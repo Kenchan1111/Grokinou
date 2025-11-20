@@ -15,7 +15,7 @@ interface SearchResultItemProps {
 /**
  * Single search result item (compact view)
  */
-export const SearchResultItem: React.FC<SearchResultItemProps> = ({
+const SearchResultItemComponent: React.FC<SearchResultItemProps> = ({
   result,
   query,
   isSelected,
@@ -81,3 +81,14 @@ export const SearchResultItem: React.FC<SearchResultItemProps> = ({
     </Box>
   );
 };
+
+// Memoize to prevent re-renders when only selection changes
+export const SearchResultItem = React.memo(SearchResultItemComponent, (prevProps, nextProps) => {
+  // Only re-render if the item's selection state changed or content changed
+  return (
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.result.message.id === nextProps.result.message.id &&
+    prevProps.query === nextProps.query &&
+    prevProps.index === nextProps.index
+  );
+});

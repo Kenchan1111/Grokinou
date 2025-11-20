@@ -187,22 +187,41 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           
           {/* Results list */}
           <Box flexDirection="column">
-            {results.slice(0, maxVisibleResults).map((result, index) => (
-              <SearchResultItem
-                key={result.message.id}
-                result={result}
-                query={query}
-                isSelected={index === selectedIndex}
-                index={index + 1}
-                total={results.length}
-                compact={true}
-              />
-            ))}
+            {(() => {
+              // Sliding window: center the selected result in the visible area
+              const halfWindow = Math.floor(maxVisibleResults / 2);
+              let windowStart = Math.max(0, selectedIndex - halfWindow);
+              const windowEnd = Math.min(results.length, windowStart + maxVisibleResults);
+              
+              // Adjust if we're at the end
+              if (windowEnd === results.length) {
+                windowStart = Math.max(0, results.length - maxVisibleResults);
+              }
+              
+              const visibleResults = results.slice(windowStart, windowEnd);
+              
+              return visibleResults.map((result, localIndex) => {
+                const globalIndex = windowStart + localIndex;
+                
+                return (
+                  <SearchResultItem
+                    key={result.message.id}
+                    result={result}
+                    query={query}
+                    isSelected={globalIndex === selectedIndex}
+                    index={globalIndex + 1}
+                    total={results.length}
+                    compact={true}
+                  />
+                );
+              });
+            })()}
             
             {results.length > maxVisibleResults && (
               <Box marginTop={1}>
                 <Text dimColor>
-                  ... {results.length - maxVisibleResults} more results (navigate with ↑/↓)
+                  Showing {Math.min(maxVisibleResults, results.length)} of {results.length} results
+                  {selectedIndex > 0 && ` • Currently at #${selectedIndex + 1}`}
                 </Text>
               </Box>
             )}
