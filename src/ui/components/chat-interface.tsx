@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Box, Text, Static } from "ink";
+import { Box, Text, Static, useStdout } from "ink";
 import { GrokAgent, ChatEntry } from "../../agent/grok-agent.js";
 import { LoadingSpinner } from "./loading-spinner.js";
 import { ChatHistory } from "./chat-history.js";
@@ -601,8 +601,12 @@ function ChatInterfaceWithAgent({
     </Box>
   );
   
+  // Get terminal height for fixed viewport (prevent stacking on scroll)
+  const { stdout: mainStdout } = useStdout();
+  const terminalHeight = mainStdout?.rows || 24;
+  
   return (
-    <Box flexDirection="column" paddingX={2}>
+    <Box flexDirection="column" paddingX={2} height={searchMode ? terminalHeight : undefined} overflow={searchMode ? "hidden" : undefined}>
       {searchMode ? (
         <SplitLayout
           left={chatViewContent}

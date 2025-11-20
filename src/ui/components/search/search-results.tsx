@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Box, Text, useInput, useStdout } from 'ink';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { Box, Text, useInput, useStdout, useApp } from 'ink';
 import { SearchResult } from '../../../utils/search-manager.js';
 import { SearchResultItem } from './search-result-item.js';
 import { ExpandedView } from './expanded-view.js';
