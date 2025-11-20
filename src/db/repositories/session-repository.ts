@@ -59,9 +59,27 @@ export class SessionRepository {
       this.closeSession(existingSession.id);
     }
     
-    // Create new session
+    // Look for ANY session with this hash (even completed ones)
     const sessionHash = this.generateSessionHash(workdir, provider);
+    const anySession = this.db.prepare(`
+      SELECT * FROM sessions WHERE session_hash = ?
+    `).get(sessionHash) as Session | undefined;
     
+    // If session exists (completed), reactivate it
+    if (anySession) {
+      this.db.prepare(`
+        UPDATE sessions 
+        SET status = 'active', 
+            last_activity = CURRENT_TIMESTAMP,
+            default_model = ?,
+            api_key_hash = ?
+        WHERE id = ?
+      `).run(model, apiKeyHash || null, anySession.id);
+      
+      return this.findById(anySession.id)!;
+    }
+    
+    // Create new session (only if hash doesn't exist at all)
     const stmt = this.db.prepare(`
       INSERT INTO sessions (
         working_dir, 
