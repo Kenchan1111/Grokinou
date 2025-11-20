@@ -20,6 +20,11 @@ import { EventEmitter } from "events";
 import { createTokenCounter, TokenCounter } from "../utils/token-counter.js";
 import { loadCustomInstructions } from "../utils/custom-instructions.js";
 import { getSettingsManager } from "../utils/settings-manager.js";
+import { 
+  appendChatEntry, 
+  saveState, 
+  sessionManager 
+} from "../utils/session-manager-sqlite.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -48,12 +53,15 @@ export class GrokAgent extends EventEmitter {
   private todoTool: TodoTool;
   private confirmationTool: ConfirmationTool;
   private search: SearchTool;
+  private applyPatch?: import("../tools/apply-patch.js").ApplyPatchTool;
   private chatHistory: ChatEntry[] = [];
   private messages: GrokMessage[] = [];
   private tokenCounter: TokenCounter;
   private abortController: AbortController | null = null;
   private mcpInitialized: boolean = false;
   private maxToolRounds: number;
+  private persistSession: boolean = true;
+  private autoRestoreSession: boolean = true;
 
   constructor(
     apiKey: string,
@@ -74,6 +82,27 @@ export class GrokAgent extends EventEmitter {
     this.confirmationTool = new ConfirmationTool();
     this.search = new SearchTool();
     this.tokenCounter = createTokenCounter(modelToUse);
+    // applyPatch tool will be lazily imported on first use
+
+    // Load project persistence settings
+    try {
+      const projectPersist = manager.getProjectSetting("persistSession");
+      const projectAutoRestore = manager.getProjectSetting("autoRestoreSession");
+      this.persistSession = projectPersist !== undefined ? !!projectPersist : true;
+      this.autoRestoreSession = projectAutoRestore !== undefined ? !!projectAutoRestore : true;
+    } catch {}
+
+    // Initialize SQLite session for current workdir
+    // Detect provider from baseURL
+    let provider = 'grok';
+    if (baseURL) {
+      if (baseURL.includes('anthropic')) provider = 'claude';
+      else if (baseURL.includes('openai')) provider = 'openai';
+      else if (baseURL.includes('mistral')) provider = 'mistral';
+      else if (baseURL.includes('deepseek')) provider = 'deepseek';
+      else if (baseURL.includes('x.ai')) provider = 'grok';
+    }
+    sessionManager.initSession(process.cwd(), provider, modelToUse, apiKey);
 
     // Initialize MCP servers if configured
     this.initializeMCP();
@@ -151,6 +180,39 @@ Current working directory: ${process.cwd()}`,
     });
   }
 
+  private async persist(entry: ChatEntry) {
+    if (!this.persistSession) return;
+    try {
+      await appendChatEntry(entry);
+    } catch {}
+  }
+
+  /**
+   * Restore message context from previously saved chat history
+   */
+  restoreFromHistory(entries: ChatEntry[]): void {
+    if (!entries || entries.length === 0) return;
+    for (const entry of entries) {
+      try {
+        if (entry.type === "user") {
+          this.messages.push({ role: "user", content: entry.content });
+        } else if (entry.type === "assistant") {
+          this.messages.push({
+            role: "assistant",
+            content: entry.content,
+            tool_calls: entry.toolCalls as any,
+          } as any);
+        } else if (entry.type === "tool_result" && entry.toolCall) {
+          this.messages.push({
+            role: "tool",
+            content: entry.content,
+            tool_call_id: entry.toolCall.id,
+          } as any);
+        }
+      } catch {}
+    }
+  }
+
   private async initializeMCP(): Promise<void> {
     // Initialize MCP in the background without blocking
     Promise.resolve().then(async () => {
@@ -208,6 +270,7 @@ Current working directory: ${process.cwd()}`,
       timestamp: new Date(),
     };
     this.chatHistory.push(userEntry);
+    await this.persist(userEntry);
     this.messages.push({ role: "user", content: message });
 
     const newEntries: ChatEntry[] = [userEntry];
@@ -248,6 +311,7 @@ Current working directory: ${process.cwd()}`,
             toolCalls: assistantMessage.tool_calls,
           };
           this.chatHistory.push(assistantEntry);
+          await this.persist(assistantEntry);
           newEntries.push(assistantEntry);
 
           // Add assistant message to conversation
@@ -289,6 +353,7 @@ Current working directory: ${process.cwd()}`,
                 toolResult: result,
               };
               this.chatHistory[entryIndex] = updatedEntry;
+              await this.persist(updatedEntry);
 
               // Also update in newEntries for return value
               const newEntryIndex = newEntries.findIndex(
@@ -330,6 +395,7 @@ Current working directory: ${process.cwd()}`,
             timestamp: new Date(),
           };
           this.chatHistory.push(finalEntry);
+          await this.persist(finalEntry);
           this.messages.push({
             role: "assistant",
             content: assistantMessage.content || "",
@@ -347,6 +413,7 @@ Current working directory: ${process.cwd()}`,
           timestamp: new Date(),
         };
         this.chatHistory.push(warningEntry);
+        await this.persist(warningEntry);
         newEntries.push(warningEntry);
       }
 
@@ -358,6 +425,7 @@ Current working directory: ${process.cwd()}`,
         timestamp: new Date(),
       };
       this.chatHistory.push(errorEntry);
+      await this.persist(errorEntry);
       return [userEntry, errorEntry];
     }
   }
@@ -405,6 +473,7 @@ Current working directory: ${process.cwd()}`,
       timestamp: new Date(),
     };
     this.chatHistory.push(userEntry);
+    await this.persist(userEntry);
     this.messages.push({ role: "user", content: message });
 
     // Calculate input tokens
@@ -446,6 +515,8 @@ Current working directory: ${process.cwd()}`,
         );
         let accumulatedMessage: any = {};
         let accumulatedContent = "";
+        let bufferedContent = "";
+        let lastContentFlush = 0;
         let toolCallsYielded = false;
 
         for await (const chunk of stream) {
@@ -479,36 +550,47 @@ Current working directory: ${process.cwd()}`,
             }
           }
 
-          // Stream content as it comes
+          // Stream content as it comes (buffered to reduce flicker)
           if (chunk.choices[0].delta?.content) {
-            accumulatedContent += chunk.choices[0].delta.content;
+                  const deltaText = chunk.choices[0].delta.content;
+            bufferedContent += deltaText;
 
-            // Update token count in real-time including accumulated content and any tool calls
-            const currentOutputTokens =
-              this.tokenCounter.estimateStreamingTokens(accumulatedContent) +
-              (accumulatedMessage.tool_calls
-                ? this.tokenCounter.countTokens(
-                    JSON.stringify(accumulatedMessage.tool_calls)
-                  )
-                : 0);
-            totalOutputTokens = currentOutputTokens;
-
-            yield {
-              type: "content",
-              content: chunk.choices[0].delta.content,
-            };
-
-            // Emit token count update
             const now = Date.now();
-            if (now - lastTokenUpdate > 250) {
-              lastTokenUpdate = now;
-              yield {
-                type: "token_count",
-                tokenCount: inputTokens + totalOutputTokens,
-              };
+            if (now - lastContentFlush > 500 || bufferedContent.length > 2000) {
+              // Flush buffered content in batches
+              yield { type: "content", content: bufferedContent };
+              accumulatedContent += bufferedContent;
+              bufferedContent = "";
+              lastContentFlush = now;
+
+              // Update token count in real-time including accumulated content and any tool calls
+              const currentOutputTokens =
+                this.tokenCounter.estimateStreamingTokens(accumulatedContent) +
+                (accumulatedMessage.tool_calls
+                  ? this.tokenCounter.countTokens(
+                      JSON.stringify(accumulatedMessage.tool_calls)
+                    )
+                  : 0);
+              totalOutputTokens = currentOutputTokens;
+
+              // Emit token count update (throttled)
+              if (now - lastTokenUpdate > 2500) {
+                lastTokenUpdate = now;
+                yield {
+                  type: "token_count",
+                  tokenCount: inputTokens + totalOutputTokens,
+                };
+              }
             }
-        }
+          }
       }
+
+        // Final content flush after stream completes
+        if (bufferedContent) {
+          yield { type: "content", content: bufferedContent };
+          accumulatedContent += bufferedContent;
+          bufferedContent = "";
+        }
 
         // Add assistant entry to history
         const assistantEntry: ChatEntry = {
@@ -518,6 +600,7 @@ Current working directory: ${process.cwd()}`,
           toolCalls: accumulatedMessage.tool_calls || undefined,
         };
         this.chatHistory.push(assistantEntry);
+        await this.persist(assistantEntry);
 
         // Add accumulated message to conversation
         this.messages.push({
@@ -562,6 +645,7 @@ Current working directory: ${process.cwd()}`,
               toolResult: result,
             };
             this.chatHistory.push(toolResultEntry);
+            await this.persist(toolResultEntry);
 
             yield {
               type: "tool_result",
@@ -622,6 +706,7 @@ Current working directory: ${process.cwd()}`,
         timestamp: new Date(),
       };
       this.chatHistory.push(errorEntry);
+      await this.persist(errorEntry);
       yield {
         type: "content",
         content: errorEntry.content,
@@ -691,6 +776,12 @@ Current working directory: ${process.cwd()}`,
             fileTypes: args.file_types,
             includeHidden: args.include_hidden,
           });
+        case "apply_patch":
+          if (!this.applyPatch) {
+            const mod = await import("../tools/apply-patch.js");
+            this.applyPatch = new mod.ApplyPatchTool();
+          }
+          return await this.applyPatch.apply(args.patch, !!args.dry_run);
 
         default:
           // Check if this is an MCP tool
@@ -770,11 +861,53 @@ Current working directory: ${process.cwd()}`,
     // Update token counter for new model
     this.tokenCounter.dispose();
     this.tokenCounter = createTokenCounter(model);
+    // Persist state (best-effort)
+    saveState({ version: 1, model, cwd: process.cwd() }).catch(() => {});
   }
 
   abortCurrentOperation(): void {
     if (this.abortController) {
       this.abortController.abort();
     }
+  }
+
+  /**
+   * Detect provider from baseURL
+   */
+  private detectProvider(baseURL?: string): string {
+    if (!baseURL) return 'grok';
+    
+    if (baseURL.includes('anthropic')) return 'claude';
+    if (baseURL.includes('openai')) return 'openai';
+    if (baseURL.includes('mistral')) return 'mistral';
+    if (baseURL.includes('deepseek')) return 'deepseek';
+    if (baseURL.includes('x.ai')) return 'grok';
+    
+    return 'grok'; // default
+  }
+
+  /**
+   * Switch to a different provider/API key
+   */
+  switchProvider(provider: string, apiKey: string, model?: string) {
+    // Detect baseURL from provider
+    const baseUrls: Record<string, string> = {
+      grok: 'https://api.x.ai/v1',
+      claude: 'https://api.anthropic.com/v1',
+      openai: 'https://api.openai.com/v1',
+      mistral: 'https://api.mistral.ai/v1',
+      deepseek: 'https://api.deepseek.com/v1',
+    };
+
+    const baseURL = baseUrls[provider] || baseUrls.grok;
+    const modelToUse = model || 'grok-code-fast-1'; // default model
+
+    // Update client
+    this.grokClient = new GrokClient(apiKey, modelToUse, baseURL);
+    
+    // Update session manager
+    sessionManager.switchProvider(provider, modelToUse, apiKey);
+    
+    console.log(`✅ Switched to ${provider} (${modelToUse})`);
   }
 }
