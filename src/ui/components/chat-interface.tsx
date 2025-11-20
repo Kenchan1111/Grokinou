@@ -497,7 +497,7 @@ function ChatInterfaceWithAgent({
 
   // Chat view content (reused in both normal and split modes)
   const chatViewContent = (
-    <Box flexDirection="column">
+    <Box flexDirection="column" height={searchMode ? "100%" : undefined} overflow={searchMode ? "hidden" : undefined}>
       {/* Tips uniquement au premier démarrage sans historique */}
       {showTips && !searchMode && (
         <Box flexDirection="column">
@@ -520,9 +520,10 @@ function ChatInterfaceWithAgent({
         </Box>
       )}
 
-      <Box flexDirection="column" ref={scrollRef} flexGrow={1}>
+      <Box flexDirection="column" ref={searchMode ? undefined : scrollRef} flexGrow={1} overflow={searchMode ? "hidden" : undefined}>
         {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
-        <Static items={committedHistory}>
+        {/* En mode recherche, limiter l'affichage pour éviter le scroll */}
+        <Static items={searchMode ? committedHistory.slice(-10) : committedHistory}>
           {(entry, index) => (
             <MemoizedArchived key={`committed-${entry.timestamp.getTime()}-${index}`} entry={entry} />
           )}
