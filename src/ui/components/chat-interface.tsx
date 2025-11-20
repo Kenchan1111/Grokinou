@@ -14,6 +14,11 @@ import ApiKeyInput from "./api-key-input.js";
 import cfonts from "cfonts";
 import { loadChatHistory, loadState } from "../../utils/session-manager-sqlite.js";
 import { getSettingsManager } from "../../utils/settings-manager.js";
+import { SplitLayout } from "./search/split-layout.js";
+import { SearchResults } from "./search/search-results.js";
+import { parseSearchCommand, executeSearchCommand } from "../../commands/search.js";
+import { SearchResult } from "../../utils/search-manager.js";
+import { sessionManager } from "../../utils/session-manager-sqlite.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
@@ -120,6 +125,12 @@ function ChatInterfaceWithAgent({
 
   const confirmationService = ConfirmationService.getInstance();
   const VISIBLE_LIMIT = 10; // Keep only last N entries in dynamic tree (rest in Static)
+  
+  // Search mode states
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const inputInjectionRef = useRef<((text: string) => void) | null>(null);
 
   // Stabilize setters with useCallback to prevent InputController re-renders
   const stableChatHistorySetter = useCallback((value: React.SetStateAction<ChatEntry[]>) => {
@@ -194,6 +205,43 @@ function ChatInterfaceWithAgent({
         pendingStreamingUpdate.current.tokenCount = undefined;
       }
     }, 200); // Token count can be even slower
+  }, []);
+
+  // Handle search command
+  const handleSearchCommand = useCallback((input: string): boolean => {
+    const searchCmd = parseSearchCommand(input);
+    
+    if (searchCmd) {
+      // Get current session ID
+      const currentSession = sessionManager.getCurrentSession();
+      const sessionId = currentSession?.id;
+      
+      // Execute search
+      const results = executeSearchCommand(searchCmd, sessionId);
+      
+      // Update search state
+      setSearchQuery(searchCmd.query);
+      setSearchResults(results);
+      setSearchMode(true);
+      
+      return true; // Command handled
+    }
+    
+    return false; // Not a search command
+  }, []);
+  
+  // Close search mode
+  const handleCloseSearch = useCallback(() => {
+    setSearchMode(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  }, []);
+  
+  // Paste to input (from clipboard via Ctrl+P in search)
+  const handlePasteToInput = useCallback((text: string) => {
+    if (inputInjectionRef.current) {
+      inputInjectionRef.current(text);
+    }
   }, []);
 
   const stableProcessingTimeSetter = useCallback((time: number) => {
@@ -447,10 +495,11 @@ function ChatInterfaceWithAgent({
   // Tips uniquement si pas d'historique au démarrage
   const showTips = committedHistory.length === 0 && !confirmationOptions;
 
-  return (
-    <Box flexDirection="column" paddingX={2}>
+  // Chat view content (reused in both normal and split modes)
+  const chatViewContent = (
+    <Box flexDirection="column">
       {/* Tips uniquement au premier démarrage sans historique */}
-      {showTips && (
+      {showTips && !searchMode && (
         <Box flexDirection="column">
           <Text color="cyan" bold>
             Tips for getting started:
@@ -471,7 +520,7 @@ function ChatInterfaceWithAgent({
         </Box>
       )}
 
-      <Box flexDirection="column" ref={scrollRef}>
+      <Box flexDirection="column" ref={scrollRef} flexGrow={1}>
         {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
         <Static items={committedHistory}>
           {(entry, index) => (
@@ -531,8 +580,31 @@ function ChatInterfaceWithAgent({
             isProcessing={isProcessing}
             isStreaming={isStreaming}
             isConfirmationActive={!!confirmationOptions}
+            onSearchCommand={handleSearchCommand}
+            inputInjectionRef={inputInjectionRef}
           />
         </>
+      )}
+    </Box>
+  );
+  
+  return (
+    <Box flexDirection="column" paddingX={2}>
+      {searchMode ? (
+        <SplitLayout
+          left={chatViewContent}
+          right={
+            <SearchResults
+              query={searchQuery}
+              results={searchResults}
+              onClose={handleCloseSearch}
+              onPasteToInput={handlePasteToInput}
+            />
+          }
+          splitRatio={0.5}
+        />
+      ) : (
+        chatViewContent
       )}
     </Box>
   );

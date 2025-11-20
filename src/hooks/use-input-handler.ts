@@ -24,6 +24,8 @@ interface UseInputHandlerProps {
   isStreaming: boolean;
   isConfirmationActive?: boolean;
   streamingBus?: import("../ui/streaming-bus.js").StreamingBus;
+  onSearchCommand?: (input: string) => boolean;
+  inputInjectionRef?: React.MutableRefObject<((text: string) => void) | null>;
 }
 
 interface CommandSuggestion {
@@ -51,6 +53,8 @@ export function useInputHandler({
   isStreaming,
   isConfirmationActive = false,
   streamingBus,
+  onSearchCommand,
+  inputInjectionRef,
 }: UseInputHandlerProps) {
   const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -218,6 +222,18 @@ export function useInputHandler({
     disabled: isConfirmationActive,
   });
 
+  // Expose input injection function for external use (e.g., paste from search)
+  useEffect(() => {
+    if (inputInjectionRef) {
+      inputInjectionRef.current = (text: string) => {
+        // Append text to current input
+        const newInput = input + text;
+        setInput(newInput);
+        setCursorPosition(newInput.length);
+      };
+    }
+  }, [input, setInput, setCursorPosition, inputInjectionRef]);
+
   // Hook up the actual input handling
   useInput((inputChar: string, key: Key) => {
     handleInput(inputChar, key);
@@ -230,6 +246,7 @@ export function useInputHandler({
 
   const commandSuggestions: CommandSuggestion[] = [
     { command: "/help", description: "Show help information" },
+    { command: "/search", description: "Search in conversation history" },
     { command: "/clear", description: "Clear chat history" },
     { command: "/clear-session", description: "Clear in-memory session only" },
     { command: "/clear-disk-session", description: "Delete persisted session and clear memory" },
@@ -245,6 +262,26 @@ export function useInputHandler({
 
   const handleDirectCommand = async (input: string): Promise<boolean> => {
     const trimmedInput = input.trim();
+
+    // Handle /search command
+    if (trimmedInput.startsWith("/search")) {
+      if (onSearchCommand) {
+        const handled = onSearchCommand(trimmedInput);
+        if (handled) {
+          clearInput();
+          return true;
+        }
+      }
+      // If not handled, show error
+      const errorEntry: ChatEntry = {
+        type: "assistant",
+        content: "❌ Search feature is not available. Usage: /search <query>",
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, errorEntry]);
+      clearInput();
+      return true;
+    }
 
     if (trimmedInput === "/clear") {
       // Reset chat history

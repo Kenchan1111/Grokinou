@@ -22,6 +22,8 @@ interface InputControllerProps {
   isProcessing: boolean;
   isStreaming: boolean;
   isConfirmationActive: boolean;
+  onSearchCommand?: (input: string) => boolean;
+  inputInjectionRef?: React.MutableRefObject<((text: string) => void) | null>;
 }
 
 // This component encapsulates input state and handlers to avoid rerendering the parent on every keystroke
@@ -42,6 +44,8 @@ const InputControllerComponent = (props: InputControllerProps) => {
     isProcessing,
     isStreaming,
     isConfirmationActive,
+    onSearchCommand,
+    inputInjectionRef,
   } = props;
 
   const {
@@ -69,6 +73,8 @@ const InputControllerComponent = (props: InputControllerProps) => {
     isProcessing,
     isStreaming,
     isConfirmationActive,
+    onSearchCommand,
+    inputInjectionRef,
   });
 
   return (
