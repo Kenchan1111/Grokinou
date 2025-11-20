@@ -3,12 +3,14 @@ import React from "react";
 import { render } from "ink";
 import { program } from "commander";
 import * as dotenv from "dotenv";
+import cfonts from "cfonts";
 import { GrokAgent } from "./agent/grok-agent.js";
 import ChatInterface from "./ui/components/chat-interface.js";
 import { getSettingsManager } from "./utils/settings-manager.js";
 import { ConfirmationService } from "./utils/confirmation-service.js";
 import { createMCPCommand } from "./commands/mcp.js";
 import type { ChatCompletionMessageParam } from "openai/resources/chat";
+import { loadTomlConfig, applyKeyValue, resolveEffectiveConfig } from "./utils/config.js";
 
 // Load environment variables
 dotenv.config();
@@ -104,6 +106,19 @@ function loadModel(): string | undefined {
   }
 
   return model;
+}
+
+function parseConfigOverrides(overrides?: string[]): Record<string, any> | undefined {
+  if (!overrides || overrides.length === 0) return undefined;
+  const out: Record<string, any> = {};
+  for (const kv of overrides) {
+    const idx = kv.indexOf("=");
+    if (idx === -1) continue;
+    const key = kv.slice(0, idx).trim();
+    const val = kv.slice(idx + 1).trim();
+    applyKeyValue(out, key, val);
+  }
+  return out;
 }
 
 // Handle commit-and-push command in headless mode
@@ -332,6 +347,10 @@ program
     "maximum number of tool execution rounds (default: 400)",
     "400"
   )
+  .option(
+    "-c, --config <key=value...>",
+    "override config values (supports dot notation)"
+  )
   .action(async (message, options) => {
     if (options.directory) {
       try {
@@ -346,10 +365,15 @@ program
     }
 
     try {
-      // Get API key from options, environment, or user settings
-      const apiKey = options.apiKey || loadApiKey();
-      const baseURL = options.baseUrl || loadBaseURL();
-      const model = options.model || loadModel();
+      // Load TOML config and CLI overrides
+      const tomlCfg = loadTomlConfig();
+      const overrides = parseConfigOverrides(options.config);
+      const effective = resolveEffectiveConfig(overrides, tomlCfg);
+
+      // Get model/provider and credentials
+      const model = options.model || effective.model || loadModel();
+      const baseURL = options.baseUrl || effective.provider?.baseURL || loadBaseURL();
+      const apiKey = options.apiKey || effective.provider?.apiKey || loadApiKey();
       const maxToolRounds = parseInt(options.maxToolRounds) || 400;
 
       if (!apiKey) {
@@ -378,7 +402,23 @@ program
 
       // Interactive mode: launch UI
       const agent = new GrokAgent(apiKey, baseURL, model, maxToolRounds);
-      console.log("🤖 Starting Grok CLI Conversational Assistant...\n");
+      
+      // Afficher le logo et instructions AVANT le démarrage d'Ink (une seule fois, jamais re-rendu)
+      const logoOutput = cfonts.render("GROK", {
+        font: "3d",
+        align: "left",
+        colors: ["magenta", "gray"],
+        space: true,
+        maxLength: "0",
+        gradient: ["magenta", "cyan"],
+        independentGradient: false,
+        transitionGradient: true,
+        env: "node",
+      }) as any;
+      console.log(logoOutput.string);
+      
+      console.log("🤖 Starting Grok CLI Conversational Assistant...");
+      console.log("\x1b[90mType your request in natural language. Ctrl+C to clear, 'exit' to quit.\x1b[0m\n");
 
       ensureUserSettingsDirectory();
 
@@ -458,5 +498,68 @@ gitCommand
 
 // MCP command
 program.addCommand(createMCPCommand());
+
+// Exec subcommand: stream events as JSONL for automation
+const execCommand = program
+  .command("exec")
+  .description("Run a prompt non-interactively and stream JSONL events")
+  .argument("[message...]", "Prompt to run; if omitted, reads from STDIN")
+  .option("-k, --api-key <key>", "Grok API key (or set GROK_API_KEY env var)")
+  .option("-u, --base-url <url>", "Grok API base URL (or set GROK_BASE_URL env var)")
+  .option("-m, --model <model>", "AI model to use")
+  .option("--max-tool-rounds <rounds>", "maximum number of tool execution rounds (default: 400)", "400")
+  .option("-c, --config <key=value...>", "override config values (supports dot notation)")
+  .action(async (message, options) => {
+    try {
+      // Assemble prompt from args or stdin
+      let prompt = Array.isArray(message) ? message.join(" ") : message;
+      if (!prompt || !prompt.trim()) {
+        // read stdin
+        prompt = await new Promise<string>((resolve) => {
+          let data = "";
+          process.stdin.setEncoding("utf-8");
+          process.stdin.on("data", (chunk) => (data += chunk));
+          process.stdin.on("end", () => resolve(data));
+        });
+      }
+      prompt = (prompt || "").trim();
+      if (!prompt) {
+        console.error("No prompt provided");
+        process.exit(1);
+      }
+
+      // Resolve config
+      const tomlCfg = loadTomlConfig();
+      const overrides = parseConfigOverrides(options.config);
+      const effective = resolveEffectiveConfig(overrides, tomlCfg);
+
+      const model = options.model || effective.model || loadModel();
+      const baseURL = options.baseUrl || effective.provider?.baseURL || loadBaseURL();
+      const apiKey = options.apiKey || effective.provider?.apiKey || loadApiKey();
+      const maxToolRounds = parseInt(options.maxToolRounds) || 400;
+
+      if (!apiKey) {
+        console.error("API key required");
+        process.exit(1);
+      }
+
+      const agent = new GrokAgent(apiKey, baseURL, model, maxToolRounds);
+      // Auto-approve to avoid confirmations in headless mode
+      const confirmationService = ConfirmationService.getInstance();
+      confirmationService.setSessionFlag("allOperations", true);
+
+      // Stream results as JSON lines
+      const encoder = (obj: any) => {
+        process.stdout.write(JSON.stringify(obj) + "\n");
+      };
+      for await (const chunk of agent.processUserMessageStream(prompt)) {
+        // Directly forward chunk structure
+        encoder(chunk);
+      }
+    } catch (e: any) {
+      process.stderr.write(JSON.stringify({ type: "error", message: e?.message || String(e) }) + "\n");
+      process.exit(1);
+    }
+  });
 
 program.parse();

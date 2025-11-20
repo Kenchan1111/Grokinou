@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { ChatEntry } from "../../agent/grok-agent.js";
 import { DiffRenderer } from "./diff-renderer.js";
@@ -50,7 +50,7 @@ const MemoizedChatEntry = React.memo(
     switch (entry.type) {
       case "user":
         return (
-          <Box key={index} flexDirection="column" marginTop={1}>
+          <Box key={index} flexDirection="column">
             <Box>
               <Text color="gray">
                 {">"} {entry.content}
@@ -61,7 +61,7 @@ const MemoizedChatEntry = React.memo(
 
       case "assistant":
         return (
-          <Box key={index} flexDirection="column" marginTop={1}>
+          <Box key={index} flexDirection="column">
             <Box flexDirection="row" alignItems="flex-start">
               <Text color="white">⏺ </Text>
               <Box flexDirection="column" flexGrow={1}>
@@ -207,21 +207,26 @@ const MemoizedChatEntry = React.memo(
 
 MemoizedChatEntry.displayName = "MemoizedChatEntry";
 
-export function ChatHistory({
+// Lightweight archived entry renderer to print finalized entries once
+export const MemoizedArchived = React.memo(({ entry }: { entry: ChatEntry }) => {
+  return <MemoizedChatEntry entry={entry} index={0} />;
+});
+
+const ChatHistoryComponent = ({
   entries,
   isConfirmationActive = false,
-}: ChatHistoryProps) {
+}: ChatHistoryProps) => {
   // Filter out tool_call entries with "Executing..." when confirmation is active
-  const filteredEntries = isConfirmationActive
-    ? entries.filter(
-        (entry) =>
-          !(entry.type === "tool_call" && entry.content === "Executing...")
-      )
-    : entries;
+  const filteredEntries = useMemo(() => {
+    if (!isConfirmationActive) return entries;
+    return entries.filter(
+      (entry) => !(entry.type === "tool_call" && entry.content === "Executing...")
+    );
+  }, [entries, isConfirmationActive]);
 
   return (
     <Box flexDirection="column">
-      {filteredEntries.slice(-20).map((entry, index) => (
+      {filteredEntries.map((entry, index) => (
         <MemoizedChatEntry
           key={`${entry.timestamp.getTime()}-${index}`}
           entry={entry}
@@ -230,4 +235,18 @@ export function ChatHistory({
       ))}
     </Box>
   );
-}
+};
+
+export const ChatHistory = React.memo(ChatHistoryComponent, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  // Only re-render if entries actually changed
+  if (prevProps.entries.length !== nextProps.entries.length) return false;
+  if (prevProps.isConfirmationActive !== nextProps.isConfirmationActive) return false;
+  
+  // Check if the last entry is the same (most common case)
+  const prevLast = prevProps.entries[prevProps.entries.length - 1];
+  const nextLast = nextProps.entries[nextProps.entries.length - 1];
+  if (prevLast?.timestamp !== nextLast?.timestamp) return false;
+  
+  return true; // Props are equal, skip re-render
+});
