@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Box, Text, useInput, useStdout } from 'ink';
 import { SearchResult } from '../../../utils/search-manager.js';
 import { SearchResultItem } from './search-result-item.js';
 import { ExpandedView } from './expanded-view.js';
@@ -23,13 +23,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onClose,
   onPasteToInput,
 }) => {
+  const { stdout } = useStdout();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [expandedScrollOffset, setExpandedScrollOffset] = useState(0);
   const [notification, setNotification] = useState<string | null>(null);
   
-  const maxVisibleResults = 8; // Number of results visible in list mode
-  const expandedMaxHeight = 20; // Max height for expanded view
+  // Calculate fixed height based on terminal height
+  const terminalHeight = stdout?.rows || 24;
+  const maxVisibleResults = Math.min(8, Math.floor((terminalHeight - 10) / 4)); // Reserve space for header/footer
+  const expandedMaxHeight = terminalHeight - 8;
   
   // Show notification with auto-dismiss
   const showNotification = useCallback((message: string, duration = 3000) => {
@@ -168,70 +171,76 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     );
   }
   
+  // Memoize visible results to prevent unnecessary recalculations
+  const visibleResultsData = useMemo(() => {
+    const halfWindow = Math.floor(maxVisibleResults / 2);
+    let windowStart = Math.max(0, selectedIndex - halfWindow);
+    const windowEnd = Math.min(results.length, windowStart + maxVisibleResults);
+    
+    if (windowEnd === results.length) {
+      windowStart = Math.max(0, results.length - maxVisibleResults);
+    }
+    
+    return {
+      windowStart,
+      windowEnd,
+      visibleResults: results.slice(windowStart, windowEnd),
+    };
+  }, [results, selectedIndex, maxVisibleResults]);
+  
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" height={terminalHeight - 4}>
       {viewMode === 'list' ? (
-        <Box flexDirection="column">
+        <Box flexDirection="column" height="100%">
           {/* Header */}
-          <Box borderStyle="single" borderBottom paddingX={1} marginBottom={1}>
+          <Box borderStyle="single" borderBottom paddingX={1}>
             <Text bold color="cyan">
               🔍 Search: "{query}"
             </Text>
           </Box>
           
-          <Box marginBottom={1}>
+          <Box>
             <Text>
               📊 {results.length} result{results.length > 1 ? 's' : ''} found
             </Text>
           </Box>
           
-          {/* Results list */}
-          <Box flexDirection="column">
-            {(() => {
-              // Sliding window: center the selected result in the visible area
-              const halfWindow = Math.floor(maxVisibleResults / 2);
-              let windowStart = Math.max(0, selectedIndex - halfWindow);
-              const windowEnd = Math.min(results.length, windowStart + maxVisibleResults);
+          {/* Results list - FIXED HEIGHT */}
+          <Box flexDirection="column" flexGrow={1} overflow="hidden">
+            {visibleResultsData.visibleResults.map((result, localIndex) => {
+              const globalIndex = visibleResultsData.windowStart + localIndex;
               
-              // Adjust if we're at the end
-              if (windowEnd === results.length) {
-                windowStart = Math.max(0, results.length - maxVisibleResults);
-              }
-              
-              const visibleResults = results.slice(windowStart, windowEnd);
-              
-              return visibleResults.map((result, localIndex) => {
-                const globalIndex = windowStart + localIndex;
-                
-                return (
-                  <SearchResultItem
-                    key={result.message.id}
-                    result={result}
-                    query={query}
-                    isSelected={globalIndex === selectedIndex}
-                    index={globalIndex + 1}
-                    total={results.length}
-                    compact={true}
-                  />
-                );
-              });
-            })()}
+              return (
+                <SearchResultItem
+                  key={`result-${result.message.id}-${globalIndex}`}
+                  result={result}
+                  query={query}
+                  isSelected={globalIndex === selectedIndex}
+                  index={globalIndex + 1}
+                  total={results.length}
+                  compact={true}
+                />
+              );
+            })}
             
+          </Box>
+          
+          {/* Footer - FIXED POSITION */}
+          <Box flexDirection="column" flexShrink={0}>
             {results.length > maxVisibleResults && (
-              <Box marginTop={1}>
+              <Box>
                 <Text dimColor>
                   Showing {Math.min(maxVisibleResults, results.length)} of {results.length} results
-                  {selectedIndex > 0 && ` • Currently at #${selectedIndex + 1}`}
+                  {selectedIndex >= 0 && ` • Currently at #${selectedIndex + 1}`}
                 </Text>
               </Box>
             )}
-          </Box>
-          
-          {/* Help footer */}
-          <Box borderStyle="single" borderTop paddingX={1} marginTop={1}>
-            <Text dimColor>
-              ↑/↓ Navigate • Enter Expand • ^S Copy • ^P Paste • Esc Close
-            </Text>
+            
+            <Box borderStyle="single" borderTop paddingX={1}>
+              <Text dimColor>
+                ↑/↓ Navigate • Enter Expand • ^S Copy • ^P Paste • Esc Close
+              </Text>
+            </Box>
           </Box>
         </Box>
       ) : (
