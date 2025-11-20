@@ -32,6 +32,28 @@ const BASE_GROK_TOOLS: GrokTool[] = [
   {
     type: "function",
     function: {
+      name: "apply_patch",
+      description:
+        "Apply a unified diff (git-style) patch to the workspace. Use this for multi-file edits.",
+      parameters: {
+        type: "object",
+        properties: {
+          patch: {
+            type: "string",
+            description: "Unified diff content. Include ---/+++ and @@ hunks.",
+          },
+          dry_run: {
+            type: "boolean",
+            description: "If true, validate without writing changes.",
+          },
+        },
+        required: ["patch"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_file",
       description: "Create a new file with specified content",
       parameters: {

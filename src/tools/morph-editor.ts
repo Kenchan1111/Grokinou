@@ -1,4 +1,5 @@
 import * as fs from "fs-extra";
+import { stat as fsStat, readdir as fsReaddir, readFile as fsReadFile } from "node:fs/promises";
 import * as path from "path";
 import axios from "axios";
 import { ToolResult } from "../types/index.js";
@@ -62,7 +63,7 @@ export class MorphEditorTool {
       }
 
       // Read the initial code
-      const initialCode = await fs.readFile(resolvedPath, "utf-8");
+      const initialCode = await fsReadFile(resolvedPath, "utf-8");
 
       // Check user confirmation before proceeding
       const sessionFlags = this.confirmationService.getSessionFlags();
@@ -331,17 +332,17 @@ export class MorphEditorTool {
       const resolvedPath = path.resolve(filePath);
 
       if (await fs.pathExists(resolvedPath)) {
-        const stats = await fs.stat(resolvedPath);
+        const stats = await fsStat(resolvedPath);
 
         if (stats.isDirectory()) {
-          const files = await fs.readdir(resolvedPath);
+          const files = await fsReaddir(resolvedPath);
           return {
             success: true,
             output: `Directory contents of ${filePath}:\n${files.join("\n")}`,
           };
         }
 
-        const content = await fs.readFile(resolvedPath, "utf-8");
+        const content = await fsReadFile(resolvedPath, "utf-8");
         const lines = content.split("\n");
 
         if (viewRange) {

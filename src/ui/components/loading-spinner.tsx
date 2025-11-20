@@ -25,7 +25,7 @@ const loadingTexts = [
   "Downloading...",
 ];
 
-export function LoadingSpinner({
+export const LoadingSpinner = React.memo(function LoadingSpinner({
   isActive,
   processingTime,
   tokenCount,
@@ -73,4 +73,4 @@ export function LoadingSpinner({
       </Text>
     </Box>
   );
-}
+});

@@ -95,7 +95,7 @@ interface DiffRendererProps {
 
 const DEFAULT_TAB_WIDTH = 4; // Spaces per tab for normalization
 
-export const DiffRenderer = ({
+export const DiffRenderer = React.memo(({ 
   diffContent,
   filename,
   tabWidth = DEFAULT_TAB_WIDTH,
@@ -131,7 +131,7 @@ export const DiffRenderer = ({
   );
 
   return <>{renderedOutput}</>;
-};
+});
 
 const renderDiffContent = (
   parsedLines: DiffLine[],

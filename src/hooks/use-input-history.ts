@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { appendInputHistory, loadInputHistory } from "../utils/input-history-manager.js";
 
 export interface InputHistoryHook {
   addToHistory: (input: string) => void;
@@ -14,9 +15,22 @@ export function useInputHistory(): InputHistoryHook {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [originalInput, setOriginalInput] = useState("");
 
+  // Load persisted input history on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await loadInputHistory();
+        if (items.length > 0) setHistory(items);
+      } catch {}
+    })();
+  }, []);
+
   const addToHistory = useCallback((input: string) => {
-    if (input.trim() && !history.includes(input.trim())) {
-      setHistory(prev => [...prev, input.trim()]);
+    const trimmed = input.trim();
+    if (trimmed && !history.includes(trimmed)) {
+      setHistory(prev => [...prev, trimmed]);
+      // Fire and forget append to JSONL (async, non-blocking)
+      appendInputHistory(trimmed).catch(() => {});
     }
     setCurrentIndex(-1);
     setOriginalInput("");

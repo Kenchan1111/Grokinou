@@ -5,7 +5,7 @@ import { MCPTool } from "../../mcp/client.js";
 
 interface MCPStatusProps {}
 
-export function MCPStatus({}: MCPStatusProps) {
+export const MCPStatus = React.memo(function MCPStatus({}: MCPStatusProps) {
   const [connectedServers, setConnectedServers] = useState<string[]>([]);
   const [availableTools, setAvailableTools] = useState<MCPTool[]>([]);
 
@@ -46,4 +46,4 @@ export function MCPStatus({}: MCPStatusProps) {
       <Text color="green">⚒ mcps: {connectedServers.length} </Text>
     </Box>
   );
-}
+});

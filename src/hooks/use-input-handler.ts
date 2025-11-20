@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useInput } from "ink";
 import { GrokAgent, ChatEntry } from "../agent/grok-agent.js";
 import { ConfirmationService } from "../utils/confirmation-service.js";
@@ -6,6 +6,7 @@ import { useEnhancedInput, Key } from "./use-enhanced-input.js";
 
 import { filterCommandSuggestions } from "../ui/components/command-suggestions.js";
 import { loadModelConfig, updateCurrentModel } from "../utils/model-config.js";
+import { clearSession } from "../utils/session-manager.js";
 
 interface UseInputHandlerProps {
   agent: GrokAgent;
@@ -13,12 +14,16 @@ interface UseInputHandlerProps {
   setChatHistory: React.Dispatch<React.SetStateAction<ChatEntry[]>>;
   setIsProcessing: (processing: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
+  setStreamingContent: (value: string | ((prev: string) => string)) => void;
+  setStreamingTools: (tools: any[] | null) => void;
+  setStreamingToolResults: (results: any[] | null | ((prev: any[] | null) => any[] | null)) => void;
   setTokenCount: (count: number) => void;
   setProcessingTime: (time: number) => void;
   processingStartTime: React.MutableRefObject<number>;
   isProcessing: boolean;
   isStreaming: boolean;
   isConfirmationActive?: boolean;
+  streamingBus?: import("../ui/streaming-bus.js").StreamingBus;
 }
 
 interface CommandSuggestion {
@@ -36,12 +41,16 @@ export function useInputHandler({
   setChatHistory,
   setIsProcessing,
   setIsStreaming,
+  setStreamingContent,
+  setStreamingTools,
+  setStreamingToolResults,
   setTokenCount,
   setProcessingTime,
   processingStartTime,
   isProcessing,
   isStreaming,
   isConfirmationActive = false,
+  streamingBus,
 }: UseInputHandlerProps) {
   const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -222,6 +231,8 @@ export function useInputHandler({
   const commandSuggestions: CommandSuggestion[] = [
     { command: "/help", description: "Show help information" },
     { command: "/clear", description: "Clear chat history" },
+    { command: "/clear-session", description: "Clear in-memory session only" },
+    { command: "/clear-disk-session", description: "Delete persisted session and clear memory" },
     { command: "/models", description: "Switch Grok Model" },
     { command: "/commit-and-push", description: "AI commit & push to remote" },
     { command: "/exit", description: "Exit the application" },
@@ -262,6 +273,8 @@ export function useInputHandler({
 
 Built-in Commands:
   /clear      - Clear chat history
+  /clear-session - Clear in-memory chat session only
+  /clear-disk-session - Delete persisted session files and clear memory
   /help       - Show this help
   /models     - Switch between available models
   /exit       - Exit application
@@ -300,6 +313,56 @@ Examples:
       };
       setChatHistory((prev) => [...prev, helpEntry]);
       clearInput();
+      return true;
+    }
+
+    if (trimmedInput === "/clear-session") {
+      // Clear in-memory session only (no disk changes)
+      setChatHistory([]);
+      setIsProcessing(false);
+      setIsStreaming(false);
+      setTokenCount(0);
+      setProcessingTime(0);
+      processingStartTime.current = 0;
+
+      const confirmationService = ConfirmationService.getInstance();
+      confirmationService.resetSession();
+
+      clearInput();
+      resetHistory();
+      return true;
+    }
+
+    if (trimmedInput === "/clear-disk-session") {
+      try {
+        await clearSession();
+        // Also clear in-memory session
+        setChatHistory([]);
+        setIsProcessing(false);
+        setIsStreaming(false);
+        setTokenCount(0);
+        setProcessingTime(0);
+        processingStartTime.current = 0;
+
+        const confirmationService = ConfirmationService.getInstance();
+        confirmationService.resetSession();
+
+        const infoEntry: ChatEntry = {
+          type: "assistant",
+          content: "✓ Deleted persisted session and cleared memory",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, infoEntry]);
+      } catch (e: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `Failed to clear disk session: ${e?.message || "Unknown error"}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      clearInput();
+      resetHistory();
       return true;
     }
 
@@ -620,29 +683,36 @@ Respond with ONLY the commit message, no additional text.`;
 
     try {
       setIsStreaming(true);
-      let streamingEntry: ChatEntry | null = null;
+      if (!streamingBus) {
+        setStreamingContent("");
+        setStreamingTools(null);
+        setStreamingToolResults(null);
+      }
+      const pendingToolResults: ChatEntry[] = [];
+      let hasStarted = false;
+      const pendingBufferRef = { text: "" };
+      const lastFlushRef = { t: 0 };
+      const flush = () => {
+        if (!pendingBufferRef.text) return;
+        const appendText = pendingBufferRef.text;
+        pendingBufferRef.text = "";
+        setStreamingContent((prev) => prev + appendText);
+      };
 
       for await (const chunk of agent.processUserMessageStream(userInput)) {
         switch (chunk.type) {
           case "content":
             if (chunk.content) {
-              if (!streamingEntry) {
-                const newStreamingEntry = {
-                  type: "assistant" as const,
-                  content: chunk.content,
-                  timestamp: new Date(),
-                  isStreaming: true,
-                };
-                setChatHistory((prev) => [...prev, newStreamingEntry]);
-                streamingEntry = newStreamingEntry;
+              hasStarted = true;
+              if (streamingBus) {
+                streamingBus.emitContent(chunk.content);
               } else {
-                setChatHistory((prev) =>
-                  prev.map((entry, idx) =>
-                    idx === prev.length - 1 && entry.isStreaming
-                      ? { ...entry, content: entry.content + chunk.content }
-                      : entry
-                  )
-                );
+                pendingBufferRef.text += chunk.content;
+                const now = Date.now();
+                if (now - lastFlushRef.t > 300) {
+                  flush();
+                  lastFlushRef.t = now;
+                }
               }
             }
             break;
@@ -655,68 +725,48 @@ Respond with ONLY the commit message, no additional text.`;
 
           case "tool_calls":
             if (chunk.toolCalls) {
-              // Stop streaming for the current assistant message
-              setChatHistory((prev) =>
-                prev.map((entry) =>
-                  entry.isStreaming
-                    ? {
-                        ...entry,
-                        isStreaming: false,
-                        toolCalls: chunk.toolCalls,
-                      }
-                    : entry
-                )
-              );
-              streamingEntry = null;
-
-              // Add individual tool call entries to show tools are being executed
-              chunk.toolCalls.forEach((toolCall) => {
-                const toolCallEntry: ChatEntry = {
-                  type: "tool_call",
-                  content: "Executing...",
-                  timestamp: new Date(),
-                  toolCall: toolCall,
-                };
-                setChatHistory((prev) => [...prev, toolCallEntry]);
-              });
+              if (streamingBus) streamingBus.emitTools(chunk.toolCalls as any);
+              else setStreamingTools(chunk.toolCalls as any);
             }
             break;
 
           case "tool_result":
             if (chunk.toolCall && chunk.toolResult) {
-              setChatHistory((prev) =>
-                prev.map((entry) => {
-                  if (entry.isStreaming) {
-                    return { ...entry, isStreaming: false };
-                  }
-                  // Update the existing tool_call entry with the result
-                  if (
-                    entry.type === "tool_call" &&
-                    entry.toolCall?.id === chunk.toolCall?.id
-                  ) {
-                    return {
-                      ...entry,
-                      type: "tool_result",
-                      content: chunk.toolResult.success
-                        ? chunk.toolResult.output || "Success"
-                        : chunk.toolResult.error || "Error occurred",
-                      toolResult: chunk.toolResult,
-                    };
-                  }
-                  return entry;
-                })
-              );
-              streamingEntry = null;
+              const toolResultEntry: ChatEntry = {
+                type: "tool_result",
+                content: chunk.toolResult.success
+                  ? chunk.toolResult.output || "Success"
+                  : chunk.toolResult.error || "Error occurred",
+                timestamp: new Date(),
+                toolCall: chunk.toolCall,
+                toolResult: chunk.toolResult,
+              };
+              // buffer result (do not update history during streaming)
+              pendingToolResults.push(toolResultEntry);
+              if (streamingBus) streamingBus.emitToolResult({ content: toolResultEntry.content });
+              else setStreamingToolResults((prev) => (prev ? [...prev, toolResultEntry] : [toolResultEntry]));
             }
             break;
 
           case "done":
-            if (streamingEntry) {
-              setChatHistory((prev) =>
-                prev.map((entry) =>
-                  entry.isStreaming ? { ...entry, isStreaming: false } : entry
-                )
-              );
+            if (streamingBus) streamingBus.emitDone();
+            else {
+              flush();
+              if (hasStarted) {
+                setStreamingContent((current) => {
+                  if (current) {
+                    const finalEntry: ChatEntry = {
+                      type: "assistant",
+                      content: current,
+                      timestamp: new Date(),
+                    };
+                    setChatHistory((prev) => [...prev, finalEntry, ...pendingToolResults]);
+                  }
+                  return "";
+                });
+              }
+              setStreamingTools(null);
+              setStreamingToolResults(null);
             }
             setIsStreaming(false);
             break;

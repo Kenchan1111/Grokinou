@@ -11,6 +11,7 @@ export interface UserSettings {
   baseURL?: string; // API base URL
   defaultModel?: string; // User's preferred default model
   models?: string[]; // Available models list
+  persistInputHistory?: boolean; // Persist input history to ~/.grok/input-history.jsonl
 }
 
 /**
@@ -20,6 +21,8 @@ export interface UserSettings {
 export interface ProjectSettings {
   model?: string; // Current model for this project
   mcpServers?: Record<string, any>; // MCP server configurations
+  persistSession?: boolean; // Persist chat session to .grok/session.jsonl
+  autoRestoreSession?: boolean; // Auto-restore session on launch
 }
 
 /**
@@ -35,6 +38,7 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
     "grok-3-fast",
     "grok-3-mini-fast",
   ],
+  persistInputHistory: true,
 };
 
 /**
@@ -42,6 +46,8 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
  */
 const DEFAULT_PROJECT_SETTINGS: Partial<ProjectSettings> = {
   model: "grok-code-fast-1",
+  persistSession: true,
+  autoRestoreSession: true,
 };
 
 /**

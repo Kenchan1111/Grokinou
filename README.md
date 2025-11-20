@@ -427,6 +427,66 @@ bun run typecheck
 - **UI**: Ink-based terminal interface components
 - **Types**: TypeScript definitions for the entire system
 
+## Advanced Configuration (TOML)
+
+In addition to JSON settings, Grok CLI supports a minimal TOML config at `~/.grok/config.toml` for provider/model selection and feature flags. CLI overrides via `--config key=value` take precedence.
+
+Example `~/.grok/config.toml`:
+
+```
+model = "grok-code-fast-1"
+model_provider = "xai"
+
+[model_providers.xai]
+base_url = "https://api.x.ai/v1"
+env_key = "GROK_API_KEY"
+wire_api = "chat"
+request_max_retries = 4
+stream_idle_timeout_ms = 300000
+
+[model_providers.openai]
+base_url = "https://api.openai.com/v1"
+env_key = "OPENAI_API_KEY"
+wire_api = "chat"
+```
+
+Override at runtime:
+
+```
+grok -c model_provider=openai -c model=gpt-4o-mini
+```
+
+## Headless JSONL Exec
+
+Use `grok exec` for non-interactive automation. Each event is printed as a JSON object per line (JSONL):
+
+```
+grok exec "Summarize README.md"
+echo "List TypeScript files" | grok exec
+grok exec -c model_provider=openai -c model=gpt-4o-mini --max-tool-rounds 50 "Refactor src/index.ts"
+```
+
+## Multi-file Edits with apply_patch
+
+The `apply_patch` tool applies git-style unified diffs (`---/+++` and `@@` hunks). File creation and deletion via `/dev/null` are supported. A confirmation preview is shown before writing.
+
+Example payload (from the assistant):
+
+```
+Tool: apply_patch
+{
+  "patch": """
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -1,3 +1,3 @@
+-console.log('Hi');
++console.log('Hello');
+"""
+}
+```
+
+Use `dry_run: true` to validate without writing.
+
 ## License
 
 MIT
