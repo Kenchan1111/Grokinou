@@ -555,7 +555,7 @@ function ChatInterfaceWithAgent({
         />
       )}
 
-      {!confirmationOptions && (
+      {!confirmationOptions && !searchMode && (
         <>
           {SHOW_STATUS && (
             <LoadingSpinner
@@ -580,10 +580,23 @@ function ChatInterfaceWithAgent({
             isProcessing={isProcessing}
             isStreaming={isStreaming}
             isConfirmationActive={!!confirmationOptions}
+            searchMode={searchMode}
             onSearchCommand={handleSearchCommand}
             inputInjectionRef={inputInjectionRef}
           />
         </>
+      )}
+      
+      {/* Search mode status indicator */}
+      {!confirmationOptions && searchMode && (
+        <Box borderStyle="single" borderColor="cyan" paddingX={1} marginTop={1}>
+          <Text color="cyan" bold>
+            🔍 Search Mode Active
+          </Text>
+          <Text dimColor>
+            {" "}• Use ↑/↓ to navigate results • Enter to expand • Ctrl+S to copy • Esc to close
+          </Text>
+        </Box>
       )}
     </Box>
   );

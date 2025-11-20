@@ -23,6 +23,7 @@ interface UseInputHandlerProps {
   isProcessing: boolean;
   isStreaming: boolean;
   isConfirmationActive?: boolean;
+  searchMode?: boolean;
   streamingBus?: import("../ui/streaming-bus.js").StreamingBus;
   onSearchCommand?: (input: string) => boolean;
   inputInjectionRef?: React.MutableRefObject<((text: string) => void) | null>;
@@ -52,6 +53,7 @@ export function useInputHandler({
   isProcessing,
   isStreaming,
   isConfirmationActive = false,
+  searchMode = false,
   streamingBus,
   onSearchCommand,
   inputInjectionRef,
@@ -236,6 +238,11 @@ export function useInputHandler({
 
   // Hook up the actual input handling
   useInput((inputChar: string, key: Key) => {
+    // Don't process input in search mode (SearchResults component handles it)
+    if (searchMode) {
+      return;
+    }
+    
     handleInput(inputChar, key);
   });
 
