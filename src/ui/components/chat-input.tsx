@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Text } from "ink";
+import { pasteManager } from "../../utils/paste-manager.js";
 
 interface ChatInputProps {
   input: string;
@@ -16,6 +17,49 @@ export const ChatInput = React.memo(function ChatInput({
 }: ChatInputProps) {
   const beforeCursor = input.slice(0, cursorPosition);
   const afterCursor = input.slice(cursorPosition);
+
+  // Function to render text with cyan-styled placeholders
+  const renderWithPlaceholders = useMemo(() => {
+    return (text: string) => {
+      const pendingPastes = pasteManager.getPendingPastes();
+      
+      if (pendingPastes.length === 0) {
+        return text;
+      }
+
+      // Split text by placeholders and create styled segments
+      const segments: Array<{ text: string; isPlaceholder: boolean }> = [];
+      let remaining = text;
+
+      for (const paste of pendingPastes) {
+        const index = remaining.indexOf(paste.placeholder);
+        if (index !== -1) {
+          // Add text before placeholder
+          if (index > 0) {
+            segments.push({ text: remaining.slice(0, index), isPlaceholder: false });
+          }
+          // Add placeholder
+          segments.push({ text: paste.placeholder, isPlaceholder: true });
+          // Continue with remaining text
+          remaining = remaining.slice(index + paste.placeholder.length);
+        }
+      }
+
+      // Add any remaining text
+      if (remaining) {
+        segments.push({ text: remaining, isPlaceholder: false });
+      }
+
+      // Render segments
+      return segments.map((segment, idx) => (
+        segment.isPlaceholder ? (
+          <Text key={idx} color="cyan">{segment.text}</Text>
+        ) : (
+          <Text key={idx}>{segment.text}</Text>
+        )
+      ));
+    };
+  }, []);
 
   // Handle multiline input display
   const lines = input.split("\n");
@@ -65,14 +109,14 @@ export const ChatInput = React.memo(function ChatInput({
               <Box key={index}>
                 <Text color={promptColor}>{promptChar} </Text>
                 <Text>
-                  {beforeCursorInLine}
+                  {renderWithPlaceholders(beforeCursorInLine)}
                   {showCursor && (
                     <Text backgroundColor="white" color="black">
                       {cursorChar}
                     </Text>
                   )}
                   {!showCursor && cursorChar !== " " && cursorChar}
-                  {afterCursorInLine}
+                  {renderWithPlaceholders(afterCursorInLine)}
                 </Text>
               </Box>
             );
@@ -80,7 +124,7 @@ export const ChatInput = React.memo(function ChatInput({
             return (
               <Box key={index}>
                 <Text color={promptColor}>{promptChar} </Text>
-                <Text>{line}</Text>
+                <Text>{renderWithPlaceholders(line)}</Text>
               </Box>
             );
           }
@@ -116,14 +160,14 @@ export const ChatInput = React.memo(function ChatInput({
           </>
         ) : (
           <Text>
-            {beforeCursor}
+            {renderWithPlaceholders(beforeCursor)}
             {showCursor && (
               <Text backgroundColor="white" color="black">
                 {cursorChar}
               </Text>
             )}
             {!showCursor && cursorChar !== " " && cursorChar}
-            {afterCursorText}
+            {renderWithPlaceholders(afterCursorText)}
           </Text>
         )}
       </Box>

@@ -7,6 +7,8 @@ import { useEnhancedInput, Key } from "./use-enhanced-input.js";
 import { filterCommandSuggestions } from "../ui/components/command-suggestions.js";
 import { loadModelConfig, updateCurrentModel } from "../utils/model-config.js";
 import { clearSession } from "../utils/session-manager.js";
+import { pasteManager } from "../utils/paste-manager.js";
+import clipboardy from "clipboardy";
 
 interface UseInputHandlerProps {
   agent: GrokAgent;
@@ -72,6 +74,25 @@ export function useInputHandler({
     // Don't handle input if confirmation dialog is active
     if (isConfirmationActive) {
       return true; // Prevent default handling
+    }
+
+    // Handle Ctrl+V (paste)
+    if (key.ctrl && key.name === 'v') {
+      clipboardy.read().then((clipboardContent) => {
+        if (clipboardContent) {
+          const { textToInsert } = pasteManager.processPaste(clipboardContent);
+          // Insert the text (placeholder or full content) at cursor position
+          const result = {
+            text: input.slice(0, cursorPosition) + textToInsert + input.slice(cursorPosition),
+            cursor: cursorPosition + textToInsert.length
+          };
+          setInput(result.text);
+          setCursorPosition(result.cursor);
+        }
+      }).catch((error) => {
+        console.error("Failed to read clipboard:", error);
+      });
+      return true; // Handled
     }
 
     // Handle shift+tab to toggle auto-edit mode
@@ -191,11 +212,16 @@ export function useInputHandler({
       return;
     }
 
-    if (userInput.trim()) {
-      const directCommandResult = await handleDirectCommand(userInput);
+    // Expand placeholders before processing
+    const expandedInput = pasteManager.expandPlaceholders(userInput);
+
+    if (expandedInput.trim()) {
+      const directCommandResult = await handleDirectCommand(expandedInput);
       if (!directCommandResult) {
-        await processUserMessage(userInput);
+        await processUserMessage(expandedInput);
       }
+      // Clear pending pastes after successful submit
+      pasteManager.clearAll();
     }
   };
 
