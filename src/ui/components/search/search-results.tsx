@@ -10,6 +10,8 @@ interface SearchResultsProps {
   results: SearchResult[];
   onClose: () => void;
   onPasteToInput?: (text: string) => void;
+  onToggleFullscreen?: () => void;
+  fullscreen?: boolean;
 }
 
 type ViewMode = 'list' | 'expanded';
@@ -22,6 +24,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   results,
   onClose,
   onPasteToInput,
+  onToggleFullscreen,
+  fullscreen = false,
 }) => {
   const { stdout } = useStdout();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -31,7 +35,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   
   // Calculate fixed height based on terminal height
   const terminalHeight = stdout?.rows || 24;
-  const maxVisibleResults = Math.min(8, Math.floor((terminalHeight - 10) / 4)); // Reserve space for header/footer
+  
+  // In fullscreen mode: more results visible (full terminal width)
+  // In split mode: fewer results (half terminal width)
+  const maxVisibleResults = fullscreen 
+    ? Math.floor(terminalHeight - 8)  // Fullscreen: one result per line (more visible)
+    : Math.min(8, Math.floor((terminalHeight - 10) / 4)); // Split: compact view
+  
   const expandedMaxHeight = terminalHeight - 8;
   
   // Show notification with auto-dismiss
@@ -112,6 +122,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         // Expand selected result
         setViewMode('expanded');
         setExpandedScrollOffset(0);
+      } else if (input === 'f' && onToggleFullscreen) {
+        // Toggle fullscreen mode
+        onToggleFullscreen();
       } else if (key.ctrl && input === 's') {
         handleCopyCompact();
       } else if (key.ctrl && input === 'p') {
@@ -197,6 +210,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             <Text bold color="cyan">
               🔍 Search: "{query}"
             </Text>
+            {fullscreen && (
+              <Text color="yellow" dimColor> [FULLSCREEN]</Text>
+            )}
           </Box>
           
           <Box>
@@ -238,7 +254,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             
             <Box borderStyle="single" borderTop paddingX={1}>
               <Text dimColor>
-                ↑/↓ Navigate • Enter Expand • ^S Copy • ^P Paste • Esc Close
+                ↑/↓ Navigate • Enter Expand • f Fullscreen • ^S Copy • Esc Close
               </Text>
             </Box>
           </Box>

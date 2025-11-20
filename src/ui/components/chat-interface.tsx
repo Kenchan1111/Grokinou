@@ -130,6 +130,7 @@ function ChatInterfaceWithAgent({
   const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchFullscreen, setSearchFullscreen] = useState(false);
   const inputInjectionRef = useRef<((text: string) => void) | null>(null);
 
   // Stabilize setters with useCallback to prevent InputController re-renders
@@ -235,6 +236,12 @@ function ChatInterfaceWithAgent({
     setSearchMode(false);
     setSearchQuery('');
     setSearchResults([]);
+    setSearchFullscreen(false);
+  }, []);
+  
+  // Toggle fullscreen for search results
+  const handleToggleFullscreen = useCallback(() => {
+    setSearchFullscreen(prev => !prev);
   }, []);
   
   // Paste to input (from clipboard via Ctrl+P in search)
@@ -609,18 +616,33 @@ function ChatInterfaceWithAgent({
   return (
     <Box flexDirection="column" paddingX={2} height={searchMode ? terminalHeight : undefined} overflow={searchMode ? "hidden" : undefined}>
       {searchMode ? (
-        <SplitLayout
-          left={chatViewContent}
-          right={
-            <SearchResults
-              query={searchQuery}
-              results={searchResults}
-              onClose={handleCloseSearch}
-              onPasteToInput={handlePasteToInput}
-            />
-          }
-          splitRatio={0.5}
-        />
+        searchFullscreen ? (
+          // Fullscreen search results (no conversation)
+          <SearchResults
+            query={searchQuery}
+            results={searchResults}
+            onClose={handleCloseSearch}
+            onPasteToInput={handlePasteToInput}
+            onToggleFullscreen={handleToggleFullscreen}
+            fullscreen={true}
+          />
+        ) : (
+          // Split view (conversation + search results)
+          <SplitLayout
+            left={chatViewContent}
+            right={
+              <SearchResults
+                query={searchQuery}
+                results={searchResults}
+                onClose={handleCloseSearch}
+                onPasteToInput={handlePasteToInput}
+                onToggleFullscreen={handleToggleFullscreen}
+                fullscreen={false}
+              />
+            }
+            splitRatio={0.5}
+          />
+        )
       ) : (
         chatViewContent
       )}
