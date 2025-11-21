@@ -111,8 +111,32 @@ export class SettingsManager {
   public static getInstance(): SettingsManager {
     if (!SettingsManager.instance) {
       SettingsManager.instance = new SettingsManager();
+      SettingsManager.instance.migrateModelsIfNeeded();
     }
     return SettingsManager.instance;
+  }
+  
+  /**
+   * Auto-migrate old model list to include all providers
+   */
+  private migrateModelsIfNeeded(): void {
+    try {
+      const currentModels = this.getUserSetting("models") || [];
+      
+      // Check if migration is needed (old list has < 10 models)
+      if (currentModels.length > 0 && currentModels.length < 10) {
+        // Only Grok models? Migrate!
+        const hasOnlyGrok = currentModels.every((m: string) => m.startsWith("grok"));
+        
+        if (hasOnlyGrok) {
+          console.log("🔄 Migrating model list to include all providers...");
+          this.updateUserSetting("models", DEFAULT_USER_SETTINGS.models);
+          console.log(`✅ Added ${DEFAULT_USER_SETTINGS.models!.length - currentModels.length} new models`);
+        }
+      }
+    } catch (error) {
+      // Silent fail - not critical
+    }
   }
 
   /**
