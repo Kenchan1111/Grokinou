@@ -39,11 +39,34 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
   baseURL: "https://api.x.ai/v1",
   defaultModel: "grok-4-latest",
   models: [
-    "grok-code-fast-1",
+    // === GROK (X.AI) ===
     "grok-4-latest",
+    "grok-code-fast-1",
     "grok-3-latest",
     "grok-3-fast",
     "grok-3-mini-fast",
+    "grok2-vision-beta",
+    
+    // === CLAUDE (Anthropic) ===
+    "claude-3-5-sonnet-20241022",
+    "claude-3-5-haiku-20241022",
+    "claude-3-opus-20240229",
+    
+    // === OPENAI ===
+    "gpt-4o",
+    "gpt-4o-mini",
+    "gpt-4-turbo",
+    "o1-preview",
+    "o1-mini",
+    
+    // === DEEPSEEK ===
+    "deepseek-chat",
+    "deepseek-coder",
+    
+    // === MISTRAL ===
+    "mistral-large-latest",
+    "mistral-medium-latest",
+    "codestral-latest",
   ],
   persistInputHistory: true,
 };

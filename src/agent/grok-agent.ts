@@ -864,6 +864,27 @@ Current working directory: ${process.cwd()}`,
     // Persist state (best-effort)
     saveState({ version: 1, model, cwd: process.cwd() }).catch(() => {});
   }
+  
+  // ✅ NEW: Get API key
+  getApiKey(): string {
+    return this.grokClient.getApiKey();
+  }
+  
+  // ✅ NEW: Switch to different model with new API key and baseURL
+  // Used when changing providers (e.g., Grok → Claude)
+  switchToModel(model: string, apiKey: string, baseURL: string): void {
+    // Recreate client with new config
+    this.grokClient = new GrokClient(apiKey, model, baseURL);
+    
+    // Update token counter
+    this.tokenCounter.dispose();
+    this.tokenCounter = createTokenCounter(model);
+    
+    // Update session manager
+    const { providerManager } = require("../utils/provider-manager.js");
+    const provider = providerManager.detectProvider(model) || 'grok';
+    sessionManager.switchProvider(provider, model, apiKey);
+  }
 
   abortCurrentOperation(): void {
     if (this.abortController) {
@@ -900,7 +921,14 @@ Current working directory: ${process.cwd()}`,
     };
 
     const baseURL = baseUrls[provider] || baseUrls.grok;
-    const modelToUse = model || 'grok-code-fast-1'; // default model
+    
+    // ✅ CORRECTED: Use priority chain instead of hardcoded fallback
+    const manager = getSettingsManager();
+    const projectModel = manager.getProjectSetting("model");
+    const userDefault = manager.getCurrentModel();
+    const systemDefault = "grok-code-fast-1";
+    
+    const modelToUse = model || projectModel || userDefault || systemDefault;
 
     // Update client
     this.grokClient = new GrokClient(apiKey, modelToUse, baseURL);

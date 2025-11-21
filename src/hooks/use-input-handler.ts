@@ -5,9 +5,10 @@ import { ConfirmationService } from "../utils/confirmation-service.js";
 import { useEnhancedInput, Key } from "./use-enhanced-input.js";
 
 import { filterCommandSuggestions } from "../ui/components/command-suggestions.js";
-import { loadModelConfig, updateCurrentModel } from "../utils/model-config.js";
+import { loadModelConfig, updateCurrentModel, updateDefaultModel } from "../utils/model-config.js";
 import { clearSession } from "../utils/session-manager.js";
 import { pasteManager } from "../utils/paste-manager.js";
+import { providerManager } from "../utils/provider-manager.js";
 
 interface UseInputHandlerProps {
   agent: GrokAgent;
@@ -260,10 +261,12 @@ export function useInputHandler({
   const commandSuggestions: CommandSuggestion[] = [
     { command: "/help", description: "Show help information" },
     { command: "/search", description: "Search in conversation history" },
+    { command: "/models", description: "Switch model (interactive)" },
+    { command: "/model-default", description: "Set global default model" },
+    { command: "/apikey", description: "Manage API keys" },
     { command: "/clear", description: "Clear chat history" },
     { command: "/clear-session", description: "Clear in-memory session only" },
     { command: "/clear-disk-session", description: "Delete persisted session and clear memory" },
-    { command: "/models", description: "Switch Grok Model" },
     { command: "/commit-and-push", description: "AI commit & push to remote" },
     { command: "/exit", description: "Exit the application" },
   ];
@@ -421,6 +424,148 @@ Examples:
       return true;
     }
 
+    // ============================================
+    // /apikey - Display API keys
+    // ============================================
+    if (trimmedInput === "/apikey") {
+      const currentProvider = providerManager.detectProvider(agent.getCurrentModel());
+      const info = providerManager.formatProviderList(currentProvider);
+      
+      const infoEntry: ChatEntry = {
+        type: "assistant",
+        content: info,
+        timestamp: new Date(),
+      };
+      
+      setChatHistory((prev) => [...prev, infoEntry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /apikey <provider> <key> - Set API key
+    // ============================================
+    if (trimmedInput.startsWith("/apikey ") && !trimmedInput.includes(" show ")) {
+      const parts = trimmedInput.split(" ");
+      
+      if (parts.length < 3) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Invalid syntax.\n\n` +
+                   `Usage:\n` +
+                   `  /apikey <provider> <key>     - Set API key\n` +
+                   `  /apikey show <provider>      - Show full key\n\n` +
+                   `Example:\n` +
+                   `  /apikey claude sk-ant-api03-xxx`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      
+      const providerName = parts[1];
+      const apiKey = parts[2];
+      
+      try {
+        providerManager.setApiKey(providerName, apiKey);
+        
+        const maskedKey = providerManager.getMaskedApiKey(providerName);
+        
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content: `✅ Set API key for ${providerName}\n` +
+                   `📝 Saved to: ~/.grok/user-settings.json\n` +
+                   `🔒 Key masked: ${maskedKey}`,
+          timestamp: new Date(),
+        };
+        
+        setChatHistory((prev) => [...prev, confirmEntry]);
+      } catch (error) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to set API key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /apikey show <provider> - Show full key
+    // ============================================
+    if (trimmedInput.startsWith("/apikey show ")) {
+      const providerName = trimmedInput.split(" ")[2];
+      
+      const provider = providerManager.getProvider(providerName);
+      
+      if (!provider || !provider.apiKey) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ No API key configured for provider: ${providerName}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      
+      const infoEntry: ChatEntry = {
+        type: "assistant",
+        content: `🔐 API Key for ${providerName}:\n` +
+                 `${provider.apiKey}\n\n` +
+                 `⚠️  Warning: Keep this key secret!`,
+        timestamp: new Date(),
+      };
+      
+      setChatHistory((prev) => [...prev, infoEntry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /model-default <model> - Set global default
+    // ============================================
+    if (trimmedInput.startsWith("/model-default ")) {
+      const modelArg = trimmedInput.slice(15).trim();
+      const modelNames = availableModels.map((m) => m.model);
+
+      if (modelNames.includes(modelArg)) {
+        // Update user settings (global default)
+        updateDefaultModel(modelArg);
+        
+        // Get current model for comparison
+        const currentModel = agent.getCurrentModel();
+        
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content: `✅ Set ${modelArg} as global default model\n` +
+                   `📝 Saved to: ~/.grok/user-settings.json\n\n` +
+                   `ℹ️  Current session still using: ${currentModel}\n` +
+                   `💡 Use /models ${modelArg} to switch this session too\n\n` +
+                   `This will be used for all NEW sessions.`,
+          timestamp: new Date(),
+        };
+        
+        setChatHistory((prev) => [...prev, confirmEntry]);
+      } else {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Model "${modelArg}" not found.\n\n` +
+                   `Available models:\n${modelNames.map(m => `  • ${m}`).join('\n')}\n\n` +
+                   `To add a new model, edit ~/.grok/user-settings.json`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+
     if (trimmedInput === "/models") {
       setShowModelSelection(true);
       setSelectedModelIndex(0);
@@ -433,18 +578,52 @@ Examples:
       const modelNames = availableModels.map((m) => m.model);
 
       if (modelNames.includes(modelArg)) {
-        agent.setModel(modelArg);
+        // ✅ NEW: Detect provider and get config
+        const providerConfig = providerManager.getProviderForModel(modelArg);
+        
+        if (!providerConfig) {
+          const errorEntry: ChatEntry = {
+            type: "assistant",
+            content: `❌ Could not detect provider for model: ${modelArg}`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, errorEntry]);
+          clearInput();
+          return true;
+        }
+        
+        // Check API key
+        if (!providerConfig.apiKey) {
+          const errorEntry: ChatEntry = {
+            type: "assistant",
+            content: `❌ API key not configured for provider: ${providerConfig.name}\n\n` +
+                     `Set it now:\n` +
+                     `  /apikey ${providerConfig.name} your-api-key-here\n\n` +
+                     `Or configure in ~/.grok/user-settings.json`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, errorEntry]);
+          clearInput();
+          return true;
+        }
+        
+        // ✅ Switch with new provider config
+        agent.switchToModel(modelArg, providerConfig.apiKey, providerConfig.baseURL);
         updateCurrentModel(modelArg); // Update project current model
+        
         const confirmEntry: ChatEntry = {
           type: "assistant",
-          content: `✓ Switched to model: ${modelArg}`,
+          content: `✅ Switched to ${modelArg}\n` +
+                   `📝 Provider: ${providerConfig.name}\n` +
+                   `🔗 Endpoint: ${providerConfig.baseURL}\n` +
+                   `💾 Saved to: .grok/settings.json`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, confirmEntry]);
       } else {
         const errorEntry: ChatEntry = {
           type: "assistant",
-          content: `Invalid model: ${modelArg}
+          content: `❌ Model "${modelArg}" not found.\n\nAvailable models:\n${modelNames.join("\n")}
 
 Available models: ${modelNames.join(", ")}`,
           timestamp: new Date(),
