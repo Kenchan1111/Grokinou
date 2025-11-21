@@ -7,11 +7,18 @@ import * as os from "os";
  * These are global settings that apply across all projects
  */
 export interface UserSettings {
-  apiKey?: string; // Grok API key
-  baseURL?: string; // API base URL
+  apiKey?: string; // Legacy: Grok API key (for backward compatibility)
+  baseURL?: string; // Legacy: API base URL
   defaultModel?: string; // User's preferred default model
   models?: string[]; // Available models list
   persistInputHistory?: boolean; // Persist input history to ~/.grok/input-history.jsonl
+  
+  // NEW: Multi-provider support
+  apiKeys?: Record<string, string>; // API keys per provider: { grok: "xai-xxx", claude: "sk-ant-xxx" }
+  providers?: Record<string, {
+    baseURL: string;
+    models?: string[];
+  }>; // Provider configurations
 }
 
 /**
@@ -30,7 +37,7 @@ export interface ProjectSettings {
  */
 const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
   baseURL: "https://api.x.ai/v1",
-  defaultModel: "grok-code-fast-1",
+  defaultModel: "grok-4-latest",
   models: [
     "grok-code-fast-1",
     "grok-4-latest",
@@ -292,7 +299,7 @@ export class SettingsManager {
   }
 
   /**
-   * Get API key from user settings or environment
+   * Get API key from user settings or environment (legacy - for backward compatibility)
    */
   public getApiKey(): string | undefined {
     // First check environment variable
@@ -303,6 +310,39 @@ export class SettingsManager {
 
     // Then check user settings
     return this.getUserSetting("apiKey");
+  }
+  
+  /**
+   * Get all API keys (multi-provider)
+   */
+  public getApiKeys(): Record<string, string> | undefined {
+    const apiKeys = this.getUserSetting("apiKeys");
+    
+    // Backward compatibility: if apiKeys not set but apiKey is, use it for grok
+    if (!apiKeys || Object.keys(apiKeys).length === 0) {
+      const legacyKey = this.getApiKey();
+      if (legacyKey) {
+        return { grok: legacyKey };
+      }
+    }
+    
+    return apiKeys;
+  }
+  
+  /**
+   * Set API key for a specific provider
+   */
+  public setApiKey(provider: string, apiKey: string): void {
+    const apiKeys = this.getApiKeys() || {};
+    apiKeys[provider] = apiKey;
+    this.updateUserSetting("apiKeys", apiKeys);
+  }
+  
+  /**
+   * Get provider configurations
+   */
+  public getProviders(): Record<string, { baseURL: string; models?: string[] }> | undefined {
+    return this.getUserSetting("providers");
   }
 
   /**

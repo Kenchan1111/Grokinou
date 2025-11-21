@@ -47,10 +47,12 @@ export interface GrokResponse {
 
 export class GrokClient {
   private client: OpenAI;
-  private currentModel: string = "grok-code-fast-1";
+  private currentModel: string; // ✅ NO HARDCODED DEFAULT
   private defaultMaxTokens: number;
+  private apiKey: string; // ✅ Store for later access
 
-  constructor(apiKey: string, model?: string, baseURL?: string) {
+  constructor(apiKey: string, model: string, baseURL?: string) { // ✅ model REQUIRED
+    this.apiKey = apiKey; // ✅ Store
     this.client = new OpenAI({
       apiKey,
       baseURL: baseURL || process.env.GROK_BASE_URL || "https://api.x.ai/v1",
@@ -58,9 +60,7 @@ export class GrokClient {
     });
     const envMax = Number(process.env.GROK_MAX_TOKENS);
     this.defaultMaxTokens = Number.isFinite(envMax) && envMax > 0 ? envMax : 1536;
-    if (model) {
-      this.currentModel = model;
-    }
+    this.currentModel = model; // ✅ Use provided model (required)
   }
 
   setModel(model: string): void {
@@ -69,6 +69,11 @@ export class GrokClient {
 
   getCurrentModel(): string {
     return this.currentModel;
+  }
+  
+  // ✅ NEW: Get API key for session switching
+  getApiKey(): string {
+    return this.apiKey;
   }
 
   async chat(
