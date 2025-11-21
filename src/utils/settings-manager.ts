@@ -47,26 +47,42 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
     "grok-3-mini-fast",
     "grok2-vision-beta",
     
-    // === CLAUDE (Anthropic) ===
+    // === CLAUDE (Anthropic) - Verified names ===
+    "claude-sonnet-4-5-20250514", // Latest Sonnet 4.5 (May 2025)
     "claude-3-5-sonnet-20241022",
     "claude-3-5-haiku-20241022",
     "claude-3-opus-20240229",
     
-    // === OPENAI ===
-    "gpt-4o",
-    "gpt-4o-mini",
-    "gpt-4-turbo",
-    "o1-preview",
-    "o1-mini",
+    // === OPENAI - Verified ✅ (Tested 2025-11-22) ===
+    "gpt-5", // ✅ Latest GPT-5 (Aug 2025)
+    "gpt-5-2025-08-07", // ✅ Explicit date version
+    "o3", // ✅ Latest O3 reasoning (Apr 2025)
+    "o3-mini", // ✅ O3 Mini (Jan 2025)
+    "o1", // ✅ O1 reasoning (Dec 2024)
+    "gpt-4o", // ✅ Latest GPT-4o
+    "gpt-4o-2024-11-20", // ✅ Nov 2024 version
+    "gpt-4o-2024-08-06", // ✅ Aug 2024 version
+    "gpt-4o-mini", // ✅ Mini version
+    "chatgpt-4o-latest", // ✅ ChatGPT version
+    "gpt-4-turbo", // ✅ GPT-4 Turbo
+    "gpt-3.5-turbo", // ✅ GPT-3.5
     
-    // === DEEPSEEK ===
+    // === DEEPSEEK - Standard names ===
     "deepseek-chat",
     "deepseek-coder",
+    "deepseek-reasoner",
     
-    // === MISTRAL ===
-    "mistral-large-latest",
-    "mistral-medium-latest",
-    "codestral-latest",
+    // === MISTRAL - Verified ✅ (Tested 2025-11-22) ===
+    "mistral-large-latest", // ✅
+    "mistral-large-2407", // ✅
+    "mistral-medium-latest", // ✅
+    "mistral-small-latest", // ✅
+    "mistral-tiny", // ✅
+    "codestral-latest", // ✅
+    "codestral-2405", // ✅
+    "open-mistral-7b", // ✅
+    "open-mixtral-8x7b", // ✅
+    "open-mixtral-8x22b", // ✅
   ],
   persistInputHistory: true,
 };
