@@ -13,6 +13,7 @@ import {
 import { useInputHistory } from "./use-input-history.js";
 import { pasteManager } from "../utils/paste-manager.js";
 import { pasteBurstDetector } from "../utils/paste-burst-detector.js";
+import { imagePathManager } from "../utils/image-path-detector.js";
 
 export interface Key {
   name?: string;
@@ -223,6 +224,28 @@ export function useEnhancedInput({
                        (key.delete && inputChar === '' && !key.shift);
                        
     if (isBackspace) {
+      // Check if cursor is at the end of a paste placeholder (atomic delete)
+      const pastePlaceholderInfo = pasteManager.findPlaceholderAtCursor(currentInput, currentCursor);
+      if (pastePlaceholderInfo) {
+        const { placeholder, start, end } = pastePlaceholderInfo;
+        const newInput = currentInput.slice(0, start) + currentInput.slice(end);
+        pasteManager.removeByPlaceholder(placeholder);
+        setInputAndCursor({ text: newInput, cursor: start });
+        setOriginalInput(newInput);
+        return;
+      }
+
+      // Check if cursor is at the end of an image placeholder (atomic delete)
+      const imagePlaceholderInfo = imagePathManager.findImagePlaceholderAtCursor(currentInput, currentCursor);
+      if (imagePlaceholderInfo) {
+        const { placeholder, start, end } = imagePlaceholderInfo;
+        const newInput = currentInput.slice(0, start) + currentInput.slice(end);
+        imagePathManager.removeImage(placeholder);
+        setInputAndCursor({ text: newInput, cursor: start });
+        setOriginalInput(newInput);
+        return;
+      }
+
       if (key.ctrl || key.meta) {
         // Ctrl/Cmd + Backspace: Delete word before cursor
         const result = deleteWordBefore(currentInput, currentCursor);
@@ -292,10 +315,22 @@ export function useEnhancedInput({
       const shouldBuffer = pasteBurstDetector.handleInput(inputChar, (bufferedContent) => {
         // This callback is called after the burst ends (20ms timeout)
         // Process the complete buffered content
-        const { textToInsert } = pasteManager.processPaste(bufferedContent);
-        const result = insertText(inputRef.current, cursorRef.current, textToInsert);
-        setInputAndCursor({ text: result.text, cursor: result.position });
-        setOriginalInput(result.text);
+        
+        // First, check if it's an image path (like Codex does)
+        const imageResult = imagePathManager.processPaste(bufferedContent);
+        
+        if (imageResult.isImage) {
+          // It's an image path! Insert placeholder
+          const result = insertText(inputRef.current, cursorRef.current, imageResult.textToInsert);
+          setInputAndCursor({ text: result.text, cursor: result.position });
+          setOriginalInput(result.text);
+        } else {
+          // Not an image, check if it's large text
+          const { textToInsert } = pasteManager.processPaste(bufferedContent);
+          const result = insertText(inputRef.current, cursorRef.current, textToInsert);
+          setInputAndCursor({ text: result.text, cursor: result.position });
+          setOriginalInput(result.text);
+        }
       });
 
       // If buffering, don't insert yet (wait for flush)

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { pasteManager } from "../../utils/paste-manager.js";
+import { imagePathManager } from "../../utils/image-path-detector.js";
 
 interface ChatInputProps {
   input: string;
@@ -18,46 +19,69 @@ export const ChatInput = React.memo(function ChatInput({
   const beforeCursor = input.slice(0, cursorPosition);
   const afterCursor = input.slice(cursorPosition);
 
-  // Function to render text with cyan-styled placeholders
+  // Function to render text with styled placeholders (cyan for text, magenta for images)
   const renderWithPlaceholders = useMemo(() => {
     return (text: string) => {
       const pendingPastes = pasteManager.getPendingPastes();
+      const attachedImages = imagePathManager.getAttachedImages();
       
-      if (pendingPastes.length === 0) {
+      if (pendingPastes.length === 0 && attachedImages.length === 0) {
         return text;
       }
 
-      // Split text by placeholders and create styled segments
-      const segments: Array<{ text: string; isPlaceholder: boolean }> = [];
-      let remaining = text;
+      // Build a combined list of all placeholders with their types
+      const placeholders: Array<{ text: string; type: 'paste' | 'image' }> = [
+        ...pendingPastes.map(p => ({ text: p.placeholder, type: 'paste' as const })),
+        ...attachedImages.map(img => ({ text: img.placeholder, type: 'image' as const })),
+      ];
 
-      for (const paste of pendingPastes) {
-        const index = remaining.indexOf(paste.placeholder);
-        if (index !== -1) {
+      // Sort by position in text for correct rendering
+      const segments: Array<{ text: string; type: 'text' | 'paste' | 'image' }> = [];
+      let remaining = text;
+      let changed = true;
+
+      while (changed && remaining) {
+        changed = false;
+        let earliestIndex = Infinity;
+        let earliestPlaceholder: { text: string; type: 'paste' | 'image' } | null = null;
+
+        // Find the earliest placeholder in remaining text
+        for (const placeholder of placeholders) {
+          const index = remaining.indexOf(placeholder.text);
+          if (index !== -1 && index < earliestIndex) {
+            earliestIndex = index;
+            earliestPlaceholder = placeholder;
+            changed = true;
+          }
+        }
+
+        if (earliestPlaceholder) {
           // Add text before placeholder
-          if (index > 0) {
-            segments.push({ text: remaining.slice(0, index), isPlaceholder: false });
+          if (earliestIndex > 0) {
+            segments.push({ text: remaining.slice(0, earliestIndex), type: 'text' });
           }
           // Add placeholder
-          segments.push({ text: paste.placeholder, isPlaceholder: true });
+          segments.push({ text: earliestPlaceholder.text, type: earliestPlaceholder.type });
           // Continue with remaining text
-          remaining = remaining.slice(index + paste.placeholder.length);
+          remaining = remaining.slice(earliestIndex + earliestPlaceholder.text.length);
         }
       }
 
       // Add any remaining text
       if (remaining) {
-        segments.push({ text: remaining, isPlaceholder: false });
+        segments.push({ text: remaining, type: 'text' });
       }
 
-      // Render segments
-      return segments.map((segment, idx) => (
-        segment.isPlaceholder ? (
-          <Text key={idx} color="cyan">{segment.text}</Text>
-        ) : (
-          <Text key={idx}>{segment.text}</Text>
-        )
-      ));
+      // Render segments with appropriate colors
+      return segments.map((segment, idx) => {
+        if (segment.type === 'paste') {
+          return <Text key={idx} color="cyan">{segment.text}</Text>;
+        } else if (segment.type === 'image') {
+          return <Text key={idx} color="magenta">{segment.text}</Text>;
+        } else {
+          return <Text key={idx}>{segment.text}</Text>;
+        }
+      });
     };
   }, []);
 
