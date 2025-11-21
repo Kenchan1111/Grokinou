@@ -67,10 +67,10 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
     "gpt-4-turbo", // ✅ GPT-4 Turbo
     "gpt-3.5-turbo", // ✅ GPT-3.5
     
-    // === DEEPSEEK - Standard names ===
-    "deepseek-chat",
-    "deepseek-coder",
-    "deepseek-reasoner",
+    // === DEEPSEEK - Verified ✅ (Tested 2025-11-22) ===
+    "deepseek-chat", // ✅ General chat
+    "deepseek-coder", // ✅ Coding (→ deepseek-chat)
+    "deepseek-reasoner", // ✅ R1 reasoning model
     
     // === MISTRAL - Verified ✅ (Tested 2025-11-22) ===
     "mistral-large-latest", // ✅
