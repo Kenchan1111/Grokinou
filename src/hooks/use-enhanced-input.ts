@@ -12,6 +12,7 @@ import {
 } from "../utils/text-utils.js";
 import { useInputHistory } from "./use-input-history.js";
 import { pasteManager } from "../utils/paste-manager.js";
+import { pasteBurstDetector } from "../utils/paste-burst-detector.js";
 
 export interface Key {
   name?: string;
@@ -287,16 +288,19 @@ export function useEnhancedInput({
 
     // Handle regular character input
     if (inputChar && !key.ctrl && !key.meta) {
-      // Detect paste-like input (multiple characters at once)
-      // Ink sends pasted text directly as a long inputChar string
-      if (inputChar.length > 10) {
-        // This looks like a paste! Process through paste manager
-        const { textToInsert } = pasteManager.processPaste(inputChar);
-        const result = insertText(currentInput, currentCursor, textToInsert);
+      // Use paste burst detector to buffer rapid inputs (paste chunks)
+      const shouldBuffer = pasteBurstDetector.handleInput(inputChar, (bufferedContent) => {
+        // This callback is called after the burst ends (20ms timeout)
+        // Process the complete buffered content
+        const { textToInsert } = pasteManager.processPaste(bufferedContent);
+        const result = insertText(inputRef.current, cursorRef.current, textToInsert);
         setInputAndCursor({ text: result.text, cursor: result.position });
         setOriginalInput(result.text);
-      } else {
-        // Normal single character typing
+      });
+
+      // If buffering, don't insert yet (wait for flush)
+      if (!shouldBuffer) {
+        // Normal single character typing (not a paste burst)
         const result = insertText(currentInput, currentCursor, inputChar);
         setInputAndCursor({ text: result.text, cursor: result.position });
         setOriginalInput(result.text);
