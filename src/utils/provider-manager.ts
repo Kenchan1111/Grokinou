@@ -43,6 +43,7 @@ const DEFAULT_PROVIDERS: Record<string, Omit<ProviderConfig, 'name' | 'apiKey'>>
   claude: {
     baseURL: 'https://api.anthropic.com/v1',
     models: [
+      'claude-sonnet-4-5-20250514',
       'claude-3-5-sonnet-20241022',
       'claude-3-5-haiku-20241022',
       'claude-3-opus-20240229',
@@ -52,12 +53,31 @@ const DEFAULT_PROVIDERS: Record<string, Omit<ProviderConfig, 'name' | 'apiKey'>>
   openai: {
     baseURL: 'https://api.openai.com/v1',
     models: [
-      'gpt-4o',
-      'gpt-4o-mini',
-      'gpt-4-turbo',
-      'gpt-4',
+      // GPT-5 (Latest)
+      'gpt-5',
+      'gpt-5-2025-08-07',
+      // O3 Reasoning (New)
+      'o3',
+      'o3-mini',
+      // O1 Reasoning
+      'o1',
       'o1-preview',
       'o1-mini',
+      // GPT-4o
+      'gpt-4o',
+      'gpt-4o-2024-11-20',
+      'gpt-4o-2024-08-06',
+      'gpt-4o-mini',
+      'gpt-4o-mini-2024-07-18',
+      'chatgpt-4o-latest',
+      // GPT-4 Turbo
+      'gpt-4-turbo',
+      'gpt-4-turbo-preview',
+      'gpt-4-turbo-2024-04-09',
+      'gpt-4',
+      // GPT-3.5
+      'gpt-3.5-turbo',
+      'gpt-3.5-turbo-0125',
     ],
   },
   deepseek: {
@@ -65,15 +85,22 @@ const DEFAULT_PROVIDERS: Record<string, Omit<ProviderConfig, 'name' | 'apiKey'>>
     models: [
       'deepseek-chat',
       'deepseek-coder',
+      'deepseek-reasoner',
     ],
   },
   mistral: {
     baseURL: 'https://api.mistral.ai/v1',
     models: [
       'mistral-large-latest',
+      'mistral-large-2407',
       'mistral-medium-latest',
       'mistral-small-latest',
+      'mistral-tiny',
       'codestral-latest',
+      'codestral-2405',
+      'open-mistral-7b',
+      'open-mixtral-8x7b',
+      'open-mixtral-8x22b',
     ],
   },
 };
