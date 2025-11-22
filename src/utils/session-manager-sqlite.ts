@@ -150,8 +150,30 @@ export class SessionManagerSQLite {
     this.currentProvider = provider;
     this.currentModel = model;
     
-    // Note: Next messages will use the new provider
-    console.log(`✅ Switched to ${provider} (${model})`);
+    // ✅ Update session in database
+    if (this.currentSession) {
+      try {
+        const database = db.getDb();
+        database.prepare(`
+          UPDATE sessions 
+          SET default_provider = ?, 
+              default_model = ?,
+              last_activity = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(provider, model, this.currentSession.id);
+        
+        // Update currentSession object
+        this.currentSession.default_provider = provider;
+        this.currentSession.default_model = model;
+        
+        console.log(`✅ Switched to ${provider} (${model}) - DB updated`);
+      } catch (error) {
+        console.error(`⚠️  Failed to update session in DB:`, error);
+        console.log(`✅ Switched to ${provider} (${model}) - Memory only`);
+      }
+    } else {
+      console.log(`✅ Switched to ${provider} (${model}) - No active session`);
+    }
   }
 
   /**
