@@ -873,7 +873,7 @@ Current working directory: ${process.cwd()}`,
   
   // ✅ NEW: Switch to different model with new API key and baseURL
   // Used when changing providers (e.g., Grok → Claude)
-  switchToModel(model: string, apiKey: string, baseURL: string): void {
+  async switchToModel(model: string, apiKey: string, baseURL: string): Promise<string> {
     console.log(`🔧 GrokAgent.switchToModel: model=${model}, baseURL=${baseURL}, apiKey=${apiKey.slice(0,10)}...`);
     
     // Recreate client with new config
@@ -890,6 +890,31 @@ Current working directory: ${process.cwd()}`,
     sessionManager.switchProvider(provider, model, apiKey);
     
     console.log(`✅ Session manager updated for provider=${provider}`);
+    
+    // ✅ NEW: Identity check (isolated message, no history)
+    try {
+      console.log(`🔍 Sending identity check to model...`);
+      
+      const identityResponse = await this.grokClient.chat(
+        [{ role: "user", content: "In one short sentence, what is your exact model name and provider?" }],
+        [], // No tools
+        undefined, // Use current model
+        undefined  // No search
+      );
+      
+      const aiSays = identityResponse.choices[0]?.message?.content || "No response";
+      const apiReturned = identityResponse.model || model;
+      
+      console.log(`✅ AI says: "${aiSays}"`);
+      console.log(`📝 API returned: ${apiReturned}`);
+      
+      // Return formatted identity info
+      return `🤖 AI Response: "${aiSays}"\n📋 API Metadata: ${apiReturned}`;
+      
+    } catch (error) {
+      console.log(`⚠️  Identity check failed:`, error);
+      return `⚠️  Identity check failed, but connection established`;
+    }
   }
 
   abortCurrentOperation(): void {

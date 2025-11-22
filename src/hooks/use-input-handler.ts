@@ -199,19 +199,24 @@ export function useInputHandler({
           return true;
         }
         
-        // ✅ Switch with new provider config
-        agent.switchToModel(selectedModel.model, providerConfig.apiKey, providerConfig.baseURL);
-        updateCurrentModel(selectedModel.model);
+        // ✅ Switch with new provider config (async)
+        (async () => {
+          const identityInfo = await agent.switchToModel(selectedModel.model, providerConfig.apiKey, providerConfig.baseURL);
+          updateCurrentModel(selectedModel.model);
+          
+          const confirmEntry: ChatEntry = {
+            type: "assistant",
+            content: `✅ Switched to ${selectedModel.model}\n` +
+                     `📝 Provider: ${providerConfig.name}\n` +
+                     `🔗 Endpoint: ${providerConfig.baseURL}\n` +
+                     `💾 Saved to: .grok/settings.json\n\n` +
+                     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                     `🔍 Identity Verification:\n${identityInfo}`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, confirmEntry]);
+        })();
         
-        const confirmEntry: ChatEntry = {
-          type: "assistant",
-          content: `✅ Switched to ${selectedModel.model}\n` +
-                   `📝 Provider: ${providerConfig.name}\n` +
-                   `🔗 Endpoint: ${providerConfig.baseURL}\n` +
-                   `💾 Saved to: .grok/settings.json`,
-          timestamp: new Date(),
-        };
-        setChatHistory((prev) => [...prev, confirmEntry]);
         setShowModelSelection(false);
         setSelectedModelIndex(0);
         return true;
@@ -672,21 +677,26 @@ Examples:
           return true;
         }
         
-        // ✅ Switch with new provider config
-        agent.switchToModel(modelArg, providerConfig.apiKey, providerConfig.baseURL);
-        updateCurrentModel(modelArg); // Update project current model
+        // ✅ Switch with new provider config (async)
+        (async () => {
+          const identityInfo = await agent.switchToModel(modelArg, providerConfig.apiKey, providerConfig.baseURL);
+          updateCurrentModel(modelArg); // Update project current model
+          
+          const confirmEntry: ChatEntry = {
+            type: "assistant",
+            content: `✅ Switched to ${modelArg}\n` +
+                     `📝 Provider: ${providerConfig.name}\n` +
+                     `🔗 Endpoint: ${providerConfig.baseURL}\n` +
+                     `💾 Saved to: .grok/settings.json\n\n` +
+                     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                     `🔍 Identity Verification:\n${identityInfo}`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, confirmEntry]);
+        })();
         
-        const confirmEntry: ChatEntry = {
-          type: "assistant",
-          content: `✅ Switched to ${modelArg}\n` +
-                   `📝 Provider: ${providerConfig.name}\n` +
-                   `🔗 Endpoint: ${providerConfig.baseURL}\n` +
-                   `🔑 API Key: ${providerConfig.apiKey.slice(0, 15)}...\n` +
-                   `💾 Saved to: .grok/settings.json\n\n` +
-                   `DEBUG: Called switchToModel(${modelArg}, ${providerConfig.apiKey.slice(0,10)}..., ${providerConfig.baseURL})`,
-          timestamp: new Date(),
-        };
-        setChatHistory((prev) => [...prev, confirmEntry]);
+        clearInput();
+        return true;
       } else {
         const errorEntry: ChatEntry = {
           type: "assistant",

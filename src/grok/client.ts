@@ -35,6 +35,7 @@ export interface SearchOptions {
 }
 
 export interface GrokResponse {
+  model?: string; // ✅ Model name returned by API
   choices: Array<{
     message: {
       role: string;
