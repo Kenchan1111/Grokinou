@@ -183,6 +183,28 @@ export class GrokClient {
   }
   
   /**
+   * Additional pruning by rough character budget (provider-sensitive)
+   */
+  private pruneByCharBudget(messages: GrokMessage[], provider: string): GrokMessage[] {
+    if (provider !== 'mistral') return messages;
+    const BUDGET = 18000; // rough char budget (~6-8k tokens depending on content)
+    // Always keep first system message if present
+    const systemMsg = messages.find(m => m.role === 'system');
+    const rest = messages.filter(m => m !== systemMsg);
+    let acc: GrokMessage[] = [];
+    let used = systemMsg ? JSON.stringify(systemMsg).length : 0;
+    for (let i = rest.length - 1; i >= 0; i--) {
+      const m = rest[i];
+      const sz = JSON.stringify(m).length;
+      if (used + sz > BUDGET) break;
+      acc.push(m);
+      used += sz;
+    }
+    acc.reverse();
+    return systemMsg ? [systemMsg, ...acc] : acc;
+  }
+  
+  /**
    * Build request payload specific to provider
    */
   private buildRequestPayload(
@@ -196,9 +218,10 @@ export class GrokClient {
     
     // ✅ Truncate messages for context window (especially for Mistral)
     const truncatedMessages = this.truncateMessages(messages, 50);
+    const prunedByBudget = this.pruneByCharBudget(truncatedMessages, provider);
     
     // ✅ Clean messages for provider compatibility (currently no-op)
-    const cleanedMessages = this.cleanMessagesForProvider(truncatedMessages);
+    const cleanedMessages = this.cleanMessagesForProvider(prunedByBudget);
     
     const requestPayload: any = {
       model: modelToUse,
