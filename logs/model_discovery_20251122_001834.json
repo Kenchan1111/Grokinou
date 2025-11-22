@@ -1,0 +1,195 @@
+{
+  "timestamp": "2025-11-22T00:18:34.551946",
+  "results": {
+    "mistral": {
+      "provider": "mistral",
+      "skipped": false,
+      "total": 10,
+      "valid": 10,
+      "results": [
+        {
+          "provider": "mistral",
+          "model": "mistral-large-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "mistral-large-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-large-2407",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "mistral-large-2407"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-medium-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "mistral-medium-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-small-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! How can I assist you today?",
+          "model_returned": "mistral-small-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-tiny",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK. I'm here to help! How",
+          "model_returned": "mistral-tiny"
+        },
+        {
+          "provider": "mistral",
+          "model": "codestral-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "codestral-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "codestral-2405",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "codestral-2405"
+        },
+        {
+          "provider": "mistral",
+          "model": "open-mistral-7b",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! I'm here to help. How",
+          "model_returned": "open-mistral-7b"
+        },
+        {
+          "provider": "mistral",
+          "model": "open-mixtral-8x7b",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! How can I assist you today?",
+          "model_returned": "open-mixtral-8x7b"
+        },
+        {
+          "provider": "mistral",
+          "model": "open-mixtral-8x22b",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! How can I assist you today?",
+          "model_returned": "open-mixtral-8x22b"
+        }
+      ],
+      "valid_models": [
+        {
+          "provider": "mistral",
+          "model": "mistral-large-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "mistral-large-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-large-2407",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "mistral-large-2407"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-medium-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "mistral-medium-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-small-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! How can I assist you today?",
+          "model_returned": "mistral-small-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "mistral-tiny",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK. I'm here to help! How",
+          "model_returned": "mistral-tiny"
+        },
+        {
+          "provider": "mistral",
+          "model": "codestral-latest",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "codestral-latest"
+        },
+        {
+          "provider": "mistral",
+          "model": "codestral-2405",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK",
+          "model_returned": "codestral-2405"
+        },
+        {
+          "provider": "mistral",
+          "model": "open-mistral-7b",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! I'm here to help. How",
+          "model_returned": "open-mistral-7b"
+        },
+        {
+          "provider": "mistral",
+          "model": "open-mixtral-8x7b",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! How can I assist you today?",
+          "model_returned": "open-mixtral-8x7b"
+        },
+        {
+          "provider": "mistral",
+          "model": "open-mixtral-8x22b",
+          "valid": true,
+          "status_code": 200,
+          "error": null,
+          "response_preview": "OK! How can I assist you today?",
+          "model_returned": "open-mixtral-8x22b"
+        }
+      ]
+    }
+  }
+}

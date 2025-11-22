@@ -1,5 +1,5 @@
 # Dependencies
-node_modules/
+# node_modules/ - Included in repo for deployment
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -10,7 +10,7 @@ yarn.lock
 # bun.lock
 
 # Build outputs
-dist/
+# dist/ - Included in repo for deployment
 lib/
 build/
 *.tsbuildinfo
@@ -39,7 +39,7 @@ ehthumbs.db
 Thumbs.db
 
 # Logs
-logs/
+# logs/ - Included in repo
 *.log
 
 # Runtime data
