@@ -109,19 +109,31 @@ export class GrokClient {
     const provider = this.getProvider();
     
     if (provider === 'mistral') {
-      // Mistral format: strict validation, clean parameters
-      return tools.map(tool => ({
-        type: "function",
-        function: {
-          name: tool.function.name,
-          description: tool.function.description,
-          parameters: {
-            type: "object",
-            properties: tool.function.parameters.properties,
-            required: tool.function.parameters.required || [],
-          }
+      // Mistral format: NO descriptions in individual properties
+      return tools.map(tool => {
+        // Strip descriptions from properties
+        const cleanProperties: any = {};
+        for (const [key, value] of Object.entries(tool.function.parameters.properties)) {
+          const propValue = value as any;
+          cleanProperties[key] = {
+            type: propValue.type,
+            // Don't include description, enum, or other fields
+          };
         }
-      }));
+        
+        return {
+          type: "function",
+          function: {
+            name: tool.function.name,
+            description: tool.function.description,
+            parameters: {
+              type: "object",
+              properties: cleanProperties,
+              required: tool.function.parameters.required || [],
+            }
+          }
+        };
+      });
     }
     
     if (provider === 'claude') {
