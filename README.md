@@ -491,3 +491,22 @@ Use `dry_run: true` to validate without writing.
 ## License
 
 MIT
+
+---
+
+## 👥 Authors & Contributors
+
+**Grokinou (Grok-CLI rev 1)** was created through collaboration between:
+
+- **Zack** - Project Lead & Architecture
+- **Claude** (Anthropic) - Development & Implementation
+- **ChatGPT** (OpenAI) - Development & Problem Solving
+- **Grok** (xAI) - Development & Testing
+
+This project represents a unique collaboration between human creativity and multiple AI systems working together to build a multi-provider AI CLI tool.
+
+---
+
+## 📄 License
+
+Dual licensed under BSD-3-Clause and GPL-3.0. See [LICENSE](LICENSE) and [LICENSE-GPL3](LICENSE-GPL3) for details.
