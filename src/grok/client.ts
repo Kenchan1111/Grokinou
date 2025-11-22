@@ -159,21 +159,29 @@ export class GrokClient {
   private cleanMessagesForProvider(messages: GrokMessage[]): GrokMessage[] {
     const provider = this.getProvider();
     
-    if (provider === 'mistral') {
-      // Mistral: Convert tool role to user role
-      return messages.map(msg => {
-        if (msg.role === 'tool') {
-          return {
-            role: 'user',
-            content: `[Tool Result: ${msg.content}]`,
-          };
-        }
-        return msg;
-      });
-    }
+    // Mistral supports OpenAI-compatible role:"tool" - no conversion needed
+    // Only other providers might need specific conversions in the future
     
     // Other providers: return as-is
     return messages;
+  }
+  
+  /**
+   * Truncate messages to fit context window
+   */
+  private truncateMessages(messages: GrokMessage[], maxMessages: number = 50): GrokMessage[] {
+    if (messages.length <= maxMessages) {
+      return messages;
+    }
+    
+    // Keep system message + last N messages
+    const systemMessages = messages.filter(m => m.role === 'system');
+    const otherMessages = messages.filter(m => m.role !== 'system');
+    const recentMessages = otherMessages.slice(-maxMessages);
+    
+    debugLog.log(`⚠️  Truncated messages: ${messages.length} → ${systemMessages.length + recentMessages.length}`);
+    
+    return [...systemMessages, ...recentMessages];
   }
   
   /**
@@ -188,8 +196,11 @@ export class GrokClient {
     const provider = this.getProvider();
     const isReasoning = this.isReasoningModel(modelToUse);
     
-    // ✅ Clean messages for provider compatibility
-    const cleanedMessages = this.cleanMessagesForProvider(messages);
+    // ✅ Truncate messages for context window (especially for Mistral)
+    const truncatedMessages = this.truncateMessages(messages, 50);
+    
+    // ✅ Clean messages for provider compatibility (currently no-op)
+    const cleanedMessages = this.cleanMessagesForProvider(truncatedMessages);
     
     const requestPayload: any = {
       model: modelToUse,
