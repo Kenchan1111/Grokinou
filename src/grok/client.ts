@@ -148,16 +148,17 @@ export class GrokClient {
     const provider = this.getProvider();
     
     if (provider === 'mistral') {
-      // Mistral: Convert tool messages to user messages
-      return messages.map(msg => {
-        if (msg.role === 'tool') {
-          return {
-            role: 'user',
-            content: `[Tool Result: ${msg.content}]`,
-          };
-        }
-        return msg;
-      });
+      // Mistral: Remove tool messages and tool_calls completely
+      return messages
+        .filter(msg => msg.role !== 'tool') // Remove tool result messages
+        .map(msg => {
+          // Remove tool_calls from assistant messages
+          if (msg.role === 'assistant' && (msg as any).tool_calls) {
+            const { tool_calls, ...cleanMsg } = msg as any;
+            return cleanMsg;
+          }
+          return msg;
+        });
     }
     
     // Other providers: return as-is
@@ -185,7 +186,8 @@ export class GrokClient {
     };
     
     // Add tools if provided (formatted for provider)
-    if (tools && tools.length > 0) {
+    // ⚠️ Mistral: Disable tools temporarily (compatibility issue)
+    if (tools && tools.length > 0 && provider !== 'mistral') {
       const formattedTools = this.formatToolsForProvider(tools);
       
       if (provider === 'claude') {
