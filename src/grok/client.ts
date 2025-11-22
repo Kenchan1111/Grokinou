@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat";
+import { debugLog } from "../utils/debug-logger.js";
 
 export type GrokMessage = ChatCompletionMessageParam;
 
@@ -72,6 +73,18 @@ export class GrokClient {
   }
   
   /**
+   * Detect current provider from baseURL
+   */
+  private getProvider(): 'grok' | 'openai' | 'claude' | 'mistral' | 'deepseek' {
+    if (this.baseURL.includes('x.ai')) return 'grok';
+    if (this.baseURL.includes('openai.com')) return 'openai';
+    if (this.baseURL.includes('anthropic.com')) return 'claude';
+    if (this.baseURL.includes('mistral.ai')) return 'mistral';
+    if (this.baseURL.includes('deepseek.com')) return 'deepseek';
+    return 'grok'; // Default
+  }
+  
+  /**
    * Check if current provider is Grok
    */
   private isGrokProvider(): boolean {
@@ -87,6 +100,100 @@ export class GrokClient {
     return modelName.startsWith('o1') || 
            modelName.startsWith('o3') || 
            modelName.startsWith('gpt-5');
+  }
+  
+  /**
+   * Format tools for specific provider
+   */
+  private formatToolsForProvider(tools: GrokTool[]): any[] {
+    const provider = this.getProvider();
+    
+    if (provider === 'mistral') {
+      // Mistral format: strict validation, clean parameters
+      return tools.map(tool => ({
+        type: "function",
+        function: {
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: {
+            type: "object",
+            properties: tool.function.parameters.properties,
+            required: tool.function.parameters.required || [],
+          }
+        }
+      }));
+    }
+    
+    if (provider === 'claude') {
+      // Claude uses a different format (tools with input_schema)
+      return tools.map(tool => ({
+        name: tool.function.name,
+        description: tool.function.description,
+        input_schema: {
+          type: "object",
+          properties: tool.function.parameters.properties,
+          required: tool.function.parameters.required || [],
+        }
+      }));
+    }
+    
+    // Grok, OpenAI, DeepSeek use standard OpenAI format
+    return tools;
+  }
+  
+  /**
+   * Build request payload specific to provider
+   */
+  private buildRequestPayload(
+    modelToUse: string,
+    messages: GrokMessage[],
+    tools?: GrokTool[],
+    searchOptions?: SearchOptions
+  ): any {
+    const provider = this.getProvider();
+    const isReasoning = this.isReasoningModel(modelToUse);
+    
+    const requestPayload: any = {
+      model: modelToUse,
+      messages,
+    };
+    
+    // Add tools if provided (formatted for provider)
+    if (tools && tools.length > 0) {
+      const formattedTools = this.formatToolsForProvider(tools);
+      
+      if (provider === 'claude') {
+        requestPayload.tools = formattedTools;
+        // Claude doesn't use tool_choice in the same way
+      } else {
+        requestPayload.tools = formattedTools;
+        requestPayload.tool_choice = "auto";
+      }
+    }
+    
+    // Add provider-specific parameters
+    if (provider === 'claude') {
+      // Claude uses max_tokens (not max_completion_tokens)
+      requestPayload.max_tokens = this.defaultMaxTokens;
+      // Claude doesn't use temperature in tool calls
+      if (!tools || tools.length === 0) {
+        requestPayload.temperature = 0.7;
+      }
+    } else if (isReasoning) {
+      // Reasoning models (o1, o3, gpt-5): max_completion_tokens, no temperature
+      requestPayload.max_completion_tokens = this.defaultMaxTokens;
+    } else {
+      // Standard models: temperature + max_tokens
+      requestPayload.temperature = 0.7;
+      requestPayload.max_tokens = this.defaultMaxTokens;
+    }
+    
+    // Grok-specific: search_parameters
+    if (provider === 'grok' && searchOptions?.search_parameters) {
+      requestPayload.search_parameters = searchOptions.search_parameters;
+    }
+    
+    return requestPayload;
   }
 
   setModel(model: string): void {
@@ -108,35 +215,46 @@ export class GrokClient {
     model?: string,
     searchOptions?: SearchOptions
   ): Promise<GrokResponse> {
+    const modelToUse = model || this.currentModel;
+    const provider = this.getProvider();
+    
+    debugLog.log(`\n📡 GrokClient.chat() - provider: ${provider}, baseURL: ${this.baseURL}, model: ${modelToUse}`);
+    
+    // ✅ Build provider-specific request payload
+    const requestPayload = this.buildRequestPayload(modelToUse, messages, tools, searchOptions);
+
+    debugLog.log(`📤 Request payload:`, {
+      provider,
+      baseURL: this.baseURL,
+      model: requestPayload.model,
+      toolsCount: requestPayload.tools?.length || 0,
+      messagesCount: requestPayload.messages?.length || 0,
+      hasTemperature: 'temperature' in requestPayload,
+      hasMaxTokens: 'max_tokens' in requestPayload,
+      hasMaxCompletionTokens: 'max_completion_tokens' in requestPayload,
+      temperature: requestPayload.temperature,
+      max_tokens: requestPayload.max_tokens,
+      tool_choice: requestPayload.tool_choice,
+    });
+
     try {
-      const modelToUse = model || this.currentModel;
-      const isReasoning = this.isReasoningModel(modelToUse);
-      
-      const requestPayload: any = {
-        model: modelToUse,
-        messages,
-        tools: tools || [],
-        tool_choice: tools && tools.length > 0 ? "auto" : undefined,
-      };
-      
-      // ✅ Reasoning models (o1, o3, gpt-5): use max_completion_tokens, no temperature
-      if (isReasoning) {
-        requestPayload.max_completion_tokens = this.defaultMaxTokens;
-      } else {
-        requestPayload.temperature = 0.7;
-        requestPayload.max_tokens = this.defaultMaxTokens;
-      }
-
-      // ✅ Add search parameters ONLY for Grok provider
-      if (this.isGrokProvider() && searchOptions?.search_parameters) {
-        requestPayload.search_parameters = searchOptions.search_parameters;
-      }
-
       const response =
         await this.client.chat.completions.create(requestPayload);
 
+      debugLog.log(`✅ API Response OK - model: ${response.model}`);
       return response as GrokResponse;
     } catch (error: any) {
+      debugLog.error(`❌ API Error:`, {
+        provider,
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        type: error.type,
+        requestHadTools: requestPayload.tools?.length || 0,
+        requestHadMessages: requestPayload.messages?.length || 0,
+        baseURL: this.baseURL,
+        model: modelToUse,
+      });
       throw new Error(`Grok API error: ${error.message}`);
     }
   }
@@ -147,39 +265,53 @@ export class GrokClient {
     model?: string,
     searchOptions?: SearchOptions
   ): AsyncGenerator<any, void, unknown> {
+    const modelToUse = model || this.currentModel;
+    const provider = this.getProvider();
+    
+    debugLog.log(`\n🌊 GrokClient.chatStream() - provider: ${provider}, baseURL: ${this.baseURL}, model: ${modelToUse}`);
+    
+    // ✅ Build provider-specific request payload
+    const requestPayload = this.buildRequestPayload(modelToUse, messages, tools, searchOptions);
+    requestPayload.stream = true; // Enable streaming
+
+    debugLog.log(`📤 Stream Request payload:`, {
+      provider,
+      baseURL: this.baseURL,
+      model: requestPayload.model,
+      toolsCount: requestPayload.tools?.length || 0,
+      messagesCount: requestPayload.messages?.length || 0,
+      hasTemperature: 'temperature' in requestPayload,
+      hasMaxTokens: 'max_tokens' in requestPayload,
+      temperature: requestPayload.temperature,
+      max_tokens: requestPayload.max_tokens,
+      tool_choice: requestPayload.tool_choice,
+      stream: true,
+    });
+
     try {
-      const modelToUse = model || this.currentModel;
-      const isReasoning = this.isReasoningModel(modelToUse);
-      
-      const requestPayload: any = {
-        model: modelToUse,
-        messages,
-        tools: tools || [],
-        tool_choice: tools && tools.length > 0 ? "auto" : undefined,
-        stream: true,
-      };
-      
-      // ✅ Reasoning models (o1, o3, gpt-5): use max_completion_tokens, no temperature
-      if (isReasoning) {
-        requestPayload.max_completion_tokens = this.defaultMaxTokens;
-      } else {
-        requestPayload.temperature = 0.7;
-        requestPayload.max_tokens = this.defaultMaxTokens;
-      }
-
-      // ✅ Add search parameters ONLY for Grok provider
-      if (this.isGrokProvider() && searchOptions?.search_parameters) {
-        requestPayload.search_parameters = searchOptions.search_parameters;
-      }
-
       const stream = (await this.client.chat.completions.create(
         requestPayload
       )) as any;
 
+      debugLog.log(`✅ Stream started successfully`);
+      
       for await (const chunk of stream) {
         yield chunk;
       }
+      
+      debugLog.log(`✅ Stream completed`);
     } catch (error: any) {
+      debugLog.error(`❌ Stream Error:`, {
+        provider,
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        type: error.type,
+        requestHadTools: requestPayload.tools?.length || 0,
+        requestHadMessages: requestPayload.messages?.length || 0,
+        baseURL: this.baseURL,
+        model: modelToUse,
+      });
       throw new Error(`Grok API error: ${error.message}`);
     }
   }
