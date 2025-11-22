@@ -203,6 +203,9 @@ export class GrokClient {
       if (provider === 'claude') {
         requestPayload.tools = formattedTools;
         // Claude doesn't use tool_choice in the same way
+      } else if (provider === 'mistral') {
+        // Mistral: tools without tool_choice
+        requestPayload.tools = formattedTools;
       } else {
         requestPayload.tools = formattedTools;
         requestPayload.tool_choice = "auto";
