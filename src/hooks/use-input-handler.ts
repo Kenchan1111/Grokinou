@@ -170,11 +170,45 @@ export function useInputHandler({
       }
       if (key.tab || key.return) {
         const selectedModel = availableModels[selectedModelIndex];
-        agent.setModel(selectedModel.model);
+        
+        // ✅ NEW: Use multi-provider logic (same as /models <name>)
+        const providerConfig = providerManager.getProviderForModel(selectedModel.model);
+        
+        if (!providerConfig) {
+          const errorEntry: ChatEntry = {
+            type: "assistant",
+            content: `❌ Could not detect provider for model: ${selectedModel.model}`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, errorEntry]);
+          setShowModelSelection(false);
+          return true;
+        }
+        
+        // Check API key
+        if (!providerConfig.apiKey) {
+          const errorEntry: ChatEntry = {
+            type: "assistant",
+            content: `❌ API key not configured for provider: ${providerConfig.name}\n\n` +
+                     `Set it now:\n` +
+                     `  /apikey ${providerConfig.name} your-api-key-here`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, errorEntry]);
+          setShowModelSelection(false);
+          return true;
+        }
+        
+        // ✅ Switch with new provider config
+        agent.switchToModel(selectedModel.model, providerConfig.apiKey, providerConfig.baseURL);
         updateCurrentModel(selectedModel.model);
+        
         const confirmEntry: ChatEntry = {
           type: "assistant",
-          content: `✓ Switched to model: ${selectedModel.model}`,
+          content: `✅ Switched to ${selectedModel.model}\n` +
+                   `📝 Provider: ${providerConfig.name}\n` +
+                   `🔗 Endpoint: ${providerConfig.baseURL}\n` +
+                   `💾 Saved to: .grok/settings.json`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, confirmEntry]);
@@ -260,6 +294,7 @@ export function useInputHandler({
 
   const commandSuggestions: CommandSuggestion[] = [
     { command: "/help", description: "Show help information" },
+    { command: "/status", description: "Show current model and provider info" },
     { command: "/search", description: "Search in conversation history" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
@@ -425,6 +460,33 @@ Examples:
     }
 
     // ============================================
+    // /status - Show current model and provider info
+    // ============================================
+    if (trimmedInput === "/status") {
+      const currentModel = agent.getCurrentModel();
+      const currentApiKey = agent.getApiKey();
+      const providerConfig = providerManager.getProviderForModel(currentModel);
+      
+      const statusEntry: ChatEntry = {
+        type: "assistant",
+        content: `📊 Current Configuration\n` +
+                 `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                 `🤖 Model: ${currentModel}\n` +
+                 `📝 Provider: ${providerConfig?.name || 'unknown'}\n` +
+                 `🔗 Endpoint: ${providerConfig?.baseURL || 'unknown'}\n` +
+                 `🔑 API Key: ${currentApiKey.slice(0, 10)}...${currentApiKey.slice(-4)}\n` +
+                 `📁 Work Dir: ${process.cwd()}\n\n` +
+                 `Use /models to switch model\n` +
+                 `Use /apikey to manage API keys`,
+        timestamp: new Date(),
+      };
+      
+      setChatHistory((prev) => [...prev, statusEntry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
     // /apikey - Display API keys
     // ============================================
     if (trimmedInput === "/apikey") {
@@ -581,6 +643,9 @@ Examples:
         // ✅ NEW: Detect provider and get config
         const providerConfig = providerManager.getProviderForModel(modelArg);
         
+        // DEBUG: Log provider config
+        console.log(`🔍 DEBUG: Model=${modelArg}, Provider=${providerConfig?.name}, BaseURL=${providerConfig?.baseURL}, HasKey=${!!providerConfig?.apiKey}`);
+        
         if (!providerConfig) {
           const errorEntry: ChatEntry = {
             type: "assistant",
@@ -616,7 +681,9 @@ Examples:
           content: `✅ Switched to ${modelArg}\n` +
                    `📝 Provider: ${providerConfig.name}\n` +
                    `🔗 Endpoint: ${providerConfig.baseURL}\n` +
-                   `💾 Saved to: .grok/settings.json`,
+                   `🔑 API Key: ${providerConfig.apiKey.slice(0, 15)}...\n` +
+                   `💾 Saved to: .grok/settings.json\n\n` +
+                   `DEBUG: Called switchToModel(${modelArg}, ${providerConfig.apiKey.slice(0,10)}..., ${providerConfig.baseURL})`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, confirmEntry]);

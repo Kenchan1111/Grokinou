@@ -25,6 +25,7 @@ import {
   saveState, 
   sessionManager 
 } from "../utils/session-manager-sqlite.js";
+import { providerManager } from "../utils/provider-manager.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -873,17 +874,22 @@ Current working directory: ${process.cwd()}`,
   // ✅ NEW: Switch to different model with new API key and baseURL
   // Used when changing providers (e.g., Grok → Claude)
   switchToModel(model: string, apiKey: string, baseURL: string): void {
+    console.log(`🔧 GrokAgent.switchToModel: model=${model}, baseURL=${baseURL}, apiKey=${apiKey.slice(0,10)}...`);
+    
     // Recreate client with new config
     this.grokClient = new GrokClient(apiKey, model, baseURL);
+    
+    console.log(`✅ GrokClient recreated with baseURL=${baseURL}`);
     
     // Update token counter
     this.tokenCounter.dispose();
     this.tokenCounter = createTokenCounter(model);
     
     // Update session manager
-    const { providerManager } = require("../utils/provider-manager.js");
     const provider = providerManager.detectProvider(model) || 'grok';
     sessionManager.switchProvider(provider, model, apiKey);
+    
+    console.log(`✅ Session manager updated for provider=${provider}`);
   }
 
   abortCurrentOperation(): void {
