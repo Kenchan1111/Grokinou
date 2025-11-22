@@ -142,6 +142,29 @@ export class GrokClient {
   }
   
   /**
+   * Clean messages for provider compatibility
+   */
+  private cleanMessagesForProvider(messages: GrokMessage[]): GrokMessage[] {
+    const provider = this.getProvider();
+    
+    if (provider === 'mistral') {
+      // Mistral: Convert tool messages to user messages
+      return messages.map(msg => {
+        if (msg.role === 'tool') {
+          return {
+            role: 'user',
+            content: `[Tool Result: ${msg.content}]`,
+          };
+        }
+        return msg;
+      });
+    }
+    
+    // Other providers: return as-is
+    return messages;
+  }
+  
+  /**
    * Build request payload specific to provider
    */
   private buildRequestPayload(
@@ -153,9 +176,12 @@ export class GrokClient {
     const provider = this.getProvider();
     const isReasoning = this.isReasoningModel(modelToUse);
     
+    // ✅ Clean messages for provider compatibility
+    const cleanedMessages = this.cleanMessagesForProvider(messages);
+    
     const requestPayload: any = {
       model: modelToUse,
-      messages,
+      messages: cleanedMessages,
     };
     
     // Add tools if provided (formatted for provider)
@@ -286,6 +312,15 @@ export class GrokClient {
       max_tokens: requestPayload.max_tokens,
       tool_choice: requestPayload.tool_choice,
       stream: true,
+    });
+    
+    // ✅ Log full payload for debugging (only first/last messages + tools)
+    debugLog.log(`📋 Full payload preview:`, {
+      model: requestPayload.model,
+      firstMessage: requestPayload.messages?.[0],
+      lastMessage: requestPayload.messages?.[requestPayload.messages.length - 1],
+      toolsPreview: requestPayload.tools?.map((t: any) => t.function?.name || t.name) || [],
+      fullToolsStructure: requestPayload.tools?.[0], // First tool structure
     });
 
     try {
