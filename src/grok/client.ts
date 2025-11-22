@@ -109,15 +109,13 @@ export class GrokClient {
     const provider = this.getProvider();
     
     if (provider === 'mistral') {
-      // Mistral format: NO descriptions in individual properties
+      // Mistral format: Minimal properties (all as strings)
       return tools.map(tool => {
-        // Strip descriptions from properties
+        // Convert all properties to string type (Mistral might not support number/boolean)
         const cleanProperties: any = {};
         for (const [key, value] of Object.entries(tool.function.parameters.properties)) {
-          const propValue = value as any;
           cleanProperties[key] = {
-            type: propValue.type,
-            // Don't include description, enum, or other fields
+            type: "string", // Force string type for all properties
           };
         }
         
