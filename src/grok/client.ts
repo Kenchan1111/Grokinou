@@ -159,19 +159,24 @@ export class GrokClient {
     
     if (provider === 'mistral') {
       // Mistral CANNOT handle tool_calls and tool messages in history
-      // Remove them entirely
-      return messages
-        .filter(msg => msg.role !== 'tool') // Remove tool result messages
-        .map(msg => {
-          // Remove tool_calls from assistant messages
-          if (msg.role === 'assistant' && (msg as any).tool_calls) {
-            return {
-              role: msg.role,
-              content: msg.content || '[Tool execution]',
-            };
-          }
-          return msg;
-        });
+      // Strategy: Convert tool results to user messages, strip tool_calls
+      return messages.map(msg => {
+        // Convert tool result messages to user messages
+        if (msg.role === 'tool') {
+          return {
+            role: 'user',
+            content: `[Tool Result]\n${msg.content}`,
+          };
+        }
+        // Remove tool_calls from assistant messages
+        if (msg.role === 'assistant' && (msg as any).tool_calls) {
+          return {
+            role: msg.role,
+            content: msg.content || '[Using tools...]',
+          };
+        }
+        return msg;
+      });
     }
     
     // Other providers: return as-is
