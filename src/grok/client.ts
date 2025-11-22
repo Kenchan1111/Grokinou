@@ -361,14 +361,16 @@ export class GrokClient {
       stream: true,
     });
     
-    // ✅ Log full payload for debugging (only first/last messages + tools)
-    debugLog.log(`📋 Full payload preview:`, {
+    // ✅ Log ACTUAL payload being sent (for debugging Mistral issue)
+    debugLog.log(`📋 ACTUAL REQUEST PAYLOAD (complete):`, JSON.stringify({
       model: requestPayload.model,
-      firstMessage: requestPayload.messages?.[0],
-      lastMessage: requestPayload.messages?.[requestPayload.messages.length - 1],
-      toolsPreview: requestPayload.tools?.map((t: any) => t.function?.name || t.name) || [],
-      fullToolsStructure: requestPayload.tools?.[0], // First tool structure
-    });
+      messages: requestPayload.messages,
+      tools: requestPayload.tools,
+      tool_choice: requestPayload.tool_choice,
+      temperature: requestPayload.temperature,
+      max_tokens: requestPayload.max_tokens,
+      stream: requestPayload.stream,
+    }, null, 2));
 
     try {
       const stream = (await this.client.chat.completions.create(
