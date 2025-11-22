@@ -157,8 +157,22 @@ export class GrokClient {
   private cleanMessagesForProvider(messages: GrokMessage[]): GrokMessage[] {
     const provider = this.getProvider();
     
-    // Mistral supports OpenAI-compatible role:"tool" - no conversion needed
-    // Only other providers might need specific conversions in the future
+    if (provider === 'mistral') {
+      // Mistral CANNOT handle tool_calls and tool messages in history
+      // Remove them entirely
+      return messages
+        .filter(msg => msg.role !== 'tool') // Remove tool result messages
+        .map(msg => {
+          // Remove tool_calls from assistant messages
+          if (msg.role === 'assistant' && (msg as any).tool_calls) {
+            return {
+              role: msg.role,
+              content: msg.content || '[Tool execution]',
+            };
+          }
+          return msg;
+        });
+    }
     
     // Other providers: return as-is
     return messages;
