@@ -9,6 +9,7 @@ import { loadModelConfig, updateCurrentModel, updateDefaultModel } from "../util
 import { clearSession } from "../utils/session-manager.js";
 import { pasteManager } from "../utils/paste-manager.js";
 import { providerManager } from "../utils/provider-manager.js";
+import { sessionManager } from "../utils/session-manager-sqlite.js";
 
 interface UseInputHandlerProps {
   agent: GrokAgent;
@@ -301,6 +302,7 @@ export function useInputHandler({
     { command: "/help", description: "Show help information" },
     { command: "/status", description: "Show current model and provider info" },
     { command: "/search", description: "Search in conversation history" },
+    { command: "/list_sessions", description: "List all sessions in current directory" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
     { command: "/apikey", description: "Manage API keys" },
@@ -369,7 +371,10 @@ Built-in Commands:
   /clear-session - Clear in-memory chat session only
   /clear-disk-session - Delete persisted session files and clear memory
   /help       - Show this help
+  /status     - Show current model and provider info
   /models     - Switch between available models
+  /list_sessions - List all sessions in current directory
+  /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
 
@@ -487,6 +492,101 @@ Examples:
       };
       
       setChatHistory((prev) => [...prev, statusEntry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /list_sessions - List all sessions in current directory
+    // ============================================
+    if (trimmedInput === "/list_sessions") {
+      try {
+        const sessions = sessionManager.listSessions(
+          process.cwd(),
+          {
+            sortBy: 'last_activity',
+            sortOrder: 'DESC',
+            limit: 20
+          }
+        );
+
+        if (sessions.length === 0) {
+          const noSessionEntry: ChatEntry = {
+            type: "assistant",
+            content: `📂 No sessions found in current directory\n\n` +
+                     `📁 Working Directory: ${process.cwd()}\n\n` +
+                     `Start chatting to create a new session!`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, noSessionEntry]);
+          clearInput();
+          return true;
+        }
+
+        // Format sessions list
+        let content = `📚 Sessions in Current Directory\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                      `📁 Working Directory: ${process.cwd()}\n` +
+                      `📊 Total Sessions: ${sessions.length}\n\n`;
+
+        sessions.forEach((session, index) => {
+          const status = session.status === 'active' ? '🟢' : 
+                        session.status === 'completed' ? '⚪' : '📦';
+          const favorite = session.is_favorite ? '⭐' : '';
+          
+          content += `${status} Session #${session.id}${favorite}\n`;
+          
+          if (session.session_name) {
+            content += `   📝 Name: ${session.session_name}\n`;
+          }
+          
+          content += `   🤖 Provider: ${session.default_provider}\n`;
+          content += `   📱 Model: ${session.default_model}\n`;
+          content += `   💬 Messages: ${session.message_count}\n`;
+          
+          if (session.total_tokens > 0) {
+            const tokenDisplay = session.total_tokens.toLocaleString('en-US');
+            content += `   🎯 Tokens: ${tokenDisplay}\n`;
+          }
+          
+          content += `   🕐 Last Activity: ${session.last_activity_relative}\n`;
+          
+          if (session.age_days !== undefined) {
+            content += `   📅 Age: ${session.age_days} days\n`;
+          }
+          
+          if (session.first_message_preview) {
+            const preview = session.first_message_preview.length > 60 
+              ? session.first_message_preview.substring(0, 60) + '...'
+              : session.first_message_preview;
+            content += `   💭 First Message: "${preview}"\n`;
+          }
+          
+          if (index < sessions.length - 1) {
+            content += `   ─────────────────────────────────\n`;
+          }
+        });
+
+        content += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        content += `\n💡 Legend:\n`;
+        content += `   🟢 Active  ⚪ Completed  📦 Archived  ⭐ Favorite\n`;
+
+        const sessionListEntry: ChatEntry = {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        };
+
+        setChatHistory((prev) => [...prev, sessionListEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to list sessions: ${error?.message || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
       clearInput();
       return true;
     }
