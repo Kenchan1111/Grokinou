@@ -108,6 +108,140 @@ function loadModel(): string | undefined {
   return model;
 }
 
+/**
+ * Resolve startup configuration with proper priority:
+ * 1. CLI args (--model, --api-key)
+ * 2. ENV vars (GROK_MODEL, GROK_API_KEY)
+ * 3. Last session from SQLite (for conversation continuity)
+ * 4. Project settings (.grok/settings.json)
+ * 5. User settings (~/.grok/user-settings.json defaultModel)
+ * 6. System default
+ */
+interface StartupConfig {
+  status: 'restored' | 'new' | 'needs_api_key';
+  model: string;
+  provider: string;
+  apiKey?: string;
+  baseURL?: string;
+  message?: string;
+  needsInput?: boolean;
+}
+
+async function resolveStartupConfiguration(
+  cliModel?: string,
+  cliApiKey?: string,
+  cliBaseURL?: string
+): Promise<StartupConfig> {
+  const cwd = process.cwd();
+  const settingsManager = getSettingsManager();
+  
+  // Import dynamically to avoid circular deps
+  const { SessionManagerSQLite } = await import('./utils/session-manager-sqlite.js');
+  const { providerManager } = await import('./utils/provider-manager.js');
+  const sessionManager = SessionManagerSQLite.getInstance();
+  
+  // PRIORITY 1: CLI args
+  if (cliModel) {
+    const provider = providerManager.detectProvider(cliModel) || 'grok';
+    const apiKey = cliApiKey || settingsManager.getApiKeyForProvider(provider);
+    const baseURL = cliBaseURL || providerManager.getProviderForModel(cliModel)?.baseURL;
+    
+    return {
+      status: 'new',
+      model: cliModel,
+      provider,
+      apiKey,
+      baseURL,
+      message: `🤖 Starting with: ${cliModel}`
+    };
+  }
+  
+  // PRIORITY 2: ENV vars
+  if (process.env.GROK_MODEL) {
+    const model = process.env.GROK_MODEL;
+    const provider = providerManager.detectProvider(model) || 'grok';
+    const apiKey = process.env.GROK_API_KEY || settingsManager.getApiKeyForProvider(provider);
+    const baseURL = providerManager.getProviderForModel(model)?.baseURL;
+    
+    return {
+      status: 'new',
+      model,
+      provider,
+      apiKey,
+      baseURL,
+      message: `🤖 Starting with: ${model}`
+    };
+  }
+  
+  // PRIORITY 3: Last session from SQLite
+  const lastSession = sessionManager.findLastSessionByWorkdir(cwd);
+  
+  if (lastSession && lastSession.default_model) {
+    const model = lastSession.default_model;
+    let provider = lastSession.default_provider;
+    
+    // Fallback if provider missing (old sessions)
+    if (!provider) {
+      provider = providerManager.detectProvider(model) || 'grok';
+    }
+    
+    // Try to find API key for this provider
+    const apiKey = settingsManager.getApiKeyForProvider(provider);
+    
+    if (!apiKey) {
+      // API key missing - need user input
+      return {
+        status: 'needs_api_key',
+        model,
+        provider,
+        needsInput: true,
+        message: `
+⚠️  Cannot restore session
+
+🔒 Previous model: ${model}
+🔑 Provider: ${provider}
+❌ API key not found in ~/.grok/user-settings.json
+
+Please provide API key:
+   /apikey ${provider} <your-key>
+
+Or switch to another model:
+   /model
+
+⏸️  Waiting for your input...
+`
+      };
+    }
+    
+    // API key found - restore session
+    const baseURL = providerManager.getProviderForModel(model)?.baseURL;
+    
+    return {
+      status: 'restored',
+      model,
+      provider,
+      apiKey,
+      baseURL,
+      message: `🔄 Restored session: ${model} (${provider})`
+    };
+  }
+  
+  // PRIORITY 4-6: Project → User → System default
+  const model = settingsManager.getCurrentModel();
+  const provider = providerManager.detectProvider(model) || 'grok';
+  const apiKey = settingsManager.getApiKeyForProvider(provider);
+  const baseURL = providerManager.getProviderForModel(model)?.baseURL;
+  
+  return {
+    status: 'new',
+    model,
+    provider,
+    apiKey,
+    baseURL,
+    message: `🤖 Starting with: ${model}`
+  };
+}
+
 function parseConfigOverrides(overrides?: string[]): Record<string, any> | undefined {
   if (!overrides || overrides.length === 0) return undefined;
   const out: Record<string, any> = {};
@@ -370,18 +504,13 @@ program
       const overrides = parseConfigOverrides(options.config);
       const effective = resolveEffectiveConfig(overrides, tomlCfg);
 
-      // Get model/provider and credentials
-      const model = options.model || effective.model || loadModel();
-      const baseURL = options.baseUrl || effective.provider?.baseURL || loadBaseURL();
-      const apiKey = options.apiKey || effective.provider?.apiKey || loadApiKey();
+      // Resolve startup configuration with proper priority
       const maxToolRounds = parseInt(options.maxToolRounds) || 400;
-
-      if (!apiKey) {
-        console.error(
-          "❌ Error: API key required. Set GROK_API_KEY environment variable, use --api-key flag, or save to ~/.grok/user-settings.json"
-        );
-        process.exit(1);
-      }
+      const startupConfig = await resolveStartupConfiguration(
+        options.model || effective.model,
+        options.apiKey || effective.provider?.apiKey,
+        options.baseUrl || effective.provider?.baseURL
+      );
 
       // Save API key and base URL to user settings if provided via command line
       if (options.apiKey || options.baseUrl) {
@@ -390,18 +519,39 @@ program
 
       // Headless mode: process prompt and exit
       if (options.prompt) {
+        if (!startupConfig.apiKey) {
+          console.error(
+            "❌ Error: API key required. Set GROK_API_KEY environment variable, use --api-key flag, or save to ~/.grok/user-settings.json"
+          );
+          process.exit(1);
+        }
+        
         await processPromptHeadless(
           options.prompt,
-          apiKey,
-          baseURL,
-          model,
+          startupConfig.apiKey,
+          startupConfig.baseURL,
+          startupConfig.model,
           maxToolRounds
         );
         return;
       }
 
+      // Check if we need API key input (session restore failed)
+      if (startupConfig.status === 'needs_api_key' || !startupConfig.apiKey) {
+        console.error(
+          startupConfig.message || 
+          "❌ Error: API key required. Set GROK_API_KEY environment variable, use --api-key flag, or save to ~/.grok/user-settings.json"
+        );
+        process.exit(1);
+      }
+
       // Interactive mode: launch UI
-      const agent = new GrokAgent(apiKey, baseURL, model, maxToolRounds);
+      const agent = new GrokAgent(
+        startupConfig.apiKey, 
+        startupConfig.baseURL, 
+        startupConfig.model, 
+        maxToolRounds
+      );
       
       // Afficher le logo et instructions AVANT le démarrage d'Ink (une seule fois, jamais re-rendu)
       const logoOutput = cfonts.render("GROKINOU", {
@@ -415,7 +565,12 @@ program
       console.log(logoOutput.string);
       
       console.log("\x1b[33m                    Based on Grok-CLI\x1b[0m\n");
-      console.log("🤖 Starting Grokinou Assistant based on Grok-CLI...");
+      
+      // Display startup status message
+      if (startupConfig.message) {
+        console.log(startupConfig.message);
+      }
+      
       console.log("\x1b[90mType your request in natural language. Ctrl+C to clear, 'exit' to quit.\x1b[0m\n");
 
       ensureUserSettingsDirectory();

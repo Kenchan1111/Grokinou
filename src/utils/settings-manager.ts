@@ -393,6 +393,14 @@ export class SettingsManager {
   }
   
   /**
+   * Get API key for a specific provider
+   */
+  public getApiKeyForProvider(provider: string): string | undefined {
+    const apiKeys = this.getApiKeys();
+    return apiKeys?.[provider];
+  }
+  
+  /**
    * Set API key for a specific provider
    */
   public setApiKey(provider: string, apiKey: string): void {

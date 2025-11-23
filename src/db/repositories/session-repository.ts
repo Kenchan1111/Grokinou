@@ -33,6 +33,21 @@ export class SessionRepository {
   }
 
   /**
+   * Find last session by workdir (regardless of provider)
+   * Used for session restoration on startup
+   */
+  findLastSessionByWorkdir(workdir: string): Session | null {
+    const stmt = this.db.prepare(`
+      SELECT * FROM sessions 
+      WHERE working_dir = ? 
+      ORDER BY last_activity DESC 
+      LIMIT 1
+    `);
+    
+    return stmt.get(workdir) as Session | null;
+  }
+
+  /**
    * Check if session should be reused (activity within last hour)
    */
   shouldReuseSession(session: Session): boolean {

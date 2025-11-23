@@ -64,6 +64,13 @@ export class SessionManagerSQLite {
   }
 
   /**
+   * Find last session by working directory (for session restoration)
+   */
+  findLastSessionByWorkdir(workdir: string): Session | null {
+    return this.sessionRepo.findLastSessionByWorkdir(workdir);
+  }
+
+  /**
    * Load chat history from current session
    */
   async loadChatHistory(): Promise<ChatEntry[]> {
