@@ -35,12 +35,15 @@ export class SessionRepository {
   /**
    * Find last session by workdir (regardless of provider)
    * Used for session restoration on startup
+   * Prioritizes sessions with messages (completed sessions with history)
    */
   findLastSessionByWorkdir(workdir: string): Session | null {
     const stmt = this.db.prepare(`
-      SELECT * FROM sessions 
-      WHERE working_dir = ? 
-      ORDER BY last_activity DESC 
+      SELECT s.*, 
+             (SELECT COUNT(*) FROM messages WHERE session_id = s.id) as message_count
+      FROM sessions s
+      WHERE s.working_dir = ? 
+      ORDER BY message_count DESC, last_activity DESC
       LIMIT 1
     `);
     

@@ -4,6 +4,9 @@ import { MessageRepository } from '../db/repositories/message-repository.js';
 import { Session, Message } from '../db/types.js';
 import { ChatEntry } from '../agent/grok-agent.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 export interface SessionState {
   version: number;
@@ -12,6 +15,42 @@ export interface SessionState {
   cwd?: string;
   sessionId?: number;
 }
+
+/**
+ * Session-specific debug logger
+ */
+class SessionDebugLogger {
+  private logPath: string;
+  
+  constructor() {
+    const logDir = path.join(os.homedir(), '.grok');
+    this.logPath = path.join(logDir, 'debug_session.log');
+    
+    // Clear log on startup
+    try {
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      fs.writeFileSync(this.logPath, `=== Session Debug Log - ${new Date().toISOString()} ===\n`);
+    } catch (error) {
+      // Ignore errors
+    }
+  }
+  
+  log(...args: any[]) {
+    try {
+      const timestamp = new Date().toISOString();
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      fs.appendFileSync(this.logPath, `[${timestamp}] ${message}\n`);
+    } catch (error) {
+      // Ignore errors
+    }
+  }
+}
+
+const sessionDebugLog = new SessionDebugLogger();
 
 /**
  * Singleton for managing SQLite-based sessions
@@ -45,11 +84,29 @@ export class SessionManagerSQLite {
     this.currentProvider = provider;
     this.currentModel = model;
     
+    sessionDebugLog.log(`🔍 [initSession] CALLED with:`);
+    sessionDebugLog.log(`   workdir="${workdir}"`);
+    sessionDebugLog.log(`   provider="${provider}"`);
+    sessionDebugLog.log(`   model="${model}"`);
+    sessionDebugLog.log(`   apiKeyHash="${apiKeyHash?.substring(0, 8)}..."`);
+    
     // Try to find existing session by workdir first (for continuity)
     const existingSession = this.sessionRepo.findLastSessionByWorkdir(workdir);
     
     if (existingSession) {
+      sessionDebugLog.log(`🔍 [initSession] existingSession FOUND:`);
+      sessionDebugLog.log(`   id=${existingSession.id}`);
+      sessionDebugLog.log(`   status="${existingSession.status}"`);
+      sessionDebugLog.log(`   default_provider="${existingSession.default_provider}"`);
+      sessionDebugLog.log(`   default_model="${existingSession.default_model}"`);
+      sessionDebugLog.log(`   working_dir="${existingSession.working_dir}"`);
+    } else {
+      sessionDebugLog.log(`🔍 [initSession] existingSession: NULL`);
+    }
+    
+    if (existingSession) {
       // Reuse existing session, update provider/model if changed
+      sessionDebugLog.log(`✅ [initSession] Reusing existing session ${existingSession.id}`);
       this.sessionRepo.updateSessionProviderAndModel(
         existingSession.id,
         provider,
@@ -57,15 +114,24 @@ export class SessionManagerSQLite {
         apiKeyHash
       );
       this.currentSession = this.sessionRepo.findById(existingSession.id)!;
+      sessionDebugLog.log(`✅ [initSession] Session updated successfully:`);
+      sessionDebugLog.log(`   id=${this.currentSession.id}`);
+      sessionDebugLog.log(`   status="${this.currentSession.status}"`);
+      sessionDebugLog.log(`   default_provider="${this.currentSession.default_provider}"`);
+      sessionDebugLog.log(`   default_model="${this.currentSession.default_model}"`);
     } else {
       // No existing session, create new one
+      sessionDebugLog.log(`🆕 [initSession] No existing session, calling findOrCreate()`);
       this.currentSession = this.sessionRepo.findOrCreate(
         workdir,
         provider,
         model,
         apiKeyHash
       );
+      sessionDebugLog.log(`🆕 [initSession] New session created: id=${this.currentSession.id}`);
     }
+    
+    sessionDebugLog.log(`✅ [initSession] FINAL currentSession: id=${this.currentSession.id}\n`);
     
     return this.currentSession;
   }
