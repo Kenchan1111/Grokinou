@@ -404,20 +404,18 @@ program
       const agent = new GrokAgent(apiKey, baseURL, model, maxToolRounds);
       
       // Afficher le logo et instructions AVANT le démarrage d'Ink (une seule fois, jamais re-rendu)
-      const logoOutput = cfonts.render("GROK", {
-        font: "3d",
+      const logoOutput = cfonts.render("GROKINOU", {
+        font: "block",
         align: "left",
-        colors: ["magenta", "gray"],
+        colors: ["#8B4513"], // Brown color
         space: true,
         maxLength: "0",
-        gradient: ["magenta", "cyan"],
-        independentGradient: false,
-        transitionGradient: true,
         env: "node",
       }) as any;
       console.log(logoOutput.string);
       
-      console.log("🤖 Starting Grok CLI Conversational Assistant...");
+      console.log("\x1b[33m                    Based on Grok-CLI\x1b[0m\n");
+      console.log("🤖 Starting Grokinou Assistant based on Grok-CLI...");
       console.log("\x1b[90mType your request in natural language. Ctrl+C to clear, 'exit' to quit.\x1b[0m\n");
 
       ensureUserSettingsDirectory();
