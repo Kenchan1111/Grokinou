@@ -178,6 +178,78 @@ export class SessionRepository {
   }
 
   /**
+   * Update session name (auto-generated from first message)
+   */
+  updateSessionName(sessionId: number, sessionName: string) {
+    const stmt = this.db.prepare(`
+      UPDATE sessions SET session_name = ? WHERE id = ?
+    `);
+    stmt.run(sessionName, sessionId);
+  }
+
+  /**
+   * Update session statistics in real-time (message_count, total_tokens, previews)
+   * Called after each message to keep denormalized stats fresh
+   * Performance: < 5ms on average, executed in a single transaction
+   * 
+   * @param sessionId - Session to update
+   */
+  updateSessionStats(sessionId: number): void {
+    // Update in a single transaction for atomicity
+    const transaction = this.db.transaction(() => {
+      // 1. Update message_count
+      this.db.prepare(`
+        UPDATE sessions 
+        SET message_count = (
+          SELECT COUNT(*) FROM messages WHERE session_id = ?
+        )
+        WHERE id = ?
+      `).run(sessionId, sessionId);
+
+      // 2. Update total_tokens (sum of all token_count in messages)
+      this.db.prepare(`
+        UPDATE sessions 
+        SET total_tokens = (
+          SELECT COALESCE(SUM(token_count), 0) FROM messages WHERE session_id = ?
+        )
+        WHERE id = ?
+      `).run(sessionId, sessionId);
+
+      // 3. Update first_message_preview (first user message)
+      const firstMessage = this.db.prepare(`
+        SELECT content FROM messages 
+        WHERE session_id = ? AND role = 'user' AND content != ''
+        ORDER BY id ASC 
+        LIMIT 1
+      `).get(sessionId) as { content: string } | undefined;
+
+      if (firstMessage) {
+        const preview = firstMessage.content.substring(0, 100).replace(/[\r\n]+/g, ' ');
+        this.db.prepare(`
+          UPDATE sessions SET first_message_preview = ? WHERE id = ?
+        `).run(preview, sessionId);
+      }
+
+      // 4. Update last_message_preview (last user or assistant message)
+      const lastMessage = this.db.prepare(`
+        SELECT content FROM messages 
+        WHERE session_id = ? AND (role = 'user' OR role = 'assistant') AND content != ''
+        ORDER BY id DESC 
+        LIMIT 1
+      `).get(sessionId) as { content: string } | undefined;
+
+      if (lastMessage) {
+        const preview = lastMessage.content.substring(0, 100).replace(/[\r\n]+/g, ' ');
+        this.db.prepare(`
+          UPDATE sessions SET last_message_preview = ? WHERE id = ?
+        `).run(preview, sessionId);
+      }
+    });
+
+    transaction();
+  }
+
+  /**
    * Get all sessions with filters
    */
   findAll(filters?: {

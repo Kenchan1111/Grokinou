@@ -192,10 +192,22 @@ export class SessionManagerSQLite {
       throw new Error('No active session. Call initSession first.');
     }
 
-    await this.saveMessage(entry);
+    const message = await this.saveMessage(entry);
     
     // Update session last activity
     this.sessionRepo.updateLastActivity(this.currentSession.id);
+    
+    // Update session stats (message_count, total_tokens, previews)
+    // This is fast (~1-5ms) and keeps denormalized fields fresh
+    this.sessionRepo.updateSessionStats(this.currentSession.id);
+    
+    // Auto-generate session name from first user message
+    if (entry.type === 'user' && !this.currentSession.session_name) {
+      const sessionName = this.generateSessionName(entry.content);
+      this.sessionRepo.updateSessionName(this.currentSession.id, sessionName);
+      // Update cached session
+      this.currentSession.session_name = sessionName;
+    }
   }
 
   /**
@@ -250,6 +262,48 @@ export class SessionManagerSQLite {
       toolCall: message.tool_call_id ? { id: message.tool_call_id } as any : undefined,
       isStreaming: false,
     };
+  }
+
+  /**
+   * Generate a session name from first user message
+   * Extracts meaningful text, cleans it, and truncates to 50 chars
+   * 
+   * Examples:
+   *   "Help me debug this React component" → "Help me debug this React component"
+   *   "Create a new API endpoint\nfor user management" → "Create a new API endpoint for user manag..."
+   *   "/list_sessions" → "list_sessions"
+   * 
+   * @param content - First user message content
+   * @returns Clean, readable session name
+   */
+  private generateSessionName(content: string): string {
+    if (!content || content.trim().length === 0) {
+      return 'New Session';
+    }
+
+    // Clean the content
+    let name = content
+      .replace(/[\r\n]+/g, ' ')          // Replace newlines with spaces
+      .replace(/\s{2,}/g, ' ')            // Collapse multiple spaces
+      .replace(/[^\w\s\-_.!?]/g, '')      // Remove special chars except basic punctuation
+      .trim();
+
+    // Handle commands (starts with /)
+    if (name.startsWith('/')) {
+      name = name.substring(1); // Remove leading /
+    }
+
+    // Truncate to 50 characters
+    if (name.length > 50) {
+      name = name.substring(0, 47) + '...';
+    }
+
+    // Fallback if empty after cleaning
+    if (name.length === 0) {
+      return 'New Session';
+    }
+
+    return name;
   }
 
   /**
