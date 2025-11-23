@@ -321,15 +321,25 @@ export function useEnhancedInput({
         
         if (imageResult.isImage) {
           // It's an image path! Insert placeholder
-          const result = insertText(inputRef.current, cursorRef.current, imageResult.textToInsert);
-          setInputAndCursor({ text: result.text, cursor: result.position });
-          setOriginalInput(result.text);
+          // Use functional state update to avoid stale ref values
+          let newText = '';
+          setInputAndCursor(prev => {
+            const result = insertText(prev.text, prev.cursor, imageResult.textToInsert);
+            newText = result.text;
+            return { text: result.text, cursor: result.position };
+          });
+          setOriginalInput(newText);
         } else {
           // Not an image, check if it's large text
           const { textToInsert } = pasteManager.processPaste(bufferedContent);
-          const result = insertText(inputRef.current, cursorRef.current, textToInsert);
-          setInputAndCursor({ text: result.text, cursor: result.position });
-          setOriginalInput(result.text);
+          // Use functional state update to avoid stale ref values
+          let newText = '';
+          setInputAndCursor(prev => {
+            const result = insertText(prev.text, prev.cursor, textToInsert);
+            newText = result.text;
+            return { text: result.text, cursor: result.position };
+          });
+          setOriginalInput(newText);
         }
       });
 

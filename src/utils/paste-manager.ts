@@ -2,13 +2,13 @@
  * Paste Manager - Handles large paste content with placeholder links
  * 
  * Inspired by Codex implementation:
- * - Large pastes (>1000 chars) are replaced with placeholders
+ * - Large pastes (>500 chars) are replaced with placeholders
  * - Placeholders are styled distinctly (cyan color)
  * - On submit, placeholders are expanded to full content
  * - Multiple pastes supported
  */
 
-export const LARGE_PASTE_THRESHOLD = 1000; // chars
+export const LARGE_PASTE_THRESHOLD = 500; // chars
 
 export interface PendingPaste {
   id: string;
