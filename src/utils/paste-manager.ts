@@ -35,7 +35,14 @@ export class PasteManager {
     
     // If content is small enough, insert normally
     if (charCount <= LARGE_PASTE_THRESHOLD) {
-      return { textToInsert: content, pendingPaste: null };
+      // Normalize whitespace: replace newlines/tabs with single spaces
+      // to avoid rendering issues in single-line input
+      const normalizedContent = content
+        .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
+        .replace(/\t/g, ' ')        // Replace tabs with spaces
+        .replace(/\s{2,}/g, ' ');   // Collapse multiple spaces into one
+      
+      return { textToInsert: normalizedContent, pendingPaste: null };
     }
 
     // Create placeholder for large content

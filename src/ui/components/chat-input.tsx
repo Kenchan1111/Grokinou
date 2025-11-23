@@ -168,8 +168,9 @@ export const ChatInput = React.memo(function ChatInput({
       paddingX={1}
       paddingY={0}
       marginTop={1}
+      flexDirection="column"
     >
-      <Box>
+      <Box flexDirection="row" flexWrap="wrap">
         <Text color={promptColor}>❯ </Text>
         {isPlaceholder ? (
           <>
@@ -183,7 +184,7 @@ export const ChatInput = React.memo(function ChatInput({
             )}
           </>
         ) : (
-          <Text>
+          <Text wrap="wrap">
             {renderWithPlaceholders(beforeCursor)}
             {showCursor && (
               <Text backgroundColor="white" color="black">
