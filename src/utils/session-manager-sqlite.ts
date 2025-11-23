@@ -45,13 +45,27 @@ export class SessionManagerSQLite {
     this.currentProvider = provider;
     this.currentModel = model;
     
-    // Find or create session
-    this.currentSession = this.sessionRepo.findOrCreate(
-      workdir,
-      provider,
-      model,
-      apiKeyHash
-    );
+    // Try to find existing session by workdir first (for continuity)
+    const existingSession = this.sessionRepo.findLastSessionByWorkdir(workdir);
+    
+    if (existingSession) {
+      // Reuse existing session, update provider/model if changed
+      this.sessionRepo.updateSessionProviderAndModel(
+        existingSession.id,
+        provider,
+        model,
+        apiKeyHash
+      );
+      this.currentSession = this.sessionRepo.findById(existingSession.id)!;
+    } else {
+      // No existing session, create new one
+      this.currentSession = this.sessionRepo.findOrCreate(
+        workdir,
+        provider,
+        model,
+        apiKeyHash
+      );
+    }
     
     return this.currentSession;
   }

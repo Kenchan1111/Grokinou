@@ -153,6 +153,28 @@ export class SessionRepository {
   }
 
   /**
+   * Update session provider, model, and reactivate
+   * Used when restoring session with potentially different provider/model
+   */
+  updateSessionProviderAndModel(
+    sessionId: number, 
+    provider: string, 
+    model: string, 
+    apiKeyHash?: string
+  ) {
+    const stmt = this.db.prepare(`
+      UPDATE sessions 
+      SET status = 'active',
+          default_provider = ?,
+          default_model = ?,
+          api_key_hash = ?,
+          last_activity = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(provider, model, apiKeyHash || null, sessionId);
+  }
+
+  /**
    * Get all sessions with filters
    */
   findAll(filters?: {
