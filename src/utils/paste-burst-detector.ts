@@ -8,7 +8,7 @@
  */
 
 const PASTE_BURST_CHAR_INTERVAL_MS = 8; // Chars arriving within 8ms = paste burst
-const PASTE_BURST_FLUSH_TIMEOUT_MS = 20; // Wait 20ms for more chunks before flushing
+const PASTE_BURST_FLUSH_TIMEOUT_MS = 100; // Wait 100ms for more chunks before flushing (handles large pastes)
 
 export class PasteBurstDetector {
   private buffer: string = '';

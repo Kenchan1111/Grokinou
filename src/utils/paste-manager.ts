@@ -48,7 +48,10 @@ export class PasteManager {
     // Create placeholder for large content
     this.pasteCounter++;
     const id = `paste-${this.pasteCounter}-${Date.now()}`;
-    const placeholder = `[Pasted Content ${charCount} chars]`;
+    
+    // Format character count with thousand separators for readability
+    const formattedCount = charCount.toLocaleString('en-US');
+    const placeholder = `[Pasted ${formattedCount} chars]`;
     
     const pendingPaste: PendingPaste = {
       id,

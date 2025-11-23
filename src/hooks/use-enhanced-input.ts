@@ -335,7 +335,16 @@ export function useEnhancedInput({
           // Use functional state update to avoid stale ref values
           let newText = '';
           setInputAndCursor(prev => {
-            const result = insertText(prev.text, prev.cursor, textToInsert);
+            // Check if cursor is right after another placeholder - add space separator
+            let finalTextToInsert = textToInsert;
+            if (textToInsert.startsWith('[Pasted ') && prev.cursor > 0) {
+              const beforeCursor = prev.text.slice(Math.max(0, prev.cursor - 10), prev.cursor);
+              if (beforeCursor.endsWith('chars]')) {
+                finalTextToInsert = ' ' + textToInsert; // Add space between consecutive placeholders
+              }
+            }
+            
+            const result = insertText(prev.text, prev.cursor, finalTextToInsert);
             newText = result.text;
             return { text: result.text, cursor: result.position };
           });
