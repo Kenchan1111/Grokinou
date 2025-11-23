@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import crypto from 'crypto';
-import { Session, SessionInput } from '../types.js';
+import { Session, SessionInput, SessionListItem } from '../types.js';
 
 export class SessionRepository {
   constructor(private db: Database.Database) {}
@@ -208,5 +208,126 @@ export class SessionRepository {
     
     const stmt = this.db.prepare(query);
     return stmt.all(...params) as Session[];
+  }
+
+  /**
+   * List sessions with enriched metadata for display/search
+   * 
+   * @param workdir - Filter by working directory (optional)
+   * @param options - Additional filtering options
+   * @returns Array of enriched session list items
+   */
+  listSessions(
+    workdir?: string,
+    options?: {
+      status?: ('active' | 'completed' | 'archived')[];
+      favoriteOnly?: boolean;
+      minMessages?: number;
+      sortBy?: 'last_activity' | 'created_at' | 'message_count' | 'session_name';
+      sortOrder?: 'ASC' | 'DESC';
+      limit?: number;
+    }
+  ): SessionListItem[] {
+    let query = `
+      SELECT 
+        s.id,
+        s.session_name,
+        s.working_dir,
+        s.default_provider,
+        s.default_model,
+        s.message_count,
+        s.total_tokens,
+        s.status,
+        s.created_at,
+        s.last_activity,
+        s.first_message_preview,
+        s.last_message_preview,
+        s.is_favorite,
+        s.project_context,
+        CAST((julianday('now') - julianday(s.created_at)) AS INTEGER) as age_days
+      FROM sessions s
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    
+    // Filter by working directory
+    if (workdir) {
+      query += ' AND s.working_dir = ?';
+      params.push(workdir);
+    }
+    
+    // Filter by status
+    if (options?.status && options.status.length > 0) {
+      const placeholders = options.status.map(() => '?').join(',');
+      query += ` AND s.status IN (${placeholders})`;
+      params.push(...options.status);
+    }
+    
+    // Filter favorites only
+    if (options?.favoriteOnly) {
+      query += ' AND s.is_favorite = 1';
+    }
+    
+    // Filter by minimum message count
+    if (options?.minMessages !== undefined && options.minMessages > 0) {
+      query += ' AND s.message_count >= ?';
+      params.push(options.minMessages);
+    }
+    
+    // Sort by
+    const sortBy = options?.sortBy || 'last_activity';
+    const sortOrder = options?.sortOrder || 'DESC';
+    query += ` ORDER BY s.${sortBy} ${sortOrder}`;
+    
+    // Limit results
+    if (options?.limit) {
+      query += ' LIMIT ?';
+      params.push(options.limit);
+    }
+    
+    const stmt = this.db.prepare(query);
+    const results = stmt.all(...params) as any[];
+    
+    // Convert to SessionListItem with computed fields
+    return results.map(row => ({
+      id: row.id,
+      session_name: row.session_name,
+      working_dir: row.working_dir,
+      default_provider: row.default_provider,
+      default_model: row.default_model,
+      message_count: row.message_count || 0,
+      total_tokens: row.total_tokens || 0,
+      status: row.status,
+      created_at: row.created_at,
+      last_activity: row.last_activity,
+      first_message_preview: row.first_message_preview,
+      last_message_preview: row.last_message_preview,
+      is_favorite: Boolean(row.is_favorite),
+      project_context: row.project_context,
+      age_days: row.age_days || 0,
+      last_activity_relative: this.formatRelativeTime(row.last_activity),
+    }));
+  }
+
+  /**
+   * Format timestamp as relative time (e.g., "2 hours ago")
+   */
+  private formatRelativeTime(timestamp: string): string {
+    const now = Date.now();
+    const then = new Date(timestamp).getTime();
+    const diffMs = now - then;
+    
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (seconds < 60) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    if (days < 30) return `${Math.floor(days / 7)}w ago`;
+    if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+    return `${Math.floor(days / 365)}y ago`;
   }
 }

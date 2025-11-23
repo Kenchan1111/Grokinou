@@ -1,7 +1,7 @@
 import { db } from '../db/database.js';
 import { SessionRepository } from '../db/repositories/session-repository.js';
 import { MessageRepository } from '../db/repositories/message-repository.js';
-import { Session, Message } from '../db/types.js';
+import { Session, Message, SessionListItem } from '../db/types.js';
 import { ChatEntry } from '../agent/grok-agent.js';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -148,6 +148,28 @@ export class SessionManagerSQLite {
    */
   findLastSessionByWorkdir(workdir: string): Session | null {
     return this.sessionRepo.findLastSessionByWorkdir(workdir);
+  }
+
+  /**
+   * List sessions with enriched metadata
+   * 
+   * @param workdir - Filter by working directory (defaults to current)
+   * @param options - Additional filtering options
+   * @returns Array of enriched session list items
+   */
+  listSessions(
+    workdir?: string,
+    options?: {
+      status?: ('active' | 'completed' | 'archived')[];
+      favoriteOnly?: boolean;
+      minMessages?: number;
+      sortBy?: 'last_activity' | 'created_at' | 'message_count' | 'session_name';
+      sortOrder?: 'ASC' | 'DESC';
+      limit?: number;
+    }
+  ): SessionListItem[] {
+    const targetWorkdir = workdir || process.cwd();
+    return this.sessionRepo.listSessions(targetWorkdir, options);
   }
 
   /**

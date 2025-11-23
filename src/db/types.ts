@@ -15,6 +15,38 @@ export interface Session {
   tags: string | null;
   metadata: string | null;
   user_id: string | null;
+  // New fields from migration 002
+  session_name: string | null;
+  created_at: string | null;
+  message_count: number;
+  total_tokens: number;
+  first_message_preview: string | null;
+  last_message_preview: string | null;
+  project_context: string | null;
+  is_favorite: number;
+}
+
+/**
+ * Enriched session list item with all metadata for display/search
+ */
+export interface SessionListItem {
+  id: number;
+  session_name: string | null;
+  working_dir: string;
+  default_provider: string;
+  default_model: string;
+  message_count: number;
+  total_tokens: number;
+  status: 'active' | 'completed' | 'archived';
+  created_at: string | null;
+  last_activity: string;
+  first_message_preview: string | null;
+  last_message_preview: string | null;
+  is_favorite: boolean;
+  project_context: string | null;
+  // Computed fields
+  age_days?: number;  // Days since creation
+  last_activity_relative?: string;  // "2 hours ago"
 }
 
 export interface Message {
