@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import { MigrationManager } from './migrations/index.js';
 
 const GROK_DIR = path.join(os.homedir(), '.grok');
 const DB_PATH = path.join(GROK_DIR, 'conversations.db');
@@ -23,6 +24,7 @@ export class GrokDatabase {
     this.db.pragma('foreign_keys = ON');
     
     this.initialize();
+    this.runMigrations();
   }
 
   static getInstance(): GrokDatabase {
@@ -30,6 +32,14 @@ export class GrokDatabase {
       GrokDatabase.instance = new GrokDatabase();
     }
     return GrokDatabase.instance;
+  }
+  
+  /**
+   * Run pending database migrations
+   */
+  private runMigrations(): void {
+    const migrationManager = new MigrationManager(this.db);
+    migrationManager.runPendingMigrations();
   }
 
   private initialize() {
