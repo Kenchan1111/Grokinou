@@ -158,25 +158,64 @@ export class GrokClient {
     const provider = this.getProvider();
     
     if (provider === 'mistral') {
-      // Mistral CANNOT handle tool_calls and tool messages in history
-      // Strategy: Convert tool results to user messages, strip tool_calls
-      return messages.map(msg => {
-        // Convert tool result messages to user messages
-        if (msg.role === 'tool') {
-          return {
-            role: 'user',
-            content: `[Tool Result]\n${msg.content}`,
-          };
+      // ✅ NEW: Mistral DOES support tool calls (OpenAI-compatible format)
+      // According to https://docs.mistral.ai/agents/tools/function_calling
+      // Just need to ensure 'type': 'function' is present in tool_calls
+      const cleaned: GrokMessage[] = [];
+      
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        
+        // Keep system messages as-is
+        if (msg.role === 'system') {
+          cleaned.push(msg);
+          continue;
         }
-        // Remove tool_calls from assistant messages
+        
+        // Fix assistant messages with tool_calls (ensure 'type' field)
         if (msg.role === 'assistant' && (msg as any).tool_calls) {
-          return {
-            role: msg.role,
-            content: msg.content || '[Using tools...]',
-          };
+          const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
+            id: tc.id,
+            type: tc.type || 'function', // Mistral requires type: 'function'
+            function: tc.function,
+          }));
+          
+          cleaned.push({
+            ...msg,
+            tool_calls: toolCalls,
+          });
+          continue;
         }
-        return msg;
-      });
+        
+        // Handle tool messages (check for orphans)
+        if (msg.role === 'tool') {
+          // Find previous assistant message
+          let prevAssistant: GrokMessage | null = null;
+          for (let j = i - 1; j >= 0; j--) {
+            if (messages[j].role === 'assistant') {
+              prevAssistant = messages[j];
+              break;
+            }
+          }
+          
+          // If tool has valid parent: keep as-is
+          if (prevAssistant && (prevAssistant as any).tool_calls) {
+            cleaned.push(msg);
+          } else {
+            // Orphaned tool: convert to user to preserve content
+            cleaned.push({
+              role: 'user',
+              content: `[Tool Result - Previous Context]\n${msg.content}`,
+            });
+          }
+          continue;
+        }
+        
+        // Other messages: keep as-is
+        cleaned.push(msg);
+      }
+      
+      return cleaned;
     }
     
     // For OpenAI, Grok, DeepSeek: Ensure tool_calls have 'type' field + convert orphaned tool messages

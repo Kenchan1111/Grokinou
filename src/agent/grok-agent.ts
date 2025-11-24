@@ -189,12 +189,14 @@ IMPORTANT RESPONSE GUIDELINES:
 Current working directory: ${process.cwd()}`,
     };
 
-    // Replace existing system message or add new one
-    if (this.messages.length > 0 && this.messages[0].role === "system") {
-      this.messages[0] = systemMessage;
-    } else {
-      this.messages.unshift(systemMessage);
-    }
+    // ✅ PURGE ALL old system messages (critical when switching models)
+    // Remove all existing system messages to avoid confusion
+    this.messages = this.messages.filter(m => m.role !== 'system');
+    
+    // Add the new system message at the beginning
+    this.messages.unshift(systemMessage);
+    
+    debugLog.log(`✅ System message purged and updated: ${this.messages.filter(m => m.role === 'system').length} system message(s) in context`);
   }
 
   private async persist(entry: ChatEntry) {
