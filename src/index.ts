@@ -574,16 +574,8 @@ program
       const initialMessage = Array.isArray(message)
         ? message.join(" ")
         : message;
-      
-      // Prepare session info to display after history is loaded
-      const sessionInfo = {
-        model: startupConfig.model,
-        provider: startupConfig.provider,
-        hasApiKey: !!startupConfig.apiKey,
-        workdir: process.cwd(),
-      };
 
-      render(React.createElement(ChatInterface, { agent, initialMessage, sessionInfo }));
+      render(React.createElement(ChatInterface, { agent, initialMessage }));
     } catch (error: any) {
       console.error("❌ Error initializing Grok CLI:", error.message);
       process.exit(1);

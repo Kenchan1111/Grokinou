@@ -19,16 +19,11 @@ import { SearchResults } from "./search/search-results.js";
 import { parseSearchCommand, executeSearchCommand } from "../../commands/search.js";
 import { SearchResult } from "../../utils/search-manager.js";
 import { sessionManager } from "../../utils/session-manager-sqlite.js";
+import { generateStatusMessage } from "../../utils/status-message.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
   initialMessage?: string;
-  sessionInfo?: {
-    model: string;
-    provider: string;
-    hasApiKey: boolean;
-    workdir: string;
-  };
 }
 
 // Separate memoized streaming display to prevent input flickering
@@ -90,85 +85,13 @@ const StreamingDisplay = React.memo(({
 
 StreamingDisplay.displayName = 'StreamingDisplay';
 
-/**
- * Create session status message to display after history is loaded
- */
-function createSessionStatusMessage(
-  sessionInfo: {
-    model: string;
-    provider: string;
-    hasApiKey: boolean;
-    workdir: string;
-  },
-  historyLength: number
-): ChatEntry {
-  try {
-    // Format directory (shorten home path)
-    const os = require('os');
-    const homeDir = os.homedir();
-    const displayDir = sessionInfo.workdir.replace(homeDir, '~');
-    
-    // API key status
-    const apiKeyStatus = sessionInfo.hasApiKey ? '✅ Configured' : '❌ Missing';
-    
-    // Build status box with fixed width for better alignment
-    const line = '═'.repeat(58);
-    
-    let content = `╔${line}╗\n`;
-    content += `║  📋 SESSION STATUS                                        ║\n`;
-    content += `╠${line}╣\n`;
-    content += `║  📂 Directory: ${displayDir.padEnd(43)}║\n`;
-    content += `║  🤖 Model: ${sessionInfo.model.padEnd(47)}║\n`;
-    content += `║  📝 Provider: ${sessionInfo.provider.padEnd(44)}║\n`;
-    content += `║  🔑 API Key: ${apiKeyStatus.padEnd(45)}║\n`;
-    content += `║  💬 Messages in history: ${String(historyLength).padEnd(33)}║\n`;
-    content += `╚${line}╝\n\n`;
-    
-    // Show helpful commands
-    if (!sessionInfo.hasApiKey) {
-      content += '⚠️  No API key configured for this provider!\n';
-      content += `   Use: /apikey ${sessionInfo.provider} <your-key>\n`;
-    } else {
-      content += 'Continue with this model? Just start typing, or use:\n';
-      content += '  /models           - List available models\n';
-      content += '  /model <name>     - Switch to another model\n';
-      content += '  /apikey <key>     - Update API key\n';
-      content += '  /status           - Show full status (detailed)\n';
-      content += '  /help             - Show all commands\n';
-    }
-    
-    return {
-      type: 'assistant',
-      content,
-      timestamp: new Date(),
-    };
-  } catch (error) {
-    console.error('Error creating session status message:', error);
-    // Fallback basic message
-    return {
-      type: 'assistant',
-      content: `💡 Session loaded with ${sessionInfo.model} (${sessionInfo.provider})\n` +
-               `📊 ${historyLength} messages in history\n\n` +
-               `Use /help for available commands, /status to see full status.`,
-      timestamp: new Date(),
-    };
-  }
-}
-
 // Main chat component that handles input when agent is available
 function ChatInterfaceWithAgent({
   agent,
   initialMessage,
-  sessionInfo,
 }: {
   agent: GrokAgent;
   initialMessage?: string;
-  sessionInfo?: {
-    model: string;
-    provider: string;
-    hasApiKey: boolean;
-    workdir: string;
-  };
 }) {
   const SHOW_STATUS = true; // Show spinner and token counter
   
@@ -361,14 +284,12 @@ function ChatInterfaceWithAgent({
         if (persistSession !== false && autoRestoreSession !== false) {
           const entries = await loadChatHistory();
           
-          // Always try to add status message if sessionInfo provided
+          // Generate status message using the same logic as /status command
           let statusMessage: ChatEntry | null = null;
-          if (sessionInfo) {
-            try {
-              statusMessage = createSessionStatusMessage(sessionInfo, entries.length);
-            } catch (error) {
-              console.error('Failed to create status message:', error);
-            }
+          try {
+            statusMessage = generateStatusMessage(agent);
+          } catch (error) {
+            console.error('Failed to generate status message:', error);
           }
           
           if (entries.length > 0) {
@@ -400,7 +321,7 @@ function ChatInterfaceWithAgent({
         setChatHistory([]);
       }
     })();
-  }, [agent, sessionInfo]);
+  }, [agent]);
 
   // Le logo est maintenant affiché AVANT le démarrage d'Ink dans index.ts
   // Plus besoin de le générer ici !
@@ -755,7 +676,6 @@ function ChatInterfaceWithAgent({
 export default function ChatInterface({
   agent,
   initialMessage,
-  sessionInfo,
 }: ChatInterfaceProps) {
   const [currentAgent, setCurrentAgent] = useState<GrokAgent | null>(
     agent || null
@@ -773,7 +693,6 @@ export default function ChatInterface({
     <ChatInterfaceWithAgent
       agent={currentAgent}
       initialMessage={initialMessage}
-      sessionInfo={sessionInfo}
     />
   );
 }
