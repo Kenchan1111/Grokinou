@@ -26,6 +26,7 @@ import {
   sessionManager 
 } from "../utils/session-manager-sqlite.js";
 import { providerManager } from "../utils/provider-manager.js";
+import { debugLog } from "../utils/debug-logger.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -889,12 +890,12 @@ Current working directory: ${process.cwd()}`,
   // ✅ NEW: Switch to different model with new API key and baseURL
   // Used when changing providers (e.g., Grok → Claude)
   async switchToModel(model: string, apiKey: string, baseURL: string): Promise<string> {
-    console.log(`🔧 GrokAgent.switchToModel: model=${model}, baseURL=${baseURL}, apiKey=${apiKey.slice(0,10)}...`);
+    debugLog.log(`🔧 GrokAgent.switchToModel: model=${model}, baseURL=${baseURL}, apiKey=${apiKey.slice(0,10)}...`);
     
     // Recreate client with new config
     this.grokClient = new GrokClient(apiKey, model, baseURL);
     
-    console.log(`✅ GrokClient recreated with baseURL=${baseURL}`);
+    debugLog.log(`✅ GrokClient recreated with baseURL=${baseURL}`);
     
     // Update token counter
     this.tokenCounter.dispose();
@@ -902,17 +903,17 @@ Current working directory: ${process.cwd()}`,
     
     // Update system message with new model name
     this.updateSystemMessage();
-    console.log(`✅ System message updated for model=${model}`);
+    debugLog.log(`✅ System message updated for model=${model}`);
     
     // Update session manager
     const provider = providerManager.detectProvider(model) || 'grok';
     sessionManager.switchProvider(provider, model, apiKey);
     
-    console.log(`✅ Session manager updated for provider=${provider}`);
+    debugLog.log(`✅ Session manager updated for provider=${provider}`);
     
     // ✅ NEW: Identity check (isolated message, no history)
     try {
-      console.log(`🔍 Sending identity check to model...`);
+      debugLog.log(`🔍 Sending identity check to model...`);
       
       const identityResponse = await this.grokClient.chat(
         [{ role: "user", content: "In one short sentence, what is your exact model name and provider?" }],
@@ -924,14 +925,14 @@ Current working directory: ${process.cwd()}`,
       const aiSays = identityResponse.choices[0]?.message?.content || "No response";
       const apiReturned = identityResponse.model || model;
       
-      console.log(`✅ AI says: "${aiSays}"`);
-      console.log(`📝 API returned: ${apiReturned}`);
+      debugLog.log(`✅ AI says: "${aiSays}"`);
+      debugLog.log(`📝 API returned: ${apiReturned}`);
       
       // Return formatted identity info
       return `🤖 AI Response: "${aiSays}"\n📋 API Metadata: ${apiReturned}`;
       
     } catch (error) {
-      console.log(`⚠️  Identity check failed:`, error);
+      debugLog.log(`⚠️  Identity check failed:`, error);
       return `⚠️  Identity check failed, but connection established`;
     }
   }
@@ -986,6 +987,6 @@ Current working directory: ${process.cwd()}`,
     // Update session manager
     sessionManager.switchProvider(provider, modelToUse, apiKey);
     
-    console.log(`✅ Switched to ${provider} (${modelToUse})`);
+    debugLog.log(`✅ Switched to ${provider} (${modelToUse})`);
   }
 }
