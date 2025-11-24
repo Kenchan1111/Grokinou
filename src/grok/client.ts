@@ -179,7 +179,7 @@ export class GrokClient {
       });
     }
     
-    // For OpenAI, Grok, DeepSeek: Ensure tool_calls have 'type' field + remove orphaned tool messages
+    // For OpenAI, Grok, DeepSeek: Ensure tool_calls have 'type' field + convert orphaned tool messages
     if (provider === 'openai' || provider === 'grok' || provider === 'deepseek') {
       const cleaned: GrokMessage[] = [];
       
@@ -197,11 +197,17 @@ export class GrokClient {
             }
           }
           
-          // Only keep tool message if previous assistant has tool_calls
+          // If tool has valid parent: keep as-is
           if (prevAssistant && (prevAssistant as any).tool_calls) {
             cleaned.push(msg);
+          } else {
+            // Orphaned tool: convert to user to preserve content
+            // Better than losing valuable context!
+            cleaned.push({
+              role: 'user',
+              content: `[Tool Result - Previous Context]\n${msg.content}`,
+            });
           }
-          // Otherwise skip this orphaned tool message
           continue;
         }
         
