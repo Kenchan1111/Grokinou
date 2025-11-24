@@ -13,7 +13,15 @@ export function generateStatusMessage(agent: GrokAgent): ChatEntry {
     const currentModel = agent.getCurrentModel();
     const currentApiKey = agent.getApiKey();
     const providerConfig = providerManager.getProviderForModel(currentModel);
-    const session = sessionManager.getCurrentSession();
+    
+    // Get session with fallback for robustness
+    // After restart, currentSession might be null until initSession() is called
+    let session = sessionManager.getCurrentSession();
+    if (!session) {
+      // Fallback: try to find last session for current directory
+      const workdir = process.cwd();
+      session = sessionManager.findLastSessionByWorkdir(workdir);
+    }
     
     // Format directory (shorten home path)
     const homeDir = require('os').homedir();
