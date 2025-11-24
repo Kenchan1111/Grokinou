@@ -179,9 +179,32 @@ export class GrokClient {
       });
     }
     
-    // For OpenAI, Grok, DeepSeek: Ensure tool_calls have required 'type' field
+    // For OpenAI, Grok, DeepSeek: Ensure tool_calls have 'type' field + remove orphaned tool messages
     if (provider === 'openai' || provider === 'grok' || provider === 'deepseek') {
-      return messages.map(msg => {
+      const cleaned: GrokMessage[] = [];
+      
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        
+        // If it's a tool message, check if previous message has tool_calls
+        if (msg.role === 'tool') {
+          // Find previous non-tool message
+          let prevAssistant: GrokMessage | null = null;
+          for (let j = i - 1; j >= 0; j--) {
+            if (messages[j].role === 'assistant') {
+              prevAssistant = messages[j];
+              break;
+            }
+          }
+          
+          // Only keep tool message if previous assistant has tool_calls
+          if (prevAssistant && (prevAssistant as any).tool_calls) {
+            cleaned.push(msg);
+          }
+          // Otherwise skip this orphaned tool message
+          continue;
+        }
+        
         // Fix assistant messages with tool_calls (add missing 'type' field)
         if (msg.role === 'assistant' && (msg as any).tool_calls) {
           const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
@@ -190,13 +213,18 @@ export class GrokClient {
             function: tc.function,
           }));
           
-          return {
+          cleaned.push({
             ...msg,
             tool_calls: toolCalls,
-          };
+          });
+          continue;
         }
-        return msg;
-      });
+        
+        // Other messages: keep as-is
+        cleaned.push(msg);
+      }
+      
+      return cleaned;
     }
     
     // Other providers (Claude): return as-is
