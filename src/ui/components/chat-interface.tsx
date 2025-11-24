@@ -23,6 +23,12 @@ import { sessionManager } from "../../utils/session-manager-sqlite.js";
 interface ChatInterfaceProps {
   agent?: GrokAgent;
   initialMessage?: string;
+  sessionInfo?: {
+    model: string;
+    provider: string;
+    hasApiKey: boolean;
+    workdir: string;
+  };
 }
 
 // Separate memoized streaming display to prevent input flickering
@@ -84,13 +90,119 @@ const StreamingDisplay = React.memo(({
 
 StreamingDisplay.displayName = 'StreamingDisplay';
 
+/**
+ * Create session status message to display after history is loaded
+ */
+async function createSessionStatusMessage(sessionInfo: {
+  model: string;
+  provider: string;
+  hasApiKey: boolean;
+  workdir: string;
+}): Promise<ChatEntry> {
+  try {
+    const session = sessionManager.findLastSessionByWorkdir(sessionInfo.workdir);
+    
+    // Format directory (shorten home path)
+    const homeDir = require('os').homedir();
+    const displayDir = sessionInfo.workdir.replace(homeDir, '~');
+    
+    // Format last activity
+    let lastActivityStr = 'New session';
+    let messageCountStr = '0';
+    let sessionNameStr = '';
+    
+    if (session) {
+      messageCountStr = String(session.message_count || 0);
+      
+      if (session.session_name) {
+        sessionNameStr = `\n║  📝 Session Name: ${session.session_name}`;
+      }
+      
+      if (session.last_activity) {
+        const lastActivity = new Date(session.last_activity);
+        const now = new Date();
+        const diffMs = now.getTime() - lastActivity.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        
+        if (diffDays > 0) {
+          lastActivityStr = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+          lastActivityStr = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else if (diffMins > 0) {
+          lastActivityStr = `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+        } else {
+          lastActivityStr = 'Just now';
+        }
+      }
+    }
+    
+    // API key status
+    const apiKeyStatus = sessionInfo.hasApiKey ? '✅ Configured' : '❌ Missing';
+    
+    // Build status box
+    const boxWidth = 60;
+    const line = '═'.repeat(boxWidth - 2);
+    
+    let content = `╔${line}╗\n`;
+    content += `║  📋 SESSION STATUS${' '.repeat(boxWidth - 20)}║\n`;
+    content += `╠${line}╣\n`;
+    content += `║  📂 Directory: ${displayDir}${' '.repeat(Math.max(0, boxWidth - 16 - displayDir.length))}║\n`;
+    content += `║  🤖 Model: ${sessionInfo.model} (${sessionInfo.provider})${' '.repeat(Math.max(0, boxWidth - 14 - sessionInfo.model.length - sessionInfo.provider.length))}║\n`;
+    content += `║  🔑 API Key: ${apiKeyStatus}${' '.repeat(Math.max(0, boxWidth - 14 - apiKeyStatus.length))}║\n`;
+    content += `║  💬 Messages: ${messageCountStr}${' '.repeat(Math.max(0, boxWidth - 16 - messageCountStr.length))}║\n`;
+    content += `║  📅 Last activity: ${lastActivityStr}${' '.repeat(Math.max(0, boxWidth - 21 - lastActivityStr.length))}║`;
+    if (sessionNameStr) {
+      content += sessionNameStr + ' '.repeat(Math.max(0, boxWidth - 20 - (session?.session_name?.length || 0))) + '║\n';
+    } else {
+      content += '\n';
+    }
+    content += `╚${line}╝\n\n`;
+    
+    // Show helpful commands
+    if (!sessionInfo.hasApiKey) {
+      content += '⚠️  No API key configured for this provider!\n';
+      content += `   Use: /apikey ${sessionInfo.provider} <your-key>\n`;
+    } else {
+      content += 'Continue with this model? Just start typing, or use:\n';
+      content += '  /models           - List available models\n';
+      content += '  /model <name>     - Switch to another model\n';
+      content += '  /apikey <key>     - Update API key\n';
+      content += '  /status           - Show this status again\n';
+      content += '  /help             - Show all commands\n';
+    }
+    
+    return {
+      type: 'assistant',
+      content,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    // Fallback basic message
+    return {
+      type: 'assistant',
+      content: `💡 Session loaded with ${sessionInfo.model} (${sessionInfo.provider})\n` +
+               `Use /help for available commands, /status to see full status.`,
+      timestamp: new Date(),
+    };
+  }
+}
+
 // Main chat component that handles input when agent is available
 function ChatInterfaceWithAgent({
   agent,
   initialMessage,
+  sessionInfo,
 }: {
   agent: GrokAgent;
   initialMessage?: string;
+  sessionInfo?: {
+    model: string;
+    provider: string;
+    hasApiKey: boolean;
+    workdir: string;
+  };
 }) {
   const SHOW_STATUS = true; // Show spinner and token counter
   
@@ -282,9 +394,23 @@ function ChatInterfaceWithAgent({
             
             // Restore agent context
             agent.restoreFromHistory(entries);
+            
+            // ✅ Add session status message after history is loaded
+            if (sessionInfo) {
+              const statusMessage = await createSessionStatusMessage(sessionInfo);
+              setChatHistory(prev => [...prev, statusMessage]);
+              setCommittedHistory(prev => [...prev, statusMessage]);
+            }
           } else {
             setCommittedHistory([]);
             setChatHistory([]);
+            
+            // ✅ Add session status message for new sessions too
+            if (sessionInfo) {
+              const statusMessage = await createSessionStatusMessage(sessionInfo);
+              setChatHistory([statusMessage]);
+              setCommittedHistory([statusMessage]);
+            }
           }
           // Restore model state if saved (optional)
           const state = await loadState();
@@ -654,6 +780,7 @@ function ChatInterfaceWithAgent({
 export default function ChatInterface({
   agent,
   initialMessage,
+  sessionInfo,
 }: ChatInterfaceProps) {
   const [currentAgent, setCurrentAgent] = useState<GrokAgent | null>(
     agent || null
@@ -671,6 +798,7 @@ export default function ChatInterface({
     <ChatInterfaceWithAgent
       agent={currentAgent}
       initialMessage={initialMessage}
+      sessionInfo={sessionInfo}
     />
   );
 }
