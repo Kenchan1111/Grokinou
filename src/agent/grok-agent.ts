@@ -227,11 +227,20 @@ Current working directory: ${process.cwd()}`,
             tool_calls: entry.toolCalls as any,
           } as any);
         } else if (entry.type === "tool_result" && entry.toolCall) {
-          this.messages.push({
+          // ✅ For Mistral: include "name" field (required by their API)
+          const toolMessage: any = {
             role: "tool",
             content: entry.content,
             tool_call_id: entry.toolCall.id,
-          } as any);
+          };
+          
+          // Add "name" field for Mistral (required by their API spec)
+          const currentProvider = providerManager.detectProvider(this.grokClient.getCurrentModel());
+          if (currentProvider === 'mistral') {
+            toolMessage.name = entry.toolCall.function?.name || 'unknown';
+          }
+          
+          this.messages.push(toolMessage);
         }
       } catch {}
     }
@@ -391,13 +400,22 @@ Current working directory: ${process.cwd()}`,
             }
 
             // Add tool result to messages with proper format (needed for AI context)
-            this.messages.push({
+            // ✅ For Mistral: include "name" field (required by their API)
+            const toolMessage: any = {
               role: "tool",
               content: result.success
                 ? result.output || "Success"
                 : result.error || "Error",
               tool_call_id: toolCall.id,
-            });
+            };
+            
+            // Add "name" field for Mistral (required by their API spec)
+            const currentProvider = providerManager.detectProvider(this.grokClient.getCurrentModel());
+            if (currentProvider === 'mistral') {
+              toolMessage.name = toolCall.function.name;
+            }
+            
+            this.messages.push(toolMessage);
           }
 
           // Get next response - this might contain more tool calls
