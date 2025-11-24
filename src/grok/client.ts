@@ -178,42 +178,80 @@ export class GrokClient {
     });
     
     if (provider === 'mistral') {
-      // ✅ NEW: Mistral DOES support tool calls (OpenAI-compatible format)
+      // ✅ Mistral-specific cleaning (strict message structure rules)
       // According to https://docs.mistral.ai/agents/tools/function_calling
-      // Just need to ensure 'type': 'function' is present in tool_calls
+      // Mistral requires:
+      // 1. No consecutive assistant messages (must have user between)
+      // 2. Tool calls must have 'type': 'function'
+      // 3. Proper alternation of user/assistant
       const cleaned: GrokMessage[] = [];
+      let lastRole: string | null = null;
       
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
         
-        // Keep system messages as-is
+        // Keep system messages as-is (only at start)
         if (msg.role === 'system') {
           cleaned.push(msg);
+          lastRole = 'system';
           continue;
         }
         
-        // Fix assistant messages with tool_calls (ensure 'type' field)
-        if (msg.role === 'assistant' && (msg as any).tool_calls) {
-          const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
-            id: tc.id,
-            type: tc.type || 'function', // Mistral requires type: 'function'
-            function: tc.function,
-          }));
+        // ✅ Handle assistant messages
+        if (msg.role === 'assistant') {
+          // Fix tool_calls if present
+          if ((msg as any).tool_calls) {
+            const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
+              id: tc.id,
+              type: tc.type || 'function',
+              function: tc.function,
+            }));
+            
+            // If last was also assistant, inject separator user message
+            if (lastRole === 'assistant') {
+              debugLog.log(`⚠️  Mistral: Consecutive assistant messages detected, adding separator`);
+              cleaned.push({
+                role: 'user',
+                content: '[Continue]',
+              });
+            }
+            
+            cleaned.push({
+              ...msg,
+              tool_calls: toolCalls,
+            });
+            lastRole = 'assistant';
+            continue;
+          }
           
-          cleaned.push({
-            ...msg,
-            tool_calls: toolCalls,
-          });
+          // Assistant without tool_calls: keep if has content
+          if (msg.content && (typeof msg.content === 'string' ? msg.content.trim() : true)) {
+            // If last was also assistant, inject separator
+            if (lastRole === 'assistant') {
+              debugLog.log(`⚠️  Mistral: Consecutive assistant messages detected, adding separator`);
+              cleaned.push({
+                role: 'user',
+                content: '[Continue]',
+              });
+            }
+            
+            cleaned.push(msg);
+            lastRole = 'assistant';
+            continue;
+          }
+          
+          // Skip empty assistant messages (already filtered but double-check)
+          debugLog.log(`🗑️  Mistral: Skipping empty assistant message`);
           continue;
         }
         
-        // Handle tool messages (check for orphans)
+        // ✅ Handle tool messages
         if (msg.role === 'tool') {
-          // Find previous assistant message
+          // Find previous assistant message with tool_calls
           let prevAssistant: GrokMessage | null = null;
-          for (let j = i - 1; j >= 0; j--) {
-            if (messages[j].role === 'assistant') {
-              prevAssistant = messages[j];
+          for (let j = cleaned.length - 1; j >= 0; j--) {
+            if (cleaned[j].role === 'assistant') {
+              prevAssistant = cleaned[j];
               break;
             }
           }
@@ -221,20 +259,32 @@ export class GrokClient {
           // If tool has valid parent: keep as-is
           if (prevAssistant && (prevAssistant as any).tool_calls) {
             cleaned.push(msg);
+            lastRole = 'tool';
           } else {
             // Orphaned tool: convert to user to preserve content
+            debugLog.log(`⚠️  Mistral: Converting orphaned tool message to user`);
             cleaned.push({
               role: 'user',
-              content: `[Tool Result - Previous Context]\n${msg.content}`,
+              content: `[Tool Result]\n${msg.content}`,
             });
+            lastRole = 'user';
           }
+          continue;
+        }
+        
+        // ✅ Handle user messages (always keep)
+        if (msg.role === 'user') {
+          cleaned.push(msg);
+          lastRole = 'user';
           continue;
         }
         
         // Other messages: keep as-is
         cleaned.push(msg);
+        lastRole = msg.role;
       }
       
+      debugLog.log(`✅ Mistral cleaning: ${messages.length} → ${cleaned.length} messages`);
       return cleaned;
     }
     
