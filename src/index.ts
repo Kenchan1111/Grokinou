@@ -109,6 +109,89 @@ function loadModel(): string | undefined {
 }
 
 /**
+ * Display session status box with current configuration
+ */
+async function displaySessionStatus(
+  model: string,
+  provider: string,
+  hasApiKey: boolean,
+  workdir: string
+): Promise<void> {
+  try {
+    const { SessionManagerSQLite } = await import('./utils/session-manager-sqlite.js');
+    const sessionManager = SessionManagerSQLite.getInstance();
+    
+    // Try to get current session info
+    const session = sessionManager.findLastSessionByWorkdir(workdir);
+    
+    // Format directory (shorten home path)
+    const homeDir = require('os').homedir();
+    const displayDir = workdir.replace(homeDir, '~');
+    
+    // Format last activity
+    let lastActivityStr = 'New session';
+    let messageCountStr = '0';
+    
+    if (session) {
+      messageCountStr = String(session.message_count || 0);
+      
+      if (session.last_activity) {
+        const lastActivity = new Date(session.last_activity);
+        const now = new Date();
+        const diffMs = now.getTime() - lastActivity.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        
+        if (diffDays > 0) {
+          lastActivityStr = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+          lastActivityStr = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else if (diffMins > 0) {
+          lastActivityStr = `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+        } else {
+          lastActivityStr = 'Just now';
+        }
+      }
+    }
+    
+    // API key status
+    const apiKeyStatus = hasApiKey ? '✅ Configured' : '❌ Missing';
+    const apiKeyColor = hasApiKey ? '\x1b[32m' : '\x1b[31m';
+    
+    // Build status box
+    const boxWidth = 60;
+    const line = '═'.repeat(boxWidth - 2);
+    
+    console.log(`\n╔${line}╗`);
+    console.log(`║  📋 SESSION STATUS${' '.repeat(boxWidth - 20)}║`);
+    console.log(`╠${line}╣`);
+    console.log(`║  📂 Directory: ${displayDir}${' '.repeat(boxWidth - 16 - displayDir.length)}║`);
+    console.log(`║  🤖 Model: ${model} (${provider})${' '.repeat(boxWidth - 14 - model.length - provider.length)}║`);
+    console.log(`║  🔑 API Key: ${apiKeyColor}${apiKeyStatus}\x1b[0m${' '.repeat(boxWidth - 14 - apiKeyStatus.length)}║`);
+    console.log(`║  💬 Messages: ${messageCountStr}${' '.repeat(boxWidth - 16 - messageCountStr.length)}║`);
+    console.log(`║  📅 Last activity: ${lastActivityStr}${' '.repeat(boxWidth - 21 - lastActivityStr.length)}║`);
+    console.log(`╚${line}╝\n`);
+    
+    // Show helpful commands
+    if (!hasApiKey) {
+      console.log('\x1b[33m⚠️  No API key configured for this provider!\x1b[0m');
+      console.log(`   Use: \x1b[36m/apikey ${provider} <your-key>\x1b[0m\n`);
+    } else {
+      console.log('\x1b[90mContinue with this model? Just start typing, or use:\x1b[0m');
+      console.log('\x1b[90m  /models           - List available models\x1b[0m');
+      console.log('\x1b[90m  /model <name>     - Switch to another model\x1b[0m');
+      console.log('\x1b[90m  /apikey <key>     - Update API key\x1b[0m');
+      console.log('\x1b[90m  /status           - Show this status again\x1b[0m');
+      console.log('\x1b[90m  /help             - Show all commands\x1b[0m\n');
+    }
+  } catch (error) {
+    // Silently fail if session info can't be retrieved
+    console.log('\x1b[90m💡 Tip: Use /models to see available models, /help for all commands\x1b[0m\n');
+  }
+}
+
+/**
  * Resolve startup configuration with proper priority:
  * 1. CLI args (--model, --api-key)
  * 2. ENV vars (GROK_MODEL, GROK_API_KEY)
@@ -566,10 +649,13 @@ program
       
       console.log("\x1b[33m                    Based on Grok-CLI\x1b[0m\n");
       
-      // Display startup status message
-      if (startupConfig.message) {
-        console.log(startupConfig.message);
-      }
+      // Display session status box with configuration info
+      await displaySessionStatus(
+        startupConfig.model,
+        startupConfig.provider,
+        !!startupConfig.apiKey,
+        process.cwd()
+      );
       
       console.log("\x1b[90mType your request in natural language. Ctrl+C to clear, 'exit' to quit.\x1b[0m\n");
 
