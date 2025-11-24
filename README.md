@@ -1,512 +1,485 @@
-# Grokinou
-## AKA Grok-CLI rev 1
+# 🤖 Grokinou CLI
 
-A conversational AI CLI tool powered by Grok with intelligent text editor capabilities and tool usage.
+**Grokinou AKA Grok-CLI rev 1**
 
-<img width="980" height="435" alt="Screenshot 2025-07-21 at 13 35 41" src="https://github.com/user-attachments/assets/192402e3-30a8-47df-9fc8-a084c5696e78" />
+> **Enhanced Fork** of [grok-cli](https://github.com/Vibe-House-LLC/grok-cli) with multi-provider AI support, advanced session management, and modern features.
 
-## Features
+![License](https://img.shields.io/badge/license-BSD--3--Clause%20%2B%20GPL--3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.0-green.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 
-- **🤖 Conversational AI**: Natural language interface powered by Grok-3
-- **📝 Smart File Operations**: AI automatically uses tools to view, create, and edit files
-- **⚡ Bash Integration**: Execute shell commands through natural conversation
-- **🔧 Automatic Tool Selection**: AI intelligently chooses the right tools for your requests
-- **🚀 Morph Fast Apply**: Optional high-speed code editing at 4,500+ tokens/sec with 98% accuracy
-- **🔌 MCP Tools**: Extend capabilities with Model Context Protocol servers (Linear, GitHub, etc.)
-- **💬 Interactive UI**: Beautiful terminal interface built with Ink
-- **🌍 Global Installation**: Install and use anywhere with `bun add -g @vibe-kit/grok-cli`
+---
 
-## Installation
+## 🌟 What is Grokinou?
+
+**Grokinou** is an **enhanced fork** (feature fork) of grok-cli, significantly extending the original with enterprise-grade features:
+
+- ✅ **Multi-Provider AI Support**: Grok, Claude, OpenAI, Mistral, DeepSeek
+- ✅ **Advanced Session Management**: SQLite-based with auto-restoration
+- ✅ **Real-Time Statistics**: Message counts, token usage, session previews
+- ✅ **Auto-Naming**: Sessions automatically named from first message
+- ✅ **Smart Paste Management**: Large paste handling with visual placeholders
+- ✅ **Enhanced Search**: Full conversation history search with split-screen UI
+- ✅ **Image Path Detection**: Automatic image placeholder rendering
+- ✅ **Extended Commands**: `/list_sessions`, `/search`, `/models`, and more
+
+<img width="980" height="435" alt="Grokinou Screenshot" src="https://github.com/user-attachments/assets/192402e3-30a8-47df-9fc8-a084c5696e78" />
+
+---
+
+## 📊 Grokinou vs grok-cli
+
+| Feature | grok-cli (original) | Grokinou (enhanced) |
+|---------|---------------------|---------------------|
+| **AI Providers** | Grok only | Grok, Claude, OpenAI, Mistral, DeepSeek |
+| **Session Management** | JSONL files | SQLite database with migrations |
+| **Session Restoration** | Manual | Automatic by working directory |
+| **Session Naming** | Manual | Auto-generated from first message |
+| **Statistics** | None | Real-time message count, tokens, previews |
+| **Provider Switching** | N/A | In-session with `/models` command |
+| **API Key Management** | Single key | Multi-provider with persistence |
+| **Search** | Basic | Split-screen with highlighting |
+| **Paste Handling** | Basic | Smart placeholders for large content |
+| **Image Support** | No | Automatic path detection with previews |
+| **Database** | File-based | SQLite with migrations system |
+| **Commands** | Basic | 15+ commands including `/list_sessions` |
+| **Testing** | None | 48 automated + manual tests |
+| **Documentation** | Basic | 1,665+ lines of docs + test suite |
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Bun 1.0+ (or Node.js 18+ as fallback)
-- Grok API key from X.AI
-- (Optional, Recommended) Morph API key for Fast Apply editing
 
-### Global Installation (Recommended)
-```bash
-bun add -g @vibe-kit/grok-cli
-```
+- **Node.js** ≥ 18.0.0 (or Bun 1.0+)
+- **API Key** from at least one provider:
+  - [Grok (X.AI)](https://x.ai)
+  - [OpenAI](https://platform.openai.com)
+  - [Claude (Anthropic)](https://console.anthropic.com)
+  - [Mistral](https://console.mistral.ai)
+  - [DeepSeek](https://platform.deepseek.com)
 
-Or with npm (fallback):
-```bash
-npm install -g @vibe-kit/grok-cli
-```
-
-### Local Development
-```bash
-git clone <repository>
-cd grok-cli
-bun install
-bun run build
-bun link
-```
-
-## Setup
-
-1. Get your Grok API key from [X.AI](https://x.ai)
-
-2. Set up your API key (choose one method):
-
-**Method 1: Environment Variable**
-```bash
-export GROK_API_KEY=your_api_key_here
-```
-
-**Method 2: .env File**
-```bash
-cp .env.example .env
-# Edit .env and add your API key
-```
-
-**Method 3: Command Line Flag**
-```bash
-grok --api-key your_api_key_here
-```
-
-**Method 4: User Settings File**
-Create `~/.grok/user-settings.json`:
-```json
-{
-  "apiKey": "your_api_key_here"
-}
-```
-
-3. (Optional, Recommended) Get your Morph API key from [Morph Dashboard](https://morphllm.com/dashboard/api-keys)
-
-4. Set up your Morph API key for Fast Apply editing (choose one method):
-
-**Method 1: Environment Variable**
-```bash
-export MORPH_API_KEY=your_morph_api_key_here
-```
-
-**Method 2: .env File**
-```bash
-# Add to your .env file
-MORPH_API_KEY=your_morph_api_key_here
-```
-
-### Custom Base URL (Optional)
-
-By default, the CLI uses `https://api.x.ai/v1` as the Grok API endpoint. You can configure a custom endpoint if needed (choose one method):
-
-**Method 1: Environment Variable**
-```bash
-export GROK_BASE_URL=https://your-custom-endpoint.com/v1
-```
-
-**Method 2: Command Line Flag**
-```bash
-grok --api-key your_api_key_here --base-url https://your-custom-endpoint.com/v1
-```
-
-**Method 3: User Settings File**
-Add to `~/.grok/user-settings.json`:
-```json
-{
-  "apiKey": "your_api_key_here",
-  "baseURL": "https://your-custom-endpoint.com/v1"
-}
-```
-
-## Configuration Files
-
-Grok CLI uses two types of configuration files to manage settings:
-
-### User-Level Settings (`~/.grok/user-settings.json`)
-
-This file stores **global settings** that apply across all projects. These settings rarely change and include:
-
-- **API Key**: Your Grok API key
-- **Base URL**: Custom API endpoint (if needed)
-- **Default Model**: Your preferred model (e.g., `grok-code-fast-1`)
-- **Available Models**: List of models you can use
-
-**Example:**
-```json
-{
-  "apiKey": "your_api_key_here",
-  "baseURL": "https://api.x.ai/v1",
-  "defaultModel": "grok-code-fast-1",
-  "models": [
-    "grok-code-fast-1",
-    "grok-4-latest",
-    "grok-3-latest",
-    "grok-3-fast",
-    "grok-3-mini-fast"
-  ]
-}
-```
-
-### Project-Level Settings (`.grok/settings.json`)
-
-This file stores **project-specific settings** in your current working directory. It includes:
-
-- **Current Model**: The model currently in use for this project
-- **MCP Servers**: Model Context Protocol server configurations
-
-**Example:**
-```json
-{
-  "model": "grok-3-fast",
-  "mcpServers": {
-    "linear": {
-      "name": "linear",
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["@linear/mcp-server"]
-    }
-  }
-}
-```
-
-### How It Works
-
-1. **Global Defaults**: User-level settings provide your default preferences
-2. **Project Override**: Project-level settings override defaults for specific projects
-3. **Directory-Specific**: When you change directories, project settings are loaded automatically
-4. **Fallback Logic**: Project model → User default model → System default (`grok-code-fast-1`)
-
-This means you can have different models for different projects while maintaining consistent global settings like your API key.
-
-### Using Other API Providers
-
-**Important**: Grok CLI uses **OpenAI-compatible APIs**. You can use any provider that implements the OpenAI chat completions standard.
-
-**Popular Providers**:
-- **X.AI (Grok)**: `https://api.x.ai/v1` (default)
-- **OpenAI**: `https://api.openai.com/v1`
-- **OpenRouter**: `https://openrouter.ai/api/v1`
-- **Groq**: `https://api.groq.com/openai/v1`
-
-**Example with OpenRouter**:
-```json
-{
-  "apiKey": "your_openrouter_key",
-  "baseURL": "https://openrouter.ai/api/v1",
-  "defaultModel": "anthropic/claude-3.5-sonnet",
-  "models": [
-    "anthropic/claude-3.5-sonnet",
-    "openai/gpt-4o",
-    "meta-llama/llama-3.1-70b-instruct"
-  ]
-}
-```
-
-## Usage
-
-### Interactive Mode
-
-Start the conversational AI assistant:
-```bash
-grok
-```
-
-Or specify a working directory:
-```bash
-grok -d /path/to/project
-```
-
-### Headless Mode
-
-Process a single prompt and exit (useful for scripting and automation):
-```bash
-grok --prompt "show me the package.json file"
-grok -p "create a new file called example.js with a hello world function"
-grok --prompt "run bun test and show me the results" --directory /path/to/project
-grok --prompt "complex task" --max-tool-rounds 50  # Limit tool usage for faster execution
-```
-
-This mode is particularly useful for:
-- **CI/CD pipelines**: Automate code analysis and file operations
-- **Scripting**: Integrate AI assistance into shell scripts
-- **Terminal benchmarks**: Perfect for tools like Terminal Bench that need non-interactive execution
-- **Batch processing**: Process multiple prompts programmatically
-
-### Tool Execution Control
-
-By default, Grok CLI allows up to 400 tool execution rounds to handle complex multi-step tasks. You can control this behavior:
+### Installation
 
 ```bash
-# Limit tool rounds for faster execution on simple tasks
-grok --max-tool-rounds 10 --prompt "show me the current directory"
+# Clone the repository
+git clone https://github.com/Kenchan1111/Grokinou.git
+cd Grokinou
 
-# Increase limit for very complex tasks (use with caution)
-grok --max-tool-rounds 1000 --prompt "comprehensive code refactoring"
-
-# Works with all modes
-grok --max-tool-rounds 20  # Interactive mode
-grok git commit-and-push --max-tool-rounds 30  # Git commands
-```
-
-**Use Cases**:
-- **Fast responses**: Lower limits (10-50) for simple queries
-- **Complex automation**: Higher limits (500+) for comprehensive tasks
-- **Resource control**: Prevent runaway executions in automated environments
-
-### Model Selection
-
-You can specify which AI model to use with the `--model` parameter or `GROK_MODEL` environment variable:
-
-**Method 1: Command Line Flag**
-```bash
-# Use Grok models
-grok --model grok-code-fast-1
-grok --model grok-4-latest
-grok --model grok-3-latest
-grok --model grok-3-fast
-
-# Use other models (with appropriate API endpoint)
-grok --model gemini-2.5-pro --base-url https://api-endpoint.com/v1
-grok --model claude-sonnet-4-20250514 --base-url https://api-endpoint.com/v1
-```
-
-**Method 2: Environment Variable**
-```bash
-export GROK_MODEL=grok-code-fast-1
-grok
-```
-
-**Method 3: User Settings File**
-Add to `~/.grok/user-settings.json`:
-```json
-{
-  "apiKey": "your_api_key_here",
-  "defaultModel": "grok-code-fast-1"
-}
-```
-
-**Model Priority**: `--model` flag > `GROK_MODEL` environment variable > user default model > system default (grok-code-fast-1)
-
-### Command Line Options
-
-```bash
-grok [options]
-
-Options:
-  -V, --version          output the version number
-  -d, --directory <dir>  set working directory
-  -k, --api-key <key>    Grok API key (or set GROK_API_KEY env var)
-  -u, --base-url <url>   Grok API base URL (or set GROK_BASE_URL env var)
-  -m, --model <model>    AI model to use (e.g., grok-code-fast-1, grok-4-latest) (or set GROK_MODEL env var)
-  -p, --prompt <prompt>  process a single prompt and exit (headless mode)
-  --max-tool-rounds <rounds>  maximum number of tool execution rounds (default: 400)
-  -h, --help             display help for command
-```
-
-### Custom Instructions
-
-You can provide custom instructions to tailor Grok's behavior to your project by creating a `.grok/GROK.md` file in your project directory:
-
-```bash
-mkdir .grok
-```
-
-Create `.grok/GROK.md` with your custom instructions:
-```markdown
-# Custom Instructions for Grok CLI
-
-Always use TypeScript for any new code files.
-When creating React components, use functional components with hooks.
-Prefer const assertions and explicit typing over inference where it improves clarity.
-Always add JSDoc comments for public functions and interfaces.
-Follow the existing code style and patterns in this project.
-```
-
-Grok will automatically load and follow these instructions when working in your project directory. The custom instructions are added to Grok's system prompt and take priority over default behavior.
-
-## Morph Fast Apply (Optional)
-
-Grok CLI supports Morph's Fast Apply model for high-speed code editing at **4,500+ tokens/sec with 98% accuracy**. This is an optional feature that provides lightning-fast file editing capabilities.
-
-**Setup**: Configure your Morph API key following the [setup instructions](#setup) above.
-
-### How It Works
-
-When `MORPH_API_KEY` is configured:
-- **`edit_file` tool becomes available** alongside the standard `str_replace_editor`
-- **Optimized for complex edits**: Use for multi-line changes, refactoring, and large modifications
-- **Intelligent editing**: Uses abbreviated edit format with `// ... existing code ...` comments
-- **Fallback support**: Standard tools remain available if Morph is unavailable
-
-**When to use each tool:**
-- **`edit_file`** (Morph): Complex edits, refactoring, multi-line changes
-- **`str_replace_editor`**: Simple text replacements, single-line edits
-
-### Example Usage
-
-With Morph Fast Apply configured, you can request complex code changes:
-
-```bash
-grok --prompt "refactor this function to use async/await and add error handling"
-grok -p "convert this class to TypeScript and add proper type annotations"
-```
-
-The AI will automatically choose between `edit_file` (Morph) for complex changes or `str_replace_editor` for simple replacements.
-
-## MCP Tools
-
-Grok CLI supports MCP (Model Context Protocol) servers, allowing you to extend the AI assistant with additional tools and capabilities.
-
-### Adding MCP Tools
-
-#### Add a custom MCP server:
-```bash
-# Add an stdio-based MCP server
-grok mcp add my-server --transport stdio --command "bun" --args server.js
-
-# Add an HTTP-based MCP server
-grok mcp add my-server --transport http --url "http://localhost:3000"
-
-# Add with environment variables
-grok mcp add my-server --transport stdio --command "python" --args "-m" "my_mcp_server" --env "API_KEY=your_key"
-```
-
-#### Add from JSON configuration:
-```bash
-grok mcp add-json my-server '{"command": "bun", "args": ["server.js"], "env": {"API_KEY": "your_key"}}'
-```
-
-### Linear Integration Example
-
-To add Linear MCP tools for project management:
-
-```bash
-# Add Linear MCP server
-grok mcp add linear --transport sse --url "https://mcp.linear.app/sse"
-```
-
-This enables Linear tools like:
-- Create and manage Linear issues
-- Search and filter issues
-- Update issue status and assignees
-- Access team and project information
-
-### Managing MCP Servers
-
-```bash
-# List all configured servers
-grok mcp list
-
-# Test server connection
-grok mcp test server-name
-
-# Remove a server
-grok mcp remove server-name
-```
-
-### Available Transport Types
-
-- **stdio**: Run MCP server as a subprocess (most common)
-- **http**: Connect to HTTP-based MCP server
-- **sse**: Connect via Server-Sent Events
-
-## Development
-
-```bash
 # Install dependencies
-bun install
+npm install
 
-# Development mode
-bun run dev
+# Build the project
+npm run build
 
-# Build project
-bun run build
+# Link globally
+npm link
 
-# Run linter
-bun run lint
-
-# Type check
-bun run typecheck
+# Verify installation
+which grokinou-cli  # Should return a path
+grokinou-cli --version
 ```
 
-## Architecture
+### Quick Setup
 
-- **Agent**: Core command processing and execution logic
-- **Tools**: Text editor and bash tool implementations
-- **UI**: Ink-based terminal interface components
-- **Types**: TypeScript definitions for the entire system
+```bash
+# Launch Grokinou
+grokinou-cli
 
-## Advanced Configuration (TOML)
+# Set your API key (in-session)
+/apikey openai sk-your-openai-key-here
 
-In addition to JSON settings, Grok CLI supports a minimal TOML config at `~/.grok/config.toml` for provider/model selection and feature flags. CLI overrides via `--config key=value` take precedence.
-
-Example `~/.grok/config.toml`:
-
-```
-model = "grok-code-fast-1"
-model_provider = "xai"
-
-[model_providers.xai]
-base_url = "https://api.x.ai/v1"
-env_key = "GROK_API_KEY"
-wire_api = "chat"
-request_max_retries = 4
-stream_idle_timeout_ms = 300000
-
-[model_providers.openai]
-base_url = "https://api.openai.com/v1"
-env_key = "OPENAI_API_KEY"
-wire_api = "chat"
+# Start chatting
+Hello, Grokinou!
 ```
 
-Override at runtime:
+---
 
-```
-grok -c model_provider=openai -c model=gpt-4o-mini
-```
+## 🎯 Usage
 
-## Headless JSONL Exec
+### Launch Commands
 
-Use `grok exec` for non-interactive automation. Each event is printed as a JSON object per line (JSONL):
+```bash
+# Primary command
+grokinou-cli
 
-```
-grok exec "Summarize README.md"
-echo "List TypeScript files" | grok exec
-grok exec -c model_provider=openai -c model=gpt-4o-mini --max-tool-rounds 50 "Refactor src/index.ts"
-```
+# Legacy alias (still supported)
+grok
 
-## Multi-file Edits with apply_patch
+# With API key
+grokinou-cli --api-key your-key-here
 
-The `apply_patch` tool applies git-style unified diffs (`---/+++` and `@@` hunks). File creation and deletion via `/dev/null` are supported. A confirmation preview is shown before writing.
-
-Example payload (from the assistant):
-
-```
-Tool: apply_patch
-{
-  "patch": """
---- a/src/app.ts
-+++ b/src/app.ts
-@@ -1,3 +1,3 @@
--console.log('Hi');
-+console.log('Hello');
-"""
-}
+# With custom model
+grokinou-cli --model gpt-4o
 ```
 
-Use `dry_run: true` to validate without writing.
+### In-Session Commands
 
-## License
+| Command | Description |
+|---------|-------------|
+| `/help` | Show all available commands |
+| `/status` | Show current model, provider, API key |
+| `/models` | List all available models (interactive) |
+| `/models <name>` | Switch to specific model |
+| `/model-default <name>` | Set global default model |
+| `/apikey <provider> <key>` | Set API key for provider |
+| `/list_sessions` | List all sessions in current directory |
+| `/search <query>` | Search conversation history (split-screen UI) |
+| `/clear` | Clear chat history (visual only) |
+| `/clear-session` | Clear in-memory session only |
+| `/clear-disk-session` | Delete persisted session and clear memory |
+| `/commit-and-push` | AI-generated commit + push to remote |
+| `/exit` | Exit Grokinou |
 
-MIT
+---
+
+## 🔑 API Key Management
+
+### Multi-Provider Support
+
+Grokinou supports **5 AI providers** with automatic key management:
+
+```bash
+# Set keys for all providers (in-session)
+/apikey grok xai-your-key-here
+/apikey openai sk-proj-your-key-here
+/apikey claude sk-ant-your-key-here
+/apikey mistral your-mistral-key-here
+/apikey deepseek your-deepseek-key-here
+```
+
+Keys are saved to `~/.grok/user-settings.json` and automatically loaded on session restart.
+
+### Configuration Priority
+
+Grokinou resolves configuration in this order:
+
+1. **CLI Arguments** (`--api-key`, `--model`)
+2. **Environment Variables** (`GROK_API_KEY`, `GROK_BASE_URL`)
+3. **Active SQLite Session** (last used provider/model in directory)
+4. **Project Settings** (`.grok/settings.json` in working directory)
+5. **User Settings** (`~/.grok/user-settings.json`)
+6. **System Defaults** (grok-beta)
+
+---
+
+## 💾 Session Management
+
+### Automatic Session Management
+
+Grokinou automatically manages sessions **per working directory** using SQLite:
+
+- ✅ **Auto-Creation**: First message creates a session
+- ✅ **Auto-Naming**: Session named from first user message
+- ✅ **Auto-Restoration**: Reopening directory restores last session
+- ✅ **Real-Time Stats**: Message count, tokens, previews updated live
+- ✅ **Provider Persistence**: Last used provider/model remembered
+
+```bash
+# Example: Create a session
+mkdir /tmp/my-project && cd /tmp/my-project
+grokinou-cli
+# Type: "Help me build a React app"
+# Session name: "Help me build a React app"
+
+# Exit and reopen
+# Ctrl+C x2
+grokinou-cli
+# History automatically restored! ✅
+```
+
+### List Sessions
+
+```bash
+# In-session
+/list_sessions
+
+# Output:
+📚 Sessions in Current Directory
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 Working Directory: /tmp/my-project
+📊 Total Sessions: 1
+
+🟢 Session #1
+   📝 Name: Help me build a React app
+   🤖 Provider: openai
+   📱 Model: gpt-4o
+   💬 Messages: 15
+   🎯 Tokens: 3,245
+   🕐 Last Activity: 5m ago
+   📅 Age: 2 days
+   💭 First Message: "Help me build a React app"
+```
+
+### Database Location
+
+All sessions are stored in `~/.grok/conversations.db` (SQLite):
+
+```bash
+# View sessions
+sqlite3 ~/.grok/conversations.db "SELECT id, session_name, message_count FROM sessions LIMIT 5;"
+
+# View migrations
+sqlite3 ~/.grok/conversations.db "SELECT * FROM schema_migrations;"
+```
+
+---
+
+## 🧪 Features
+
+### 1. Multi-Provider AI
+
+Switch between providers seamlessly:
+
+```bash
+/models
+# Interactive list of all models from all providers
+
+/models gpt-4o
+# ✅ Switched to OpenAI GPT-4o
+
+/models claude-sonnet-4.5
+# ✅ Switched to Claude Sonnet 4.5
+
+/models mistral-large-latest
+# ✅ Switched to Mistral Large
+
+/models deepseek-chat
+# ✅ Switched to DeepSeek Chat
+```
+
+**Supported Providers:**
+
+| Provider | Base URL | Models |
+|----------|----------|--------|
+| **Grok** | `https://api.x.ai/v1` | grok-beta, grok-vision-beta |
+| **OpenAI** | `https://api.openai.com/v1` | gpt-4o, gpt-4-turbo, gpt-3.5-turbo, o1-preview, o1-mini |
+| **Claude** | `https://api.anthropic.com/v1` | claude-sonnet-4.5, claude-3-5-sonnet, claude-3-opus |
+| **Mistral** | `https://api.mistral.ai/v1` | mistral-large-latest, codestral-latest |
+| **DeepSeek** | `https://api.deepseek.com/v1` | deepseek-chat, deepseek-coder |
+
+### 2. Smart Paste Management
+
+Handles large pastes intelligently:
+
+- **Small paste** (< 500 chars): Displayed inline
+- **Large paste** (> 500 chars): `[Pasted 2,000 chars]` placeholder
+- **Very large paste** (> 100k chars): Single placeholder, no overflow
+
+```bash
+# Example
+grokinou-cli
+# Paste 2000 chars
+# Displays: [Pasted 2,000 chars]
+# Full content sent to AI on submission ✅
+```
+
+### 3. Image Path Detection
+
+Automatically detects image paths and creates visual placeholders:
+
+```bash
+# Paste: /home/user/screenshot.png
+# Displays: [screenshot.png 1920x1080]  (in magenta)
+# Full path sent to AI ✅
+```
+
+### 4. Enhanced Search
+
+Full conversation search with split-screen UI:
+
+```bash
+/search React component
+```
+
+- ✅ Split-screen: conversation left, results right
+- ✅ Pattern highlighting
+- ✅ Navigate with ↑↓
+- ✅ Expand messages for full view
+- ✅ Copy to clipboard with Ctrl+S
+
+### 5. Input Enhancements
+
+**Keyboard Shortcuts:**
+
+| Shortcut | Action |
+|----------|--------|
+| **↑ / ↓** | Navigate command history |
+| **Ctrl+A** | Move to line start |
+| **Ctrl+E** | Move to line end |
+| **Ctrl+W** | Delete word backward |
+| **Ctrl+K** | Delete to line end |
+| **Ctrl+U** | Delete to line start |
+| **Ctrl+← / →** | Move by word |
+| **Ctrl+C** | Clear input (or exit on 2nd press) |
+
+---
+
+## 📚 Documentation
+
+- **[TESTING.md](./TESTING.md)** - Full testing guide (926 lines, 48 tests)
+- **[TESTING_QUICK.md](./TESTING_QUICK.md)** - Quick testing (5 min)
+- **[TESTS_SUMMARY.md](./TESTS_SUMMARY.md)** - Visual test summary (3 min)
+- **[test/README.md](./test/README.md)** - Test scripts documentation
+
+---
+
+## 🧪 Testing
+
+### Quick Test (3 minutes)
+
+```bash
+cd Grokinou
+npm run build && npm link
+node test/test-list-sessions.js
+./test/test-auto-stats.sh
+grokinou-cli
+# Hello
+# /list_sessions
+# /status
+# Ctrl+C x2
+```
+
+### Full Test Suite
+
+```bash
+# See TESTING.md for 48 detailed tests
+less TESTING.md
+
+# Run automated tests
+node test/test-list-sessions.js
+./test/test-auto-stats.sh
+sqlite3 ~/.grok/conversations.db "PRAGMA integrity_check;"
+```
+
+---
+
+## 🛠️ Development
+
+### Build
+
+```bash
+npm run build         # TypeScript compilation
+npm run build:bun     # Build with Bun
+```
+
+### Development Mode
+
+```bash
+npm run dev           # Run with tsx (Node)
+npm run dev:bun       # Run with Bun
+```
+
+### Linting
+
+```bash
+npm run lint          # ESLint
+npm run typecheck     # TypeScript check only
+```
+
+---
+
+## 📦 Project Structure
+
+```
+Grokinou/
+├── src/
+│   ├── agent/          # AI agent logic
+│   ├── commands/       # Command handlers
+│   ├── db/             # Database (SQLite + migrations)
+│   ├── grok/           # API clients
+│   ├── hooks/          # React hooks for UI
+│   ├── tools/          # File editing tools
+│   ├── ui/             # Ink components
+│   ├── utils/          # Utilities (session, config, paste, etc.)
+│   └── index.ts        # Entry point
+├── test/               # Test suite
+│   ├── README.md
+│   ├── test-list-sessions.js
+│   ├── test-auto-stats.sh
+│   └── test-list-sessions-ui.sh
+├── dist/               # Compiled output
+├── TESTING.md          # Full testing guide
+├── TESTING_QUICK.md    # Quick test guide
+├── TESTS_SUMMARY.md    # Visual test summary
+├── LICENSE             # BSD-3-Clause + GPL-3.0
+└── README.md           # This file
+```
+
+---
+
+## 🔄 Migration from grok-cli
+
+If you're migrating from the original grok-cli:
+
+1. **Sessions**: Old JSONL files won't be imported. Start fresh with SQLite.
+2. **Command**: Use `grokinou-cli` (or `grok` alias still works).
+3. **Config**: User settings moved to `~/.grok/user-settings.json`.
+4. **API Keys**: Set keys for each provider with `/apikey <provider> <key>`.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+### Reporting Bugs
+
+Found a bug? [Open an issue](https://github.com/Kenchan1111/Grokinou/issues) with:
+- Grokinou version (`grokinou-cli --version`)
+- Node version (`node --version`)
+- Steps to reproduce
+- Expected vs actual behavior
+
+---
+
+## 📜 License
+
+Dual-licensed under:
+
+- **BSD-3-Clause** (original grok-cli code)
+- **GPL-3.0** (Grokinou enhancements)
+
+See [LICENSE](./LICENSE) for details.
 
 ---
 
 ## 👥 Authors & Contributors
 
-**Grokinou (Grok-CLI rev 1)** was created through collaboration between:
+- **Zack** - Project lead, architecture, features
+- **Claude (Anthropic)** - AI development assistant
+- **ChatGPT (OpenAI)** - AI development assistant
+- **Grok (X.AI)** - AI development assistant
 
-- **Zack** - Project Lead & Architecture
-- **Claude** (Anthropic) - Development & Implementation
-- **ChatGPT** (OpenAI) - Development & Problem Solving
-- **Grok** (xAI) - Development & Testing
-
-This project represents a unique collaboration between human creativity and multiple AI systems working together to build a multi-provider AI CLI tool.
+Based on [grok-cli](https://github.com/Vibe-House-LLC/grok-cli) by Vibe House LLC.
 
 ---
 
-## 📄 License
+## 🔗 Links
 
-Dual licensed under BSD-3-Clause and GPL-3.0. See [LICENSE](LICENSE) and [LICENSE-GPL3](LICENSE-GPL3) for details.
+- **Repository**: https://github.com/Kenchan1111/Grokinou
+- **Issues**: https://github.com/Kenchan1111/Grokinou/issues
+- **Original grok-cli**: https://github.com/Vibe-House-LLC/grok-cli
+
+---
+
+## 🎯 Terminology
+
+**In Linux/Dev jargon, Grokinou is:**
+
+- **Enhanced Fork** - A fork with substantial improvements
+- **Feature Fork** - Fork focused on adding major features
+- **Distribution** - Like Ubuntu to Debian, or Neovim to Vim
+
+Grokinou extends grok-cli just like:
+- Ubuntu extends Debian
+- Pop!_OS extends Ubuntu
+- Neovim extends Vim
+- MariaDB extends MySQL
+
+---
+
+**⭐ If Grokinou is useful, consider starring the repo!**
+
+*Built with ❤️ using Ink, SQLite, and TypeScript*

@@ -1,7 +1,7 @@
 {
-  "name": "@vibe-kit/grok-cli",
-  "version": "0.0.33",
-  "description": "An open-source AI agent that brings the power of Grok directly into your terminal.",
+  "name": "@vibe-kit/grokinou-cli",
+  "version": "0.1.0",
+  "description": "Grokinou - Enhanced fork of grok-cli with multi-provider AI support (Grok, Claude, OpenAI, Mistral, DeepSeek), advanced session management, and modern features",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -11,6 +11,7 @@
     }
   },
   "bin": {
+    "grokinou-cli": "dist/index.js",
     "grok": "dist/index.js"
   },
   "scripts": {
@@ -29,10 +30,25 @@
     "agent",
     "text-editor",
     "grok",
-    "ai"
+    "grokinou",
+    "ai",
+    "multi-provider",
+    "openai",
+    "claude",
+    "mistral",
+    "deepseek",
+    "session-management"
   ],
-  "author": "Your Name",
-  "license": "MIT",
+  "author": "Zack, Claude, ChatGPT, Grok",
+  "license": "BSD-3-Clause AND GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kenchan1111/Grokinou.git"
+  },
+  "homepage": "https://github.com/Kenchan1111/Grokinou",
+  "bugs": {
+    "url": "https://github.com/Kenchan1111/Grokinou/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
     "@types/better-sqlite3": "^7.6.13",
