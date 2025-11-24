@@ -678,13 +678,22 @@ Current working directory: ${process.cwd()}`,
             };
 
             // Add tool result with proper format (needed for AI context)
-            this.messages.push({
+            // ✅ For Mistral: include "name" field (required by their API)
+            const toolMessage: any = {
               role: "tool",
               content: result.success
                 ? result.output || "Success"
                 : result.error || "Error",
               tool_call_id: toolCall.id,
-            });
+            };
+            
+            // Add "name" field for Mistral (required by their API spec)
+            const currentProvider = providerManager.detectProvider(this.grokClient.getCurrentModel());
+            if (currentProvider === 'mistral') {
+              toolMessage.name = toolCall.function.name;
+            }
+            
+            this.messages.push(toolMessage);
           }
 
           // Update token count after processing all tool calls to include tool results

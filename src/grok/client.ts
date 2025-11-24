@@ -109,29 +109,21 @@ export class GrokClient {
     const provider = this.getProvider();
     
     if (provider === 'mistral') {
-      // Mistral format: Minimal properties (all as strings)
-      return tools.map(tool => {
-        // Convert all properties to string type (Mistral might not support number/boolean)
-        const cleanProperties: any = {};
-        for (const [key, value] of Object.entries(tool.function.parameters.properties)) {
-          cleanProperties[key] = {
-            type: "string", // Force string type for all properties
-          };
-        }
-        
-        return {
-          type: "function",
-          function: {
-            name: tool.function.name,
-            description: tool.function.description,
-            parameters: {
-              type: "object",
-              properties: cleanProperties,
-              required: tool.function.parameters.required || [],
-            }
+      // ✅ Mistral format: Standard OpenAI-compatible with full type support
+      // According to https://docs.mistral.ai/agents/tools/function_calling
+      // Mistral supports: string, number, boolean, object, array
+      return tools.map(tool => ({
+        type: "function",
+        function: {
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: {
+            type: "object",
+            properties: tool.function.parameters.properties,  // ✅ Keep original types
+            required: tool.function.parameters.required || [],
           }
-        };
-      });
+        }
+      }));
     }
     
     if (provider === 'claude') {
