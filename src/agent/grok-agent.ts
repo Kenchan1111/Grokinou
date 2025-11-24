@@ -108,16 +108,23 @@ export class GrokAgent extends EventEmitter {
     // Initialize MCP servers if configured
     this.initializeMCP();
 
-    // Load custom instructions
+    // Initialize with system message (will be updated on model switch)
+    this.updateSystemMessage();
+  }
+
+  /**
+   * Update system message with current model name
+   * Called during initialization and when switching models
+   */
+  private updateSystemMessage(): void {
     const customInstructions = loadCustomInstructions();
     const customInstructionsSection = customInstructions
       ? `\n\nCUSTOM INSTRUCTIONS:\n${customInstructions}\n\nThe above custom instructions should be followed alongside the standard instructions below.`
       : "";
 
-    // Initialize with system message (dynamic model name)
     const currentModel = this.grokClient.getCurrentModel();
-    this.messages.push({
-      role: "system",
+    const systemMessage = {
+      role: "system" as const,
       content: `You are ${currentModel}, a WORLD CLASS AI COLLABORATOR that helps with file editing, coding tasks, and system operations.${customInstructionsSection}
 
 You have access to these tools:
@@ -179,7 +186,14 @@ IMPORTANT RESPONSE GUIDELINES:
 - If a tool execution completes the user's request, confirm and give a complete explanation of what have been done, then summarize the findings
 
 Current working directory: ${process.cwd()}`,
-    });
+    };
+
+    // Replace existing system message or add new one
+    if (this.messages.length > 0 && this.messages[0].role === "system") {
+      this.messages[0] = systemMessage;
+    } else {
+      this.messages.unshift(systemMessage);
+    }
   }
 
   private async persist(entry: ChatEntry) {
@@ -885,6 +899,10 @@ Current working directory: ${process.cwd()}`,
     // Update token counter
     this.tokenCounter.dispose();
     this.tokenCounter = createTokenCounter(model);
+    
+    // Update system message with new model name
+    this.updateSystemMessage();
+    console.log(`✅ System message updated for model=${model}`);
     
     // Update session manager
     const provider = providerManager.detectProvider(model) || 'grok';
