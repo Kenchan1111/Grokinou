@@ -191,13 +191,9 @@ export class GrokClient {
         
         // ✅ Handle assistant messages
         if (msg.role === 'assistant') {
-          // Fix tool_calls if present
+          // Strip tool_calls if present (Mistral doesn't need them in history)
           if ((msg as any).tool_calls) {
-            const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
-              id: tc.id,
-              type: tc.type || 'function',
-              function: tc.function,
-            }));
+            debugLog.log(`🔄 Mistral: Stripping tool_calls from assistant message`);
             
             // If last was also assistant, inject separator user message
             if (lastRole === 'assistant') {
@@ -208,9 +204,10 @@ export class GrokClient {
               });
             }
             
+            // Push assistant WITHOUT tool_calls (was the working solution from bc275d3)
             cleaned.push({
-              ...msg,
-              tool_calls: toolCalls,
+              role: 'assistant',
+              content: msg.content || '[Using tools...]',
             });
             lastRole = 'assistant';
             continue;
@@ -237,30 +234,17 @@ export class GrokClient {
           continue;
         }
         
-        // ✅ Handle tool messages
+        // ✅ Handle tool messages - Convert ALL to user messages for Mistral
         if (msg.role === 'tool') {
-          // Find previous assistant message with tool_calls
-          let prevAssistant: GrokMessage | null = null;
-          for (let j = cleaned.length - 1; j >= 0; j--) {
-            if (cleaned[j].role === 'assistant') {
-              prevAssistant = cleaned[j];
-              break;
-            }
-          }
-          
-          // If tool has valid parent: keep as-is
-          if (prevAssistant && (prevAssistant as any).tool_calls) {
-            cleaned.push(msg);
-            lastRole = 'tool';
-          } else {
-            // Orphaned tool: convert to user to preserve content
-            debugLog.log(`⚠️  Mistral: Converting orphaned tool message to user`);
-            cleaned.push({
-              role: 'user',
-              content: `[Tool Result]\n${msg.content}`,
-            });
-            lastRole = 'user';
-          }
+          // ✅ Mistral doesn't support role:"tool" even with 'name' field
+          // Convert ALL tool messages to user messages (not just orphans!)
+          // This was the working solution from commit bc275d3 (22 Nov)
+          debugLog.log(`🔄 Mistral: Converting tool message to user (content length: ${msg.content.length})`);
+          cleaned.push({
+            role: 'user',
+            content: `[Tool Result]\n${msg.content}`,
+          });
+          lastRole = 'user';
           continue;
         }
         
