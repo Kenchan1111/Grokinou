@@ -93,71 +93,35 @@ StreamingDisplay.displayName = 'StreamingDisplay';
 /**
  * Create session status message to display after history is loaded
  */
-async function createSessionStatusMessage(sessionInfo: {
-  model: string;
-  provider: string;
-  hasApiKey: boolean;
-  workdir: string;
-}): Promise<ChatEntry> {
+function createSessionStatusMessage(
+  sessionInfo: {
+    model: string;
+    provider: string;
+    hasApiKey: boolean;
+    workdir: string;
+  },
+  historyLength: number
+): ChatEntry {
   try {
-    const session = sessionManager.findLastSessionByWorkdir(sessionInfo.workdir);
-    
     // Format directory (shorten home path)
-    const homeDir = require('os').homedir();
+    const os = require('os');
+    const homeDir = os.homedir();
     const displayDir = sessionInfo.workdir.replace(homeDir, '~');
-    
-    // Format last activity
-    let lastActivityStr = 'New session';
-    let messageCountStr = '0';
-    let sessionNameStr = '';
-    
-    if (session) {
-      messageCountStr = String(session.message_count || 0);
-      
-      if (session.session_name) {
-        sessionNameStr = `\n║  📝 Session Name: ${session.session_name}`;
-      }
-      
-      if (session.last_activity) {
-        const lastActivity = new Date(session.last_activity);
-        const now = new Date();
-        const diffMs = now.getTime() - lastActivity.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        
-        if (diffDays > 0) {
-          lastActivityStr = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        } else if (diffHours > 0) {
-          lastActivityStr = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        } else if (diffMins > 0) {
-          lastActivityStr = `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-        } else {
-          lastActivityStr = 'Just now';
-        }
-      }
-    }
     
     // API key status
     const apiKeyStatus = sessionInfo.hasApiKey ? '✅ Configured' : '❌ Missing';
     
-    // Build status box
-    const boxWidth = 60;
-    const line = '═'.repeat(boxWidth - 2);
+    // Build status box with fixed width for better alignment
+    const line = '═'.repeat(58);
     
     let content = `╔${line}╗\n`;
-    content += `║  📋 SESSION STATUS${' '.repeat(boxWidth - 20)}║\n`;
+    content += `║  📋 SESSION STATUS                                        ║\n`;
     content += `╠${line}╣\n`;
-    content += `║  📂 Directory: ${displayDir}${' '.repeat(Math.max(0, boxWidth - 16 - displayDir.length))}║\n`;
-    content += `║  🤖 Model: ${sessionInfo.model} (${sessionInfo.provider})${' '.repeat(Math.max(0, boxWidth - 14 - sessionInfo.model.length - sessionInfo.provider.length))}║\n`;
-    content += `║  🔑 API Key: ${apiKeyStatus}${' '.repeat(Math.max(0, boxWidth - 14 - apiKeyStatus.length))}║\n`;
-    content += `║  💬 Messages: ${messageCountStr}${' '.repeat(Math.max(0, boxWidth - 16 - messageCountStr.length))}║\n`;
-    content += `║  📅 Last activity: ${lastActivityStr}${' '.repeat(Math.max(0, boxWidth - 21 - lastActivityStr.length))}║`;
-    if (sessionNameStr) {
-      content += sessionNameStr + ' '.repeat(Math.max(0, boxWidth - 20 - (session?.session_name?.length || 0))) + '║\n';
-    } else {
-      content += '\n';
-    }
+    content += `║  📂 Directory: ${displayDir.padEnd(43)}║\n`;
+    content += `║  🤖 Model: ${sessionInfo.model.padEnd(47)}║\n`;
+    content += `║  📝 Provider: ${sessionInfo.provider.padEnd(44)}║\n`;
+    content += `║  🔑 API Key: ${apiKeyStatus.padEnd(45)}║\n`;
+    content += `║  💬 Messages in history: ${String(historyLength).padEnd(33)}║\n`;
     content += `╚${line}╝\n\n`;
     
     // Show helpful commands
@@ -169,7 +133,7 @@ async function createSessionStatusMessage(sessionInfo: {
       content += '  /models           - List available models\n';
       content += '  /model <name>     - Switch to another model\n';
       content += '  /apikey <key>     - Update API key\n';
-      content += '  /status           - Show this status again\n';
+      content += '  /status           - Show full status (detailed)\n';
       content += '  /help             - Show all commands\n';
     }
     
@@ -179,10 +143,12 @@ async function createSessionStatusMessage(sessionInfo: {
       timestamp: new Date(),
     };
   } catch (error) {
+    console.error('Error creating session status message:', error);
     // Fallback basic message
     return {
       type: 'assistant',
       content: `💡 Session loaded with ${sessionInfo.model} (${sessionInfo.provider})\n` +
+               `📊 ${historyLength} messages in history\n\n` +
                `Use /help for available commands, /status to see full status.`,
       timestamp: new Date(),
     };
@@ -377,8 +343,15 @@ function ChatInterfaceWithAgent({
   }, []);
 
   // Input is handled by InputController to avoid rerendering parent on each keystroke
+  
+  // Track if status was already added (to avoid duplicates in React strict mode)
+  const statusAddedRef = useRef(false);
 
   useEffect(() => {
+    // Avoid duplicate execution in React strict mode
+    if (statusAddedRef.current) return;
+    statusAddedRef.current = true;
+    
     (async () => {
       try {
         const manager = getSettingsManager();
@@ -387,31 +360,32 @@ function ChatInterfaceWithAgent({
 
         if (persistSession !== false && autoRestoreSession !== false) {
           const entries = await loadChatHistory();
+          
+          // Always try to add status message if sessionInfo provided
+          let statusMessage: ChatEntry | null = null;
+          if (sessionInfo) {
+            try {
+              statusMessage = createSessionStatusMessage(sessionInfo, entries.length);
+            } catch (error) {
+              console.error('Failed to create status message:', error);
+            }
+          }
+          
           if (entries.length > 0) {
             // Historique JSONL → STATIQUE (messages terminés)
-            setCommittedHistory(entries);
-            setChatHistory(entries);
+            const historyToSet = statusMessage ? [...entries, statusMessage] : entries;
+            setCommittedHistory(historyToSet);
+            setChatHistory(historyToSet);
             
             // Restore agent context
             agent.restoreFromHistory(entries);
-            
-            // ✅ Add session status message after history is loaded
-            if (sessionInfo) {
-              const statusMessage = await createSessionStatusMessage(sessionInfo);
-              setChatHistory(prev => [...prev, statusMessage]);
-              setCommittedHistory(prev => [...prev, statusMessage]);
-            }
           } else {
-            setCommittedHistory([]);
-            setChatHistory([]);
-            
-            // ✅ Add session status message for new sessions too
-            if (sessionInfo) {
-              const statusMessage = await createSessionStatusMessage(sessionInfo);
-              setChatHistory([statusMessage]);
-              setCommittedHistory([statusMessage]);
-            }
+            // New session
+            const historyToSet = statusMessage ? [statusMessage] : [];
+            setCommittedHistory(historyToSet);
+            setChatHistory(historyToSet);
           }
+          
           // Restore model state if saved (optional)
           const state = await loadState();
           if (state?.model) {
@@ -421,11 +395,12 @@ function ChatInterfaceWithAgent({
           setCommittedHistory([]);
           setChatHistory([]);
         }
-      } catch {
+      } catch (error) {
+        console.error('Session load error:', error);
         setChatHistory([]);
       }
     })();
-  }, []);
+  }, [agent, sessionInfo]);
 
   // Le logo est maintenant affiché AVANT le démarrage d'Ink dans index.ts
   // Plus besoin de le générer ici !
