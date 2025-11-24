@@ -12,7 +12,7 @@
   },
   "bin": {
     "grokinou-cli": "dist/index.js",
-    "grok": "dist/index.js"
+    "grokinou": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

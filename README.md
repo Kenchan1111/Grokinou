@@ -101,14 +101,16 @@ Hello, Grokinou!
 ### Launch Commands
 
 ```bash
-# Primary command
+# Primary command (explicit CLI name)
 grokinou-cli
 
-# Legacy alias (still supported)
-grok
+# Short alias (convenience)
+grokinou
 
 # With API key
 grokinou-cli --api-key your-key-here
+# or
+grokinou --api-key your-key-here
 
 # With custom model
 grokinou-cli --model gpt-4o
@@ -414,9 +416,16 @@ Grokinou/
 If you're migrating from the original grok-cli:
 
 1. **Sessions**: Old JSONL files won't be imported. Start fresh with SQLite.
-2. **Command**: Use `grokinou-cli` (or `grok` alias still works).
+2. **Command**: Use `grokinou-cli` or `grokinou` (no more `grok` command).
 3. **Config**: User settings moved to `~/.grok/user-settings.json`.
 4. **API Keys**: Set keys for each provider with `/apikey <provider> <key>`.
+
+**Why `grokinou-cli` instead of `grok`?**
+- ✅ **CLI-first branding**: Emphasizes it's a command-line tool
+- ✅ **LLM-agnostic**: Not tied to Grok AI specifically
+- ✅ **Multi-provider**: Supports Grok, Claude, OpenAI, Mistral, DeepSeek
+- ✅ **Clear identity**: Distinct from original grok-cli
+- ✅ **Short alias**: Use `grokinou` for convenience
 
 ---
 
