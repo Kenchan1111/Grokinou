@@ -179,7 +179,27 @@ export class GrokClient {
       });
     }
     
-    // Other providers: return as-is
+    // For OpenAI, Grok, DeepSeek: Ensure tool_calls have required 'type' field
+    if (provider === 'openai' || provider === 'grok' || provider === 'deepseek') {
+      return messages.map(msg => {
+        // Fix assistant messages with tool_calls (add missing 'type' field)
+        if (msg.role === 'assistant' && (msg as any).tool_calls) {
+          const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
+            id: tc.id,
+            type: tc.type || 'function', // ✅ Add missing 'type' field
+            function: tc.function,
+          }));
+          
+          return {
+            ...msg,
+            tool_calls: toolCalls,
+          };
+        }
+        return msg;
+      });
+    }
+    
+    // Other providers (Claude): return as-is
     return messages;
   }
   
