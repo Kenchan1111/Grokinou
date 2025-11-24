@@ -157,6 +157,26 @@ export class GrokClient {
   private cleanMessagesForProvider(messages: GrokMessage[]): GrokMessage[] {
     const provider = this.getProvider();
     
+    // ✅ FIRST: Remove invalid assistant messages (empty content + no tool_calls)
+    // This causes 400 errors with all providers (OpenAI, Mistral, etc.)
+    messages = messages.filter(msg => {
+      if (msg.role === 'assistant') {
+        // Check if has content (handle both string and array types)
+        const hasContent = msg.content && 
+          (typeof msg.content === 'string' 
+            ? msg.content.trim().length > 0 
+            : msg.content.length > 0);
+        const hasToolCalls = (msg as any).tool_calls && (msg as any).tool_calls.length > 0;
+        
+        // Keep only if has content OR tool_calls
+        if (!hasContent && !hasToolCalls) {
+          debugLog.log(`🗑️  Removing invalid assistant message (no content, no tool_calls)`);
+          return false;
+        }
+      }
+      return true;
+    });
+    
     if (provider === 'mistral') {
       // ✅ NEW: Mistral DOES support tool calls (OpenAI-compatible format)
       // According to https://docs.mistral.ai/agents/tools/function_calling
