@@ -191,12 +191,17 @@ Current working directory: ${process.cwd()}`,
 
     // ✅ PURGE ALL old system messages (critical when switching models)
     // Remove all existing system messages to avoid confusion
+    const oldSystemCount = this.messages.filter(m => m.role === 'system').length;
+    debugLog.log(`🗑️  BEFORE purge: ${oldSystemCount} system message(s), total: ${this.messages.length} messages`);
+    
     this.messages = this.messages.filter(m => m.role !== 'system');
+    debugLog.log(`🗑️  AFTER purge: ${this.messages.length} messages remaining (no system)`);
     
     // Add the new system message at the beginning
     this.messages.unshift(systemMessage);
     
-    debugLog.log(`✅ System message purged and updated: ${this.messages.filter(m => m.role === 'system').length} system message(s) in context`);
+    const newSystemCount = this.messages.filter(m => m.role === 'system').length;
+    debugLog.log(`✅ System message added: model="${currentModel}", now ${newSystemCount} system message(s), total: ${this.messages.length} messages`);
   }
 
   private async persist(entry: ChatEntry) {
