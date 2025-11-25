@@ -183,6 +183,17 @@ export class ProviderManager {
   }
   
   /**
+   * Get all registered providers
+   */
+  getAllProviders(): Record<string, ProviderConfig> {
+    const result: Record<string, ProviderConfig> = {};
+    for (const [name, config] of this.providers.entries()) {
+      result[name] = config;
+    }
+    return result;
+  }
+  
+  /**
    * Get provider config for a specific model
    */
   getProviderForModel(modelName: string): ProviderConfig | null {

@@ -117,7 +117,7 @@ function loadModel(): string | undefined {
  * 5. User settings (~/.grok/user-settings.json defaultModel)
  * 6. System default
  */
-interface StartupConfig {
+export interface StartupConfig {
   status: 'restored' | 'new' | 'needs_api_key';
   model: string;
   provider: string;
@@ -536,22 +536,35 @@ program
         return;
       }
 
-      // Check if we need API key input (session restore failed)
-      if (startupConfig.status === 'needs_api_key' || !startupConfig.apiKey) {
-        console.error(
-          startupConfig.message || 
-          "❌ Error: API key required. Set GROK_API_KEY environment variable, use --api-key flag, or save to ~/.grok/user-settings.json"
-        );
-        process.exit(1);
-      }
-
       // Interactive mode: launch UI
-      const agent = new GrokAgent(
-        startupConfig.apiKey, 
-        startupConfig.baseURL, 
-        startupConfig.model, 
-        maxToolRounds
-      );
+      // Note: agent can be undefined if no API key is configured
+      // The UI will handle the "unconfigured" state and prompt for configuration
+      let agent: GrokAgent | undefined;
+      let initialConfigMessage: string | undefined;
+      
+      if (!startupConfig.apiKey) {
+        // No API key - start in "configuration mode"
+        initialConfigMessage = 
+          "⚙️  **Configuration Required**\n\n" +
+          "No model is configured for this session.\n\n" +
+          "**To get started:**\n" +
+          "1. Choose a model: `/models` (lists available models)\n" +
+          "2. Set API key: `/apikey <provider> <your-key>`\n" +
+          "   Example: `/apikey openai sk-proj-...`\n\n" +
+          "**Available providers:** grok, openai, claude, deepseek, mistral\n\n" +
+          "**Or set a global default:**\n" +
+          "`/model-default <model-name>` (applies to all future sessions)\n\n" +
+          `${startupConfig.message || ''}`;
+        agent = undefined;
+      } else {
+        // API key available - initialize agent normally
+        agent = new GrokAgent(
+          startupConfig.apiKey, 
+          startupConfig.baseURL, 
+          startupConfig.model, 
+          maxToolRounds
+        );
+      }
       
       // Afficher le logo et instructions AVANT le démarrage d'Ink (une seule fois, jamais re-rendu)
       const logoOutput = cfonts.render("GROKINOU", {
@@ -571,11 +584,20 @@ program
       ensureUserSettingsDirectory();
 
       // Support variadic positional arguments for multi-word initial message
-      const initialMessage = Array.isArray(message)
+      let initialMessage = Array.isArray(message)
         ? message.join(" ")
         : message;
+      
+      // If we're in configuration mode, use the config message instead
+      if (initialConfigMessage) {
+        initialMessage = initialConfigMessage;
+      }
 
-      render(React.createElement(ChatInterface, { agent, initialMessage }));
+      render(React.createElement(ChatInterface, { 
+        agent, 
+        initialMessage,
+        startupConfig 
+      }));
     } catch (error: any) {
       console.error("❌ Error initializing Grok CLI:", error.message);
       process.exit(1);

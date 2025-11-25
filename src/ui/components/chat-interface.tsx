@@ -20,10 +20,12 @@ import { parseSearchCommand, executeSearchCommand } from "../../commands/search.
 import { SearchResult } from "../../utils/search-manager.js";
 import { sessionManager } from "../../utils/session-manager-sqlite.js";
 import { generateStatusMessage } from "../../utils/status-message.js";
+import type { StartupConfig } from "../../index.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
   initialMessage?: string;
+  startupConfig?: StartupConfig;
 }
 
 // Separate memoized streaming display to prevent input flickering
@@ -676,6 +678,7 @@ function ChatInterfaceWithAgent({
 export default function ChatInterface({
   agent,
   initialMessage,
+  startupConfig,
 }: ChatInterfaceProps) {
   const [currentAgent, setCurrentAgent] = useState<GrokAgent | null>(
     agent || null
@@ -686,7 +689,13 @@ export default function ChatInterface({
   };
 
   if (!currentAgent) {
-    return <ApiKeyInput onApiKeySet={handleApiKeySet} />;
+    return (
+      <ApiKeyInput 
+        onApiKeySet={handleApiKeySet} 
+        startupConfig={startupConfig}
+        initialMessage={initialMessage}
+      />
+    );
   }
 
   return (
