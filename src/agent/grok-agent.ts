@@ -975,16 +975,23 @@ If you need confirmation, use the 'get_my_identity' tool.`
     
     debugLog.log(`✅ Session manager updated for provider=${provider}`);
     
-    // ✅ NEW: Identity check (isolated message, no history)
+    // ✅ NEW: Identity check (isolated message, no history) with timeout
     try {
       debugLog.log(`🔍 Sending identity check to model...`);
       
-      const identityResponse = await this.grokClient.chat(
+      // Add timeout to prevent hanging on unresponsive APIs
+      const identityPromise = this.grokClient.chat(
         [{ role: "user", content: "In one short sentence, what is your exact model name and provider?" }],
         [], // No tools
         undefined, // Use current model
         undefined  // No search
       );
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Identity check timeout after 10s')), 10000)
+      );
+      
+      const identityResponse = await Promise.race([identityPromise, timeoutPromise]) as any;
       
       const aiSays = identityResponse.choices[0]?.message?.content || "No response";
       const apiReturned = identityResponse.model || model;
@@ -995,9 +1002,9 @@ If you need confirmation, use the 'get_my_identity' tool.`
       // Return formatted identity info
       return `🤖 AI Response: "${aiSays}"\n📋 API Metadata: ${apiReturned}`;
       
-    } catch (error) {
-      debugLog.log(`⚠️  Identity check failed:`, error);
-      return `⚠️  Identity check failed, but connection established`;
+    } catch (error: any) {
+      debugLog.log(`⚠️  Identity check failed: ${error.message}`);
+      return `⚠️  Identity check skipped (${error.message || 'timeout'}), connection established`;
     }
   }
 
