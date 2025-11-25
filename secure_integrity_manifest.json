@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-25T21:27:47.610143+00:00",
-  "merkle_root": "c86b94fac433e887b62770dd4dab809b762999a3638a4ac2c0b9927ac5ac81ed",
-  "total_files": 1128,
+  "timestamp": "2025-11-25T22:27:29.710464+00:00",
+  "merkle_root": "2757826ff242cb82918cc01bdad4cf95715009a8e3ac0561c7136a902e30cb05",
+  "total_files": 1130,
   "files": {
     "ARCHITECTURE_ANALYSIS.md": {
       "path": "ARCHITECTURE_ANALYSIS.md",
@@ -412,6 +412,18 @@
       "blockchain_block_roots": null,
       "ots_verified": null
     },
+    "TEMPORARY_INTEGRITY_EVIDENCE.json": {
+      "path": "TEMPORARY_INTEGRITY_EVIDENCE.json",
+      "sha256": "7fa457fb86915803ad96551a7960739be045e19170adcf86f0ecfe4e3b063dc6",
+      "size": 7238,
+      "mtime": "2025-11-25T21:28:12.508414+00:00",
+      "ots_receipt": null,
+      "blockchain_tx": null,
+      "blockchain_txids": null,
+      "blockchain_block_heights": null,
+      "blockchain_block_roots": null,
+      "ots_verified": null
+    },
     "TESTING.md": {
       "path": "TESTING.md",
       "sha256": "336521604b9f0c15776993b0059173b7cca5cafc079e2b40392a83d5c7ae3248",
@@ -501,6 +513,18 @@
       "sha256": "1852b7c54b0f378f2a09d650600f5d4d372cbc9b5a5a4c4b92689e41fa8ce492",
       "size": 5895,
       "mtime": "2025-11-24T05:48:41.704770+00:00",
+      "ots_receipt": null,
+      "blockchain_tx": null,
+      "blockchain_txids": null,
+      "blockchain_block_heights": null,
+      "blockchain_block_roots": null,
+      "ots_verified": null
+    },
+    "docs/NEW_SESSION_GUIDE.md": {
+      "path": "docs/NEW_SESSION_GUIDE.md",
+      "sha256": "d376764b7ac0b8022e9745474dc6fd64234b2d2767d100d2d74402a7347f8422",
+      "size": 11734,
+      "mtime": "2025-11-25T22:25:55.796907+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -13541,10 +13565,10 @@
       "ots_verified": null
     }
   },
-  "previous_manifest_digest": "8cf547d5f85450163b4347b37bfb4a6ba40db07213db0539ff7b1bc0a5723eee",
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251125_212749.ots",
-  "merkle_root_anchored_at": "2025-11-25T21:27:49.170057+00:00",
+  "previous_manifest_digest": "b9d75cfbc4f7bf8de4cb83d526ceff3d95b6eee5837882327ac77a3963ec141b",
+  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251125_222731.ots",
+  "merkle_root_anchored_at": "2025-11-25T22:27:31.955587+00:00",
   "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251125_212750.ots",
-  "baseline_anchored_at": "2025-11-25T21:27:50.794114+00:00"
+  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251125_222733.ots",
+  "baseline_anchored_at": "2025-11-25T22:27:33.271851+00:00"
 }

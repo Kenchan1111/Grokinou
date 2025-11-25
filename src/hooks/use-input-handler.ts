@@ -12,6 +12,37 @@ import { providerManager } from "../utils/provider-manager.js";
 import { sessionManager } from "../utils/session-manager-sqlite.js";
 import { generateStatusMessage } from "../utils/status-message.js";
 
+/**
+ * Parse date from various formats:
+ * - DD/MM/YYYY (e.g., 01/11/2025)
+ * - YYYY-MM-DD (e.g., 2025-11-01)
+ * - Relative: "today", "yesterday"
+ */
+function parseDate(dateStr: string): Date {
+  // Relative dates
+  if (dateStr === 'today') {
+    return new Date();
+  }
+  if (dateStr === 'yesterday') {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d;
+  }
+  
+  // DD/MM/YYYY format
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  
+  // YYYY-MM-DD format
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+    return new Date(dateStr);
+  }
+  
+  throw new Error(`Invalid date format: ${dateStr}. Use DD/MM/YYYY or YYYY-MM-DD`);
+}
+
 interface UseInputHandlerProps {
   agent: GrokAgent;
   chatHistory: ChatEntry[];
@@ -378,10 +409,18 @@ Built-in Commands:
   /models     - Switch between available models
   /list_sessions - List all sessions in current directory
   /switch-session <id> - Switch to a different session by ID
-  /new-session [options] - Create a new session in current directory
-      --import-history   Import messages from current session
-      --model <name>     Start with specific model
-      --provider <name>  Start with specific provider
+  /new-session [options] - Create a new session (Git-like branching)
+      --directory <path>     Create session in different directory
+      --import-history       Import messages from source session
+      --from-session <id>    Import from specific session (default: current)
+      --from-date <date>     Import messages from this date onwards
+      --to-date <date>       Import messages up to this date
+      --date-range <start> <end>  Import messages between dates
+      --model <name>         Start with specific model
+      --provider <name>      Start with specific provider
+      
+      Date formats: DD/MM/YYYY, YYYY-MM-DD, "today", "yesterday"
+      Example: /new-session --directory ~/rewind --from-session 5 --date-range 01/11/2025 03/11/2025
   /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
@@ -714,6 +753,10 @@ Examples:
         let importHistory = false;
         let specificModel: string | undefined;
         let specificProvider: string | undefined;
+        let targetDirectory: string | undefined;
+        let fromSessionId: number | undefined;
+        let fromDate: Date | undefined;
+        let toDate: Date | undefined;
         
         for (let i = 0; i < args.length; i++) {
           const arg = args[i];
@@ -726,11 +769,61 @@ Examples:
           } else if (arg === '--provider' && args[i + 1]) {
             specificProvider = args[i + 1];
             i++; // Skip next arg
+          } else if (arg === '--directory' && args[i + 1]) {
+            targetDirectory = args[i + 1];
+            i++; // Skip next arg
+          } else if (arg === '--from-session' && args[i + 1]) {
+            fromSessionId = parseInt(args[i + 1], 10);
+            if (isNaN(fromSessionId)) {
+              throw new Error(`Invalid session ID: ${args[i + 1]}`);
+            }
+            importHistory = true; // Implicit
+            i++; // Skip next arg
+          } else if (arg === '--from-date' && args[i + 1]) {
+            fromDate = parseDate(args[i + 1]);
+            importHistory = true; // Implicit
+            i++; // Skip next arg
+          } else if (arg === '--to-date' && args[i + 1]) {
+            toDate = parseDate(args[i + 1]);
+            importHistory = true; // Implicit
+            i++; // Skip next arg
+          } else if (arg === '--date-range' && args[i + 1] && args[i + 2]) {
+            fromDate = parseDate(args[i + 1]);
+            toDate = parseDate(args[i + 2]);
+            importHistory = true; // Implicit
+            i += 2; // Skip next 2 args
+          }
+        }
+        
+        // Validate date range
+        if (fromDate && toDate && fromDate > toDate) {
+          throw new Error('--from-date must be before --to-date');
+        }
+        
+        // Build date range for filtering
+        const dateRange = (fromDate || toDate) ? {
+          start: fromDate || new Date(0), // Beginning of time if not specified
+          end: toDate || new Date() // Now if not specified
+        } : undefined;
+        
+        // Determine target directory (default: current directory)
+        const targetWorkdir = targetDirectory 
+          ? (targetDirectory.startsWith('/') ? targetDirectory : `${process.cwd()}/${targetDirectory}`)
+          : process.cwd();
+        
+        // Verify/create target directory
+        const fs = await import('fs');
+        if (!fs.existsSync(targetWorkdir)) {
+          // Ask for confirmation to create directory
+          const shouldCreate = true; // TODO: Add confirmation dialog
+          if (shouldCreate) {
+            fs.mkdirSync(targetWorkdir, { recursive: true });
+          } else {
+            throw new Error(`Directory does not exist: ${targetWorkdir}`);
           }
         }
         
         // Determine model and provider
-        const currentWorkdir = process.cwd();
         const currentSession = sessionManager.getCurrentSession();
         
         const targetModel = specificModel || currentSession?.default_model || agent.getCurrentModel();
@@ -762,11 +855,15 @@ Examples:
         
         // Create the new session
         const { session, history } = await sessionManager.createNewSession(
-          currentWorkdir,
+          targetWorkdir,
           targetProvider,
           targetModel,
           apiKey,
-          importHistory
+          {
+            importHistory,
+            fromSessionId,
+            dateRange
+          }
         );
         
         // Update agent with new session's model/provider
@@ -781,18 +878,22 @@ Examples:
         setChatHistory(history);
         
         // Add confirmation message
+        const dirChanged = targetWorkdir !== process.cwd();
         const confirmEntry: ChatEntry = {
           type: "assistant",
           content: `✅ **New Session Created** #${session.id}\n\n` +
                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
                    `📂 Working Directory: ${session.working_dir}\n` +
+                   (dirChanged ? `   (Created in new directory)\n` : '') +
                    `🤖 Provider: ${session.default_provider}\n` +
                    `📱 Model: ${session.default_model}\n` +
                    `💬 Messages: ${history.length}${importHistory ? ' (imported)' : ''}\n` +
                    `🕐 Created: ${new Date(session.created_at).toLocaleString()}\n\n` +
                    (importHistory 
-                     ? `📋 **History Imported** from previous session\n` +
-                       `   All ${history.length} messages have been copied to the new session.\n\n`
+                     ? `📋 **History Imported**\n` +
+                       (fromSessionId ? `   Source: Session #${fromSessionId}\n` : `   Source: Current session\n`) +
+                       (dateRange ? `   Date Range: ${dateRange.start.toLocaleDateString()} → ${dateRange.end.toLocaleDateString()}\n` : '') +
+                       `   Messages: ${history.length} imported\n\n`
                      : `📄 **Fresh Start**\n` +
                        `   This is a brand new conversation.\n\n`
                    ) +

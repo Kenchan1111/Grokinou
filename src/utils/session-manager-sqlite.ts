@@ -137,14 +137,16 @@ export class SessionManagerSQLite {
   }
 
   /**
-   * Create a new session in the current working directory
-   * (even if a session already exists)
+   * Create a new session (Git-like branching for conversations)
    * 
-   * @param workdir - Working directory for the new session
+   * @param workdir - Working directory for the new session (can be different from current)
    * @param provider - AI provider (e.g., 'openai', 'grok')
    * @param model - Model name (e.g., 'gpt-4o')
    * @param apiKey - Optional API key (will be hashed)
-   * @param importHistory - If true, copy messages from current session
+   * @param options - Import options
+   *   - importHistory: Copy all messages from source session
+   *   - fromSessionId: Import from specific session (default: current session)
+   *   - dateRange: { start: Date, end: Date } - Filter messages by date
    * @returns The newly created session and its history
    */
   async createNewSession(
@@ -152,18 +154,44 @@ export class SessionManagerSQLite {
     provider: string,
     model: string,
     apiKey?: string,
-    importHistory: boolean = false
+    options?: {
+      importHistory?: boolean;
+      fromSessionId?: number;
+      dateRange?: { start: Date; end: Date };
+    }
   ): Promise<{ session: Session; history: ChatEntry[] }> {
     const apiKeyHash = apiKey ? this.hashApiKey(apiKey) : undefined;
+    const importHistory = options?.importHistory || false;
+    const fromSessionId = options?.fromSessionId;
+    const dateRange = options?.dateRange;
     
     sessionDebugLog.log(`🆕 [createNewSession] CALLED with:`);
     sessionDebugLog.log(`   workdir="${workdir}"`);
     sessionDebugLog.log(`   provider="${provider}"`);
     sessionDebugLog.log(`   model="${model}"`);
     sessionDebugLog.log(`   importHistory=${importHistory}`);
+    sessionDebugLog.log(`   fromSessionId=${fromSessionId}`);
+    sessionDebugLog.log(`   dateRange=${dateRange ? `${dateRange.start} → ${dateRange.end}` : 'none'}`);
     
-    // Store current session for history import
-    const previousSession = this.currentSession;
+    // Determine source session for history import
+    let sourceSession: Session | null = null;
+    if (importHistory) {
+      if (fromSessionId) {
+        // Import from specific session
+        sourceSession = this.sessionRepo.findById(fromSessionId);
+        if (!sourceSession) {
+          throw new Error(`Source session not found: ${fromSessionId}`);
+        }
+        sessionDebugLog.log(`📋 [createNewSession] Importing from session ${fromSessionId}`);
+      } else {
+        // Import from current session
+        sourceSession = this.currentSession;
+        if (!sourceSession) {
+          throw new Error('No current session to import from. Use --from-session <id>');
+        }
+        sessionDebugLog.log(`📋 [createNewSession] Importing from current session ${sourceSession.id}`);
+      }
+    }
     
     // Force creation of a new session (don't reuse existing)
     const newSession = this.sessionRepo.create(
@@ -182,13 +210,28 @@ export class SessionManagerSQLite {
     
     let history: ChatEntry[] = [];
     
-    // Import history from previous session if requested
-    if (importHistory && previousSession) {
-      sessionDebugLog.log(`📋 [createNewSession] Importing history from session ${previousSession.id}`);
+    // Import history from source session if requested
+    if (importHistory && sourceSession) {
+      sessionDebugLog.log(`📋 [createNewSession] Importing history from session ${sourceSession.id}`);
       
-      const messages = this.messageRepo.getBySession(previousSession.id);
+      let messages = this.messageRepo.getBySession(sourceSession.id);
       
-      // Copy messages to new session
+      // Filter by date range if specified
+      if (dateRange) {
+        const startTime = dateRange.start.getTime();
+        const endTime = dateRange.end.getTime();
+        
+        const originalCount = messages.length;
+        messages = messages.filter(msg => {
+          const msgTime = new Date(msg.timestamp).getTime();
+          return msgTime >= startTime && msgTime <= endTime;
+        });
+        
+        sessionDebugLog.log(`📅 [createNewSession] Date filter: ${originalCount} → ${messages.length} messages`);
+        sessionDebugLog.log(`   Range: ${dateRange.start.toISOString()} → ${dateRange.end.toISOString()}`);
+      }
+      
+      // Copy filtered messages to new session
       for (const message of messages) {
         const newMessage = this.messageRepo.save({
           session_id: newSession.id,
