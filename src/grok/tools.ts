@@ -263,6 +263,18 @@ const BASE_GROK_TOOLS: GrokTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_my_identity",
+      description: "Get factual information about your own model identity, provider, and configuration. Use this if you need to verify who you are, especially after noticing inconsistencies in conversation history.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
 ];
 
 // Morph Fast Apply tool (conditional)

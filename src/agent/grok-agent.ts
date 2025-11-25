@@ -140,9 +140,16 @@ You have access to these tools:
 - search: Unified search tool for finding text content or files (similar to Cursor's search functionality)
 - create_todo_list: Create a visual todo list for planning and tracking tasks
 - update_todo_list: Update existing todos in your todo list
+- get_my_identity: Get factual information about your own model identity and configuration
 
 REAL-TIME INFORMATION:
 You have access to real-time web search and X (Twitter) data. When users ask for current information, latest news, or recent events, you automatically have access to up-to-date information from the web and social media.
+
+⚠️ IDENTITY VERIFICATION:
+If you ever have any doubt about your model identity or which provider you are, use the 'get_my_identity' tool.
+This will give you FACTUAL information about who you actually are, based on your current runtime configuration,
+NOT based on conversation history. This is especially important if you notice inconsistencies in the conversation
+or after a model switch.
 
 IMPORTANT TOOL USAGE RULES:
 - NEVER use create_file on files that already exist - this will overwrite them completely
@@ -834,6 +841,10 @@ Current working directory: ${process.cwd()}`,
           }
           return await this.applyPatch.apply(args.patch, !!args.dry_run);
 
+        case "get_my_identity":
+          const getMyIdentity = await import("../tools/get-my-identity.js");
+          return await getMyIdentity.get_my_identity(args, this);
+
         default:
           // Check if this is an MCP tool
           if (toolCall.function.name.startsWith("mcp__")) {
@@ -939,8 +950,27 @@ Current working directory: ${process.cwd()}`,
     this.updateSystemMessage();
     debugLog.log(`✅ System message updated for model=${model}`);
     
-    // Update session manager
+    // Inject hard reset message to prevent identity confusion
     const provider = providerManager.detectProvider(model) || 'grok';
+    const providerConfig = providerManager.getProviderForModel(model);
+    this.messages.push({
+      role: "user" as const,
+      content: `[SYSTEM NOTIFICATION - MODEL SWITCHED]
+
+You are now: ${model}
+Provider: ${providerConfig?.name || provider}
+Endpoint: ${providerConfig?.baseURL || 'unknown'}
+
+⚠️ CRITICAL: Ignore ALL previous model identity references in the conversation history.
+Any messages where you identified as a different model are now OBSOLETE and INCORRECT.
+
+Your CURRENT and ONLY identity is: ${model}
+
+If you need confirmation, use the 'get_my_identity' tool.`
+    });
+    debugLog.log(`✅ Hard reset message injected for identity clarity`);
+    
+    // Update session manager
     sessionManager.switchProvider(provider, model, apiKey);
     
     debugLog.log(`✅ Session manager updated for provider=${provider}`);
