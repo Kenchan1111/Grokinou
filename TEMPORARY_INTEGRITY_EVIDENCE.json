@@ -1,0 +1,173 @@
+{
+  "timestamp": "2025-11-25T21:28:12.508820+00:00",
+  "directory": "/home/zack/GROK_CLI/Temporary_Integrity",
+  "file_count": 33,
+  "aggregate_hash": "9e87aae9bfaeb46f07865803073b224e5c1b30482bec5955b189a94df5794996",
+  "files": {
+    "README.md": {
+      "sha256": "dc2c84a657c13dba4c1077ae41af8ebde2ca9831f9e1316a3574a26bee3eabb5",
+      "size": 14320,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "README.md.backup": {
+      "sha256": "ba476cb1b2fb3767375b25cb2329156f4d7cad381dee922cd6b76b5f8dc9e975",
+      "size": 3762,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "README_INTEGRITY_CHECK.md": {
+      "sha256": "c1382704146e7346494aca9c8f330d349e094869219f5e4748434058d5235dcb",
+      "size": 7567,
+      "mtime": "2025-11-15T06:11:16.212121+00:00"
+    },
+    "README_USAGE.md": {
+      "sha256": "e7856c886ae3946c7d2ef7bfcdfe6db49faac09bdec7a624a1afcf8677873c23",
+      "size": 17185,
+      "mtime": "2025-11-08T15:01:29.543189+00:00"
+    },
+    "integrity_full_check.py": {
+      "sha256": "99f3528b733c897b0e83eaeaf270f7fc90c2ac768df0734dcb00a23ca71020fc",
+      "size": 19965,
+      "mtime": "2025-11-25T20:31:59.426758+00:00"
+    },
+    "secure_integrity_manager.py": {
+      "sha256": "d8be83b73466fd6d31df56d423ee805b685fa40bcc5c77673970f3dd8f858cb2",
+      "size": 96915,
+      "mtime": "2025-11-09T10:30:10.084600+00:00"
+    },
+    "sync_main_to_forensics.sh": {
+      "sha256": "d921f99f0098d866f662f216481214b19e5f2494b6f7c024b2503268bf524343",
+      "size": 9185,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "unified_integrity.py": {
+      "sha256": "a340667a63fe30e01211c1e5b3b1bc8568d24a74beaa4161e40680a816c034b8",
+      "size": 20061,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "unified_integrity_enhanced.py": {
+      "sha256": "276ccaafabe4a90593e79707a0b390f88cde2168867c3d2e0a338af6b7dc220b",
+      "size": 36203,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "unified_integrity_git.py": {
+      "sha256": "7fa0ec70674a36bc258092d5ca1e8f29daeb1eeac831f513f53ca538e3048ca1",
+      "size": 23966,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "unified_integrity_sigstore.py": {
+      "sha256": "2906cdc9345a40324ef8e4f523ced12c4c8d25dce9de22a57e6894c16caa02d8",
+      "size": 37230,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "archive/README_ENHANCED.md": {
+      "sha256": "eb4e21531c6395f3ba7bfe7056e67e299c3e6ced53b07cf3b6db531014cbf511",
+      "size": 16367,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "archive/README_GIT_INTEGRATION.md": {
+      "sha256": "b7c2fc8c309dfe25e106942a63d7107f1b065581897dd32d2964bbacae1a01f9",
+      "size": 24108,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "archive/README_LEGACY.md": {
+      "sha256": "d18060fd0d640337a838fb5093f68b2d55c6d62869d466f1aacab8d81e309301",
+      "size": 1360,
+      "mtime": "2025-10-31T08:30:15.257664+00:00"
+    },
+    "archive/README_SECURE_INTEGRITY_MANAGER.md": {
+      "sha256": "823b7bae8f2d6f0560682edb00651fc301d82e987785c72390e43f49242cfe36",
+      "size": 13950,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "archive/README_SIGSTORE.md": {
+      "sha256": "65b67e8df4ca1ecfe91d561ebef332eae9a0efdaf368d30934762830913b76ec",
+      "size": 22911,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "archive/RFC_INTEGRITY_FLOW.md": {
+      "sha256": "fde218a6e4bf6bb470c63d030f1e53a4fd761b27c5cc9af2ec18ac5002f5c849",
+      "size": 6258,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "logs/anchors/tsa/merkle_root_20251104_200938.tsq": {
+      "sha256": "138138208888031fa4c6ef79ffec5f89c84f18c8253f2795703100e0b8f78d67",
+      "size": 59,
+      "mtime": "2025-11-04T20:09:38.958770+00:00"
+    },
+    "logs/anchors/tsa/merkle_root_20251104_200938.tsr": {
+      "sha256": "880a8d65ec8a57e8cc41ea2bbbf528e92af33c2a6d411c7bf52b69a4b6c29b18",
+      "size": 5462,
+      "mtime": "2025-11-04T20:09:39.849775+00:00"
+    },
+    "logs/anchors/tsa/merkle_root_20251104_201122.tsq": {
+      "sha256": "ee4de9a9f0a607f54dd3b86756eec4b04c4e57886ae2a397cc8cbf302ac68ec7",
+      "size": 59,
+      "mtime": "2025-11-04T20:11:22.335415+00:00"
+    },
+    "logs/anchors/tsa/merkle_root_20251104_201122.tsr": {
+      "sha256": "56a83d099afcd218684586c545078bfd20fc49278339f29dc868ba05e0f1878d",
+      "size": 5462,
+      "mtime": "2025-11-04T20:11:22.960419+00:00"
+    },
+    "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json": {
+      "sha256": "647313f90dcb6ea2176469196a5fa401cae015f0c93780043ebd8b31d9906fa1",
+      "size": 5659,
+      "mtime": "2025-11-04T20:11:33.626485+00:00"
+    },
+    "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.summary.json": {
+      "sha256": "ddf0939398295eee81545c76e5500c2beda3682e33d50979bb572a68e9eb4318",
+      "size": 142,
+      "mtime": "2025-11-04T20:11:33.685486+00:00"
+    },
+    "logs/anchors/ots/baseline_sha_committed_20251104_200938.ots": {
+      "sha256": "ee142d6bf765bee0ec012af7d01dd0aaf11f2cfb01f2ec498aa3d442343f6970",
+      "size": 700,
+      "mtime": "2025-11-04T20:09:38.921770+00:00"
+    },
+    "logs/anchors/ots/baseline_sha_committed_20251104_201122.ots": {
+      "sha256": "087c6847673a2ea31b13e7503d5d14d9bb892a351013067db6d0a0823e3c8716",
+      "size": 735,
+      "mtime": "2025-11-04T20:11:22.295415+00:00"
+    },
+    "logs/anchors/ots/merkle_root_commit_20251104_200937.ots": {
+      "sha256": "385bea9de912b2d8002e77a49f268bcb2e2d35685b6af2377d56d3ee00388d64",
+      "size": 735,
+      "mtime": "2025-11-04T20:09:37.511761+00:00"
+    },
+    "logs/anchors/ots/merkle_root_commit_20251104_201120.ots": {
+      "sha256": "31fe15862222eed08a133012fac49e4ffa82047de7586361a9f0b1639aa1c4dc",
+      "size": 770,
+      "mtime": "2025-11-04T20:11:20.912406+00:00"
+    },
+    "__pycache__/secure_integrity_manager.cpython-312.pyc": {
+      "sha256": "2969552d4a7ec9b306df1e08767442ad6e45fe138620c7c4208be9fa8c27311e",
+      "size": 93382,
+      "mtime": "2025-11-08T12:38:28.335369+00:00"
+    },
+    "__pycache__/unified_integrity.cpython-312.pyc": {
+      "sha256": "eabe0592e7b825d191b9db3f4874c0a4d3e712a18ad74ac64cec9b591cf22381",
+      "size": 25814,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "__pycache__/unified_integrity_sigstore.cpython-312.pyc": {
+      "sha256": "63b8955fda3a102d2d91c710612b51def16a1c6a7addce2a48acc9ec2f861bde",
+      "size": 37936,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    },
+    "integrity_snapshots/secure_integrity_manifest.json.20251104T200935Z.committed": {
+      "sha256": "852b3f02872a944c1e1844061fcb93b0a8df38128eb43c4092668e3b0b483377",
+      "size": 6305,
+      "mtime": "2025-11-04T20:09:35.658749+00:00"
+    },
+    "integrity_snapshots/secure_integrity_manifest.json.20251104T201118Z.committed": {
+      "sha256": "34d7cc5709f304eb15aa1abbee3ee411d403e403ac9789bb49f6952318242725",
+      "size": 6800,
+      "mtime": "2025-11-04T20:09:38.953770+00:00"
+    },
+    "Backup/commit_with_integrity.sh": {
+      "sha256": "8514e982cf8268926d6be0b8bf6312609681e520691787831394bdbf1f74bbb4",
+      "size": 14857,
+      "mtime": "2025-10-30T11:26:03.778300+00:00"
+    }
+  }
+}
