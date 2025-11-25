@@ -82,7 +82,7 @@
 
 ## ❌ Ce qui MANQUE pour Phase 3-7
 
-### Phase 3.1: /switch <session-id>
+### Phase 3.1: /switch-session <session-id>
 
 ```typescript
 ❌ SessionManagerSQLite.switchSession(sessionId: number): Promise<void>
@@ -240,7 +240,7 @@
 2. ❌ Test: Changement de model → vérifier que session est mise à jour
 3. ❌ Ajouter logs pour debug multi-session
 
-### Priorité 2: Phase 3.1 (/switch)
+### Priorité 2: Phase 3.1 (/switch-session)
 1. Implémenter `switchSession(sessionId)`
 2. Mettre à jour l'UI pour supporter le changement
 3. Tester avec 2-3 sessions différentes
@@ -286,7 +286,7 @@
 2. /new-session (une fois implémenté)
 3. Envoyer "test 2"
 4. /list_sessions → devrait montrer 2 sessions
-5. /switch 1
+5. /switch-session 1
 6. Historique devrait afficher "test 1"
 ```
 

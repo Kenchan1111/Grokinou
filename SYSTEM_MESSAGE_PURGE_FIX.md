@@ -347,7 +347,7 @@ Ces fixes résolvent deux problèmes critiques :
 
 **Prochaine étape:**
 - Tester en conditions réelles
-- Si OK → Implémenter `/switch_session`
+- Si OK → Implémenter `/switch-session` ✅ DONE
 
 ---
 

@@ -157,5 +157,5 @@ if (!session) {
 1. Corriger Bug #1 (provider persistence)
 2. Corriger Bug #2 (getCurrentSession fallback)
 3. Re-tester avec script interactif
-4. Une fois OK → Implémenter Phase 3.1 (/switch)
+4. Une fois OK → Implémenter Phase 3.1 (/switch-session) ✅ DONE
 

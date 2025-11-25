@@ -304,7 +304,7 @@ export function useInputHandler({
     { command: "/status", description: "Show current model and provider info" },
     { command: "/search", description: "Search in conversation history" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
-    { command: "/switch", description: "Switch to a different session by ID" },
+    { command: "/switch-session", description: "Switch to a different session by ID" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
     { command: "/apikey", description: "Manage API keys" },
@@ -376,7 +376,7 @@ Built-in Commands:
   /status     - Show current model and provider info
   /models     - Switch between available models
   /list_sessions - List all sessions in current directory
-  /switch <id> - Switch to a different session by ID
+  /switch-session <id> - Switch to a different session by ID
   /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
@@ -556,7 +556,7 @@ Examples:
         content += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
         content += `\n💡 Legend:\n`;
         content += `   🟢 Active  ⚪ Completed  📦 Archived  ⭐ Favorite\n`;
-        content += `\n💡 To switch to a session, use: /switch <id>`;
+        content += `\n💡 To switch to a session, use: /switch-session <id>`;
 
         const sessionListEntry: ChatEntry = {
           type: "assistant",
@@ -579,16 +579,16 @@ Examples:
     }
 
     // ============================================
-    // /switch <id> - Switch to a different session
+    // /switch-session <id> - Switch to a different session
     // ============================================
-    if (trimmedInput.startsWith("/switch")) {
+    if (trimmedInput.startsWith("/switch-session")) {
       const parts = trimmedInput.split(/\s+/);
       
       if (parts.length < 2 || !parts[1]) {
         const errorEntry: ChatEntry = {
           type: "assistant",
-          content: `❌ Usage: /switch <session_id>\n\n` +
-                   `Example: /switch 5\n\n` +
+          content: `❌ Usage: /switch-session <session_id>\n\n` +
+                   `Example: /switch-session 5\n\n` +
                    `💡 Use /list_sessions to see available session IDs`,
           timestamp: new Date(),
         };

@@ -21,7 +21,7 @@
 ## 🚧 Prochaines Phases (À Faire)
 
 ### Phase 3: Navigation
-- [ ] **3.1 Commande /switch <session-id>**
+- [x] **3.1 Commande /switch-session <session-id>**
   - Permet de changer de session active
   - Charge l'historique de la session cible
   - Met à jour le contexte de l'agent
@@ -150,7 +150,7 @@ providerManager.setApiKey(provider, key)
 
 ## 🎯 Priorités Recommandées
 
-1. **Phase 3.1** : `/switch <id>` (Navigation essentielle)
+1. **Phase 3.1** : `/switch-session <id>` (Navigation essentielle) - ✅ DONE
 2. **Phase 4.1** : `/new-session` (Créer facilement de nouvelles branches)
 3. **Phase 5.2** : `/rename` (UX simple, déjà implémenté en backend)
 4. **Phase 6.1** : Recherche cross-session (Très utile)
