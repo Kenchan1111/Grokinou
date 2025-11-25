@@ -173,6 +173,67 @@ export class SessionManagerSQLite {
   }
 
   /**
+   * Switch to a different session
+   * 
+   * @param sessionId - ID of the session to switch to
+   * @returns The new active session and its history
+   * @throws Error if session not found or on failure
+   */
+  async switchSession(sessionId: number): Promise<{ session: Session; history: ChatEntry[] }> {
+    sessionDebugLog.log(`\n🔄 [switchSession] CALLED with sessionId=${sessionId}`);
+    
+    // Find the session
+    const targetSession = this.sessionRepo.findById(sessionId);
+    
+    if (!targetSession) {
+      sessionDebugLog.log(`❌ [switchSession] Session ${sessionId} not found`);
+      throw new Error(`Session ${sessionId} not found`);
+    }
+    
+    sessionDebugLog.log(`✅ [switchSession] Target session found:`);
+    sessionDebugLog.log(`   working_dir="${targetSession.working_dir}"`);
+    sessionDebugLog.log(`   provider="${targetSession.default_provider}"`);
+    sessionDebugLog.log(`   model="${targetSession.default_model}"`);
+    sessionDebugLog.log(`   status="${targetSession.status}"`);
+    
+    // Close current session if exists
+    if (this.currentSession) {
+      sessionDebugLog.log(`📋 [switchSession] Closing previous session ${this.currentSession.id}`);
+      this.sessionRepo.updateLastActivity(this.currentSession.id);
+    }
+    
+    // Update target session to active
+    if (targetSession.status !== 'active') {
+      sessionDebugLog.log(`🔓 [switchSession] Reactivating session ${sessionId}`);
+      this.sessionRepo.updateStatus(sessionId, 'active');
+      targetSession.status = 'active';
+    }
+    
+    // Update current session reference
+    this.currentSession = targetSession;
+    this.currentProvider = targetSession.default_provider;
+    this.currentModel = targetSession.default_model;
+    
+    // Update last activity
+    this.sessionRepo.updateLastActivity(sessionId);
+    
+    // Load history from the new session
+    const messages = this.messageRepo.getBySession(sessionId);
+    const history = messages.map(this.messageToEntry);
+    
+    sessionDebugLog.log(`✅ [switchSession] Switched successfully:`);
+    sessionDebugLog.log(`   currentSession.id=${this.currentSession.id}`);
+    sessionDebugLog.log(`   currentProvider="${this.currentProvider}"`);
+    sessionDebugLog.log(`   currentModel="${this.currentModel}"`);
+    sessionDebugLog.log(`   history.length=${history.length}`);
+    
+    return {
+      session: this.currentSession,
+      history
+    };
+  }
+
+  /**
    * Load chat history from current session
    */
   async loadChatHistory(): Promise<ChatEntry[]> {

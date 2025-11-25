@@ -304,6 +304,7 @@ export function useInputHandler({
     { command: "/status", description: "Show current model and provider info" },
     { command: "/search", description: "Search in conversation history" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
+    { command: "/switch", description: "Switch to a different session by ID" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
     { command: "/apikey", description: "Manage API keys" },
@@ -375,6 +376,7 @@ Built-in Commands:
   /status     - Show current model and provider info
   /models     - Switch between available models
   /list_sessions - List all sessions in current directory
+  /switch <id> - Switch to a different session by ID
   /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
@@ -554,6 +556,7 @@ Examples:
         content += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
         content += `\n💡 Legend:\n`;
         content += `   🟢 Active  ⚪ Completed  📦 Archived  ⭐ Favorite\n`;
+        content += `\n💡 To switch to a session, use: /switch <id>`;
 
         const sessionListEntry: ChatEntry = {
           type: "assistant",
@@ -571,6 +574,88 @@ Examples:
         setChatHistory((prev) => [...prev, errorEntry]);
       }
 
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /switch <id> - Switch to a different session
+    // ============================================
+    if (trimmedInput.startsWith("/switch")) {
+      const parts = trimmedInput.split(/\s+/);
+      
+      if (parts.length < 2 || !parts[1]) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Usage: /switch <session_id>\n\n` +
+                   `Example: /switch 5\n\n` +
+                   `💡 Use /list_sessions to see available session IDs`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      
+      const sessionId = parseInt(parts[1], 10);
+      
+      if (isNaN(sessionId)) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Invalid session ID: "${parts[1]}"\n\n` +
+                   `Session ID must be a number.\n\n` +
+                   `💡 Use /list_sessions to see available session IDs`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      
+      try {
+        // Switch session
+        const { session, history } = await sessionManager.switchSession(sessionId);
+        
+        // Update agent with new session's model/provider
+        const providerConfig = providerManager.getProviderForModel(session.default_model);
+        if (!providerConfig) {
+          throw new Error(`Unknown provider for model: ${session.default_model}`);
+        }
+        
+        const apiKey = agent.getApiKey(); // Keep current API key
+        await agent.switchToModel(session.default_model, apiKey, providerConfig.baseURL);
+        
+        // Replace chat history with the new session's history
+        setChatHistory(history);
+        
+        // Add confirmation message
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content: `✅ Switched to Session #${session.id}\n\n` +
+                   `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `📝 Name: ${session.session_name || 'Unnamed'}\n` +
+                   `🤖 Provider: ${session.default_provider}\n` +
+                   `📱 Model: ${session.default_model}\n` +
+                   `💬 Messages: ${history.length}\n` +
+                   `📁 Working Directory: ${session.working_dir}\n` +
+                   `🕐 Last Activity: ${new Date(session.last_activity).toLocaleString()}\n\n` +
+                   `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `Conversation history loaded! Continue chatting...`,
+          timestamp: new Date(),
+        };
+        
+        setChatHistory((prev) => [...prev, confirmEntry]);
+        
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to switch session: ${error?.message || 'Unknown error'}\n\n` +
+                   `💡 Use /list_sessions to see available sessions`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
       clearInput();
       return true;
     }

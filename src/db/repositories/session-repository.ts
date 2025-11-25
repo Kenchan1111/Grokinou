@@ -126,11 +126,23 @@ export class SessionRepository {
    */
   updateLastActivity(sessionId: number) {
     const stmt = this.db.prepare(`
-      UPDATE sessions 
-      SET last_activity = CURRENT_TIMESTAMP 
+      UPDATE sessions
+      SET last_activity = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
     stmt.run(sessionId);
+  }
+
+  /**
+   * Update session status
+   */
+  updateStatus(sessionId: number, status: 'active' | 'completed' | 'archived'): void {
+    const stmt = this.db.prepare(`
+      UPDATE sessions
+      SET status = ?, last_activity = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(status, sessionId);
   }
 
   /**
