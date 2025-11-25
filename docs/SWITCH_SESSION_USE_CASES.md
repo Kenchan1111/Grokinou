@@ -210,6 +210,83 @@ User: "Configuration Docker + Kubernetes"
 
 ---
 
+## ⚠️ Fonctionnalité Critique : Changement Automatique de Répertoire
+
+### **Pourquoi c'est Important**
+
+Quand tu fais `/switch-session <id>`, le CLI change **AUTOMATIQUEMENT** le répertoire de travail (CWD) du process Node pour correspondre au `working_dir` de la session cible.
+
+**Pourquoi c'est CRITIQUE :**
+
+```bash
+# Scénario problématique SANS changement de répertoire :
+cd ~/WDIMQ
+grokinou-cli
+# Session 1 créée dans ~/WDIMQ
+
+cd ~/TenderWatch
+grokinou-cli
+# Session 2 créée dans ~/TenderWatch
+
+cd ~/WDIMQ
+grokinou-cli
+/switch-session 2  # Session de TenderWatch
+
+# 💥 PROBLÈME :
+# - LLM pense être dans ~/TenderWatch (contexte de la session)
+# - MAIS Node est dans ~/WDIMQ (CWD réel)
+# - Tous les paths relatifs sont FAUX
+# - bash, file editor travaillent dans le MAUVAIS répertoire
+```
+
+**Avec changement automatique de répertoire :**
+
+```bash
+cd ~/WDIMQ
+grokinou-cli
+/switch-session 2  # Session de TenderWatch
+
+# ✅ RÉSULTAT :
+# 1. Node fait automatiquement `process.chdir('~/TenderWatch')`
+# 2. Le CWD devient ~/TenderWatch
+# 3. LLM ET Node sont synchronisés
+# 4. Tous les paths relatifs sont corrects
+```
+
+### **Message de Confirmation**
+
+Quand tu switch vers une session dans un **autre répertoire**, tu vois :
+
+```
+✅ Switched to Session #2
+
+📝 Name: API REST TenderWatch
+🤖 Provider: openai
+📱 Model: gpt-4o
+💬 Messages: 45
+📁 Working Directory: /home/user/TenderWatch
+🕐 Last Activity: 1 hour ago
+
+📂 **Directory Changed:**
+   From: /home/user/WDIMQ
+   To:   /home/user/TenderWatch
+
+⚠️  All relative paths now resolve to the new directory.
+
+Conversation history loaded! Continue chatting...
+```
+
+### **Gestion d'Erreurs**
+
+Si le répertoire de la session n'existe plus (supprimé, renommé, etc.), tu vois :
+
+```
+❌ Failed to switch session: Session's working directory does not exist: /home/user/OldProject
+The directory may have been moved or deleted.
+```
+
+---
+
 ## 🚀 Comment Utiliser `/switch-session`
 
 ### **1. Lister les Sessions Disponibles**
@@ -301,35 +378,86 @@ Assistant: [Reprend exactement où la conversation s'était arrêtée]
 
 ---
 
-## 💬 Exemple Complet de Workflow
+## 💬 Exemple Complet de Workflow Multi-Projets
+
+### **Scénario : WDIMQ, ColPali, et TenderWatch**
+
+Ce cas d'usage résout **exactement** le problème que tu as rencontré :
 
 ```bash
-# Jour 1 : Authentification
-cd ~/mon-app
+# Jour 1 : Développement WDIMQ principal
+cd ~/WDIMQ
 grokinou-cli
-User: "Implémente OAuth avec Google et GitHub"
-[...50 messages sur l'auth...]
+User: "Implémente le système de recherche principal"
+[...50 messages sur WDIMQ...]
+# Session #1 créée dans ~/WDIMQ
 
-# Jour 2 : API REST (nouvelle feature)
-/new-session
-User: "Crée une API REST pour les utilisateurs"
-[...30 messages sur l'API...]
+# Jour 2 : Sous-projet ColPali (dans WDIMQ)
+cd ~/WDIMQ/ColPali
+grokinou-cli
+User: "Intègre ColPali pour la recherche visuelle"
+[...40 messages sur ColPali...]
+# Session #2 créée dans ~/WDIMQ/ColPali
 
-# Jour 3 : Bug urgent sur l'auth
+# Jour 3 : Nouveau projet TenderWatch (hors WDIMQ)
+cd ~/TenderWatch
+grokinou-cli
+User: "Scrape les appels d'offres publics"
+[...30 messages sur TenderWatch...]
+# Session #3 créée dans ~/TenderWatch
+
+# Jour 4 : Retour sur WDIMQ principal
+cd ~/WDIMQ
+grokinou-cli
 /list_sessions
-/switch-session 1  # Retour à l'auth
-User: "Bug : les tokens expirent trop vite"
-[...debug et fix...]
+# Session #1 - WDIMQ - ~/WDIMQ
+# Session #2 - ColPali - ~/WDIMQ/ColPali
+# Session #3 - TenderWatch - ~/TenderWatch
 
-# Retour à l'API
-/switch-session 2
-User: "Continue l'API : ajoute les endpoints de recherche"
-
-# Jour 4 : Revue de code avec un collègue
-/list_sessions
-# Collègue : "Montre-moi comment tu as fait l'auth"
 /switch-session 1
-# Toute la conversation technique est disponible !
+# ✅ CWD = ~/WDIMQ
+# ✅ Le LLM sait qu'il travaille sur WDIMQ principal
+# ✅ Tous les paths relatifs corrects
+
+User: "Continue le système de recherche"
+# Travail dans ~/WDIMQ
+
+# Switch vers ColPali
+/switch-session 2
+# ✅ CWD change automatiquement vers ~/WDIMQ/ColPali
+# ✅ Le LLM sait qu'il travaille sur ColPali
+# ✅ Paths relatifs vers les fichiers ColPali
+
+User: "Optimise la vectorisation des images"
+# Travail dans ~/WDIMQ/ColPali
+
+# Switch vers TenderWatch
+/switch-session 3
+# ✅ CWD change automatiquement vers ~/TenderWatch
+# ✅ Le LLM sait qu'il est dans un AUTRE projet
+# ✅ Paths relatifs vers TenderWatch
+
+User: "Ajoute le parsing des PDF"
+# Travail dans ~/TenderWatch
+
+# Retour à WDIMQ
+/switch-session 1
+# ✅ CWD retourne vers ~/WDIMQ
+# ✅ Contexte WDIMQ restauré
+```
+
+**Avant cette fonctionnalité (BUGUÉ) :**
+```
+❌ LLM confus : "Je ne sais plus dans quel répertoire je travaille"
+❌ Paths incorrects : "Impossible de trouver src/api/tender.ts"
+❌ Pollution : "Les fichiers de TenderWatch interfèrent avec WDIMQ"
+```
+
+**Après cette fonctionnalité (RÉSOLU) :**
+```
+✅ LLM toujours synchronisé avec le bon répertoire
+✅ Paths toujours corrects
+✅ Isolation parfaite entre projets
 ```
 
 ---

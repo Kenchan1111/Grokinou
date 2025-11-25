@@ -616,6 +616,35 @@ Examples:
         // Switch session
         const { session, history } = await sessionManager.switchSession(sessionId);
         
+        // CRITICAL: Change working directory to match the session's working_dir
+        // This prevents path confusion when the LLM thinks it's in one directory
+        // but the Node process is actually in another
+        const targetWorkdir = session.working_dir;
+        const currentWorkdir = process.cwd();
+        
+        if (targetWorkdir !== currentWorkdir) {
+          // Verify target directory exists
+          const fs = await import('fs');
+          if (!fs.existsSync(targetWorkdir)) {
+            throw new Error(
+              `Session's working directory does not exist: ${targetWorkdir}\n` +
+              `The directory may have been moved or deleted.`
+            );
+          }
+          
+          // Change the Node process's current working directory
+          process.chdir(targetWorkdir);
+          
+          // Verify the change was successful
+          const newCwd = process.cwd();
+          if (newCwd !== targetWorkdir) {
+            throw new Error(
+              `Failed to change directory from ${currentWorkdir} to ${targetWorkdir}\n` +
+              `Current directory is: ${newCwd}`
+            );
+          }
+        }
+        
         // Update agent with new session's model/provider
         const providerConfig = providerManager.getProviderForModel(session.default_model);
         if (!providerConfig) {
@@ -628,7 +657,8 @@ Examples:
         // Replace chat history with the new session's history
         setChatHistory(history);
         
-        // Add confirmation message
+        // Add confirmation message with directory change notice
+        const dirChanged = targetWorkdir !== currentWorkdir;
         const confirmEntry: ChatEntry = {
           type: "assistant",
           content: `✅ Switched to Session #${session.id}\n\n` +
@@ -639,6 +669,13 @@ Examples:
                    `💬 Messages: ${history.length}\n` +
                    `📁 Working Directory: ${session.working_dir}\n` +
                    `🕐 Last Activity: ${new Date(session.last_activity).toLocaleString()}\n\n` +
+                   (dirChanged 
+                     ? `📂 **Directory Changed:**\n` +
+                       `   From: ${currentWorkdir}\n` +
+                       `   To:   ${targetWorkdir}\n\n` +
+                       `⚠️  All relative paths now resolve to the new directory.\n\n`
+                     : `📂 **Directory:** Already in ${targetWorkdir}\n\n`
+                   ) +
                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
                    `Conversation history loaded! Continue chatting...`,
           timestamp: new Date(),
