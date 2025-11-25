@@ -142,6 +142,61 @@ You have access to these tools:
 - update_todo_list: Update existing todos in your todo list
 - get_my_identity: Get factual information about your own model identity and configuration
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌳 CONVERSATION SESSION MANAGEMENT (Git-like)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You have powerful tools for managing conversation sessions like Git branches:
+
+**session_list:** List all conversation sessions with details (ID, directory, model, messages, dates)
+  - Use this to see available sessions before switching
+  - Shows current session and session metadata
+
+**session_switch:** Switch to a different conversation session
+  - Changes working directory AND loads conversation history
+  - **CRITICAL: ALWAYS ask user permission BEFORE calling this tool**
+  - Explain what will happen: "I will switch to Session #X in directory ~/foo and load Y messages. Approve?"
+  - Wait for explicit user confirmation ("yes", "ok", "go ahead", etc.)
+  - NEVER call without permission
+
+**session_new:** Create a new conversation session (branching)
+  - Can create in DIFFERENT directory
+  - Can import history from ANY session (not just current)
+  - Can filter messages by DATE RANGE (time travel!)
+  - Example: Create new session with only messages from Nov 1-3
+  - **Ask permission if creating in NEW directory or importing filtered history**
+
+**session_rewind:** Git rewind - synchronize conversation + code to specific date
+  - **MOST POWERFUL operation**
+  - Creates new directory with CODE at specific Git commit + CONVERSATION at that date
+  - **ALWAYS explain FULL plan and get EXPLICIT permission**
+  - Example permission request:
+    "I will perform Git rewind to Nov 3:
+     1. Create ~/rewind-nov-03/
+     2. Extract Git repository at Nov 3 commit (40 files)
+     3. Import conversation messages from Nov 1-3 (25 messages)
+     4. Create Git branch rewind-2025-11-03
+     Approve this operation?"
+  - NEVER call without detailed explanation + approval
+
+**Permission Rules:**
+- session_list: No permission needed (read-only)
+- session_switch: ALWAYS ask permission
+- session_new: Ask if creating new directory or filtering
+- session_rewind: ALWAYS explain full plan + get approval
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 GIT VERSION CONTROL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**You already know Git.** Use the bash tool for all Git operations:
+- git status, git add, git commit, git push, git branch, etc.
+- NO special Git tools needed - use bash directly as you normally would
+- Commit after file changes: git commit -m "feat: description"
+- Push regularly: git push origin <branch>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 REAL-TIME INFORMATION:
 You have access to real-time web search and X (Twitter) data. When users ask for current information, latest news, or recent events, you automatically have access to up-to-date information from the web and social media.
 
@@ -844,6 +899,96 @@ Current working directory: ${process.cwd()}`,
         case "get_my_identity":
           const getMyIdentity = await import("../tools/get-my-identity.js");
           return await getMyIdentity.get_my_identity(args, this);
+        
+        // ============================================
+        // SESSION MANAGEMENT TOOLS
+        // ============================================
+        
+        case "session_list": {
+          const sessionTools = await import('../tools/session-tools.js');
+          return await sessionTools.executeSessionList();
+        }
+        
+        case "session_switch": {
+          const switchArgs = JSON.parse(toolCall.function.arguments) as { session_id: number };
+          const sessionTools = await import('../tools/session-tools.js');
+          const result = await sessionTools.executeSessionSwitch(switchArgs);
+          
+          if (result.success) {
+            // Update agent's context after switch
+            const { sessionManager } = await import('../utils/session-manager-sqlite.js');
+            const currentSession = sessionManager.getCurrentSession();
+            
+            if (currentSession) {
+              const { providerManager } = await import('../utils/provider-manager.js');
+              const providerConfig = providerManager.getProviderForModel(currentSession.default_model);
+              
+              if (providerConfig) {
+                await this.switchToModel(
+                  currentSession.default_model,
+                  this.getApiKey(),
+                  providerConfig.baseURL
+                );
+              }
+            }
+          }
+          
+          return result;
+        }
+        
+        case "session_new": {
+          const newArgs = JSON.parse(toolCall.function.arguments);
+          const sessionTools = await import('../tools/session-tools.js');
+          const result = await sessionTools.executeSessionNew(newArgs);
+          
+          if (result.success) {
+            // Update agent's context
+            const { sessionManager } = await import('../utils/session-manager-sqlite.js');
+            const currentSession = sessionManager.getCurrentSession();
+            
+            if (currentSession) {
+              const { providerManager } = await import('../utils/provider-manager.js');
+              const providerConfig = providerManager.getProviderForModel(currentSession.default_model);
+              
+              if (providerConfig) {
+                await this.switchToModel(
+                  currentSession.default_model,
+                  this.getApiKey(),
+                  providerConfig.baseURL
+                );
+              }
+            }
+          }
+          
+          return result;
+        }
+        
+        case "session_rewind": {
+          const rewindArgs = JSON.parse(toolCall.function.arguments);
+          const sessionTools = await import('../tools/session-tools.js');
+          const result = await sessionTools.executeSessionRewind(rewindArgs);
+          
+          if (result.success) {
+            // Update agent's context
+            const { sessionManager } = await import('../utils/session-manager-sqlite.js');
+            const currentSession = sessionManager.getCurrentSession();
+            
+            if (currentSession) {
+              const { providerManager } = await import('../utils/provider-manager.js');
+              const providerConfig = providerManager.getProviderForModel(currentSession.default_model);
+              
+              if (providerConfig) {
+                await this.switchToModel(
+                  currentSession.default_model,
+                  this.getApiKey(),
+                  providerConfig.baseURL
+                );
+              }
+            }
+          }
+          
+          return result;
+        }
 
         default:
           // Check if this is an MCP tool

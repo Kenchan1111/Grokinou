@@ -275,6 +275,117 @@ const BASE_GROK_TOOLS: GrokTool[] = [
       },
     },
   },
+  
+  // ============================================
+  // SESSION MANAGEMENT TOOLS (Git-like)
+  // ============================================
+  
+  {
+    type: "function",
+    function: {
+      name: "session_list",
+      description: "List all conversation sessions with details (ID, directory, model, message count, dates). Use this to see available sessions before switching or for conversation management.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
+  
+  {
+    type: "function",
+    function: {
+      name: "session_switch",
+      description: "Switch to a different conversation session. Changes working directory and loads conversation history. **CRITICAL: ALWAYS ask user permission before calling.** Explain what will happen and get explicit approval.",
+      parameters: {
+        type: "object",
+        properties: {
+          session_id: {
+            type: "number",
+            description: "ID of the session to switch to (use session_list to see available sessions)",
+          },
+        },
+        required: ["session_id"],
+      },
+    },
+  },
+  
+  {
+    type: "function",
+    function: {
+      name: "session_new",
+      description: "Create a new conversation session (Git-like branching). Can create in different directory, import history from another session, filter by date range. Use for branching conversations or starting fresh contexts.",
+      parameters: {
+        type: "object",
+        properties: {
+          directory: {
+            type: "string",
+            description: "Target directory for new session (absolute or relative path). Will be created if doesn't exist.",
+          },
+          import_history: {
+            type: "boolean",
+            description: "Whether to import conversation history from source session",
+          },
+          from_session_id: {
+            type: "number",
+            description: "Session ID to import from (default: current session)",
+          },
+          date_range_start: {
+            type: "string",
+            description: "Start date for history filtering (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY)",
+          },
+          date_range_end: {
+            type: "string",
+            description: "End date for history filtering (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY)",
+          },
+          model: {
+            type: "string",
+            description: "Model to use in new session (optional)",
+          },
+          provider: {
+            type: "string",
+            description: "Provider to use in new session (optional)",
+          },
+        },
+        required: ["directory"],
+      },
+    },
+  },
+  
+  {
+    type: "function",
+    function: {
+      name: "session_rewind",
+      description: "Perform Git rewind: synchronize conversation history AND code state to a specific date range. Creates new session in target directory with filtered conversation messages and Git repository at corresponding commit. **CRITICAL: This is the most powerful operation - ALWAYS explain the plan in detail and get explicit user permission before calling.** This modifies filesystem and Git state.",
+      parameters: {
+        type: "object",
+        properties: {
+          target_directory: {
+            type: "string",
+            description: "Directory for rewound session (will be created, must not exist)",
+          },
+          date_range_start: {
+            type: "string",
+            description: "Start date for rewind (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY)",
+          },
+          date_range_end: {
+            type: "string",
+            description: "End date for rewind (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY)",
+          },
+          from_session_id: {
+            type: "number",
+            description: "Session to rewind from (default: current session)",
+          },
+          preserve_git_history: {
+            type: "boolean",
+            description: "If true, clone full Git history. If false, use git archive (lightweight). Default: false",
+          },
+        },
+        required: ["target_directory", "date_range_start", "date_range_end"],
+      },
+    },
+  },
 ];
 
 // Morph Fast Apply tool (conditional)
