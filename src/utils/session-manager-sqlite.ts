@@ -137,6 +137,91 @@ export class SessionManagerSQLite {
   }
 
   /**
+   * Create a new session in the current working directory
+   * (even if a session already exists)
+   * 
+   * @param workdir - Working directory for the new session
+   * @param provider - AI provider (e.g., 'openai', 'grok')
+   * @param model - Model name (e.g., 'gpt-4o')
+   * @param apiKey - Optional API key (will be hashed)
+   * @param importHistory - If true, copy messages from current session
+   * @returns The newly created session and its history
+   */
+  async createNewSession(
+    workdir: string,
+    provider: string,
+    model: string,
+    apiKey?: string,
+    importHistory: boolean = false
+  ): Promise<{ session: Session; history: ChatEntry[] }> {
+    const apiKeyHash = apiKey ? this.hashApiKey(apiKey) : undefined;
+    
+    sessionDebugLog.log(`🆕 [createNewSession] CALLED with:`);
+    sessionDebugLog.log(`   workdir="${workdir}"`);
+    sessionDebugLog.log(`   provider="${provider}"`);
+    sessionDebugLog.log(`   model="${model}"`);
+    sessionDebugLog.log(`   importHistory=${importHistory}`);
+    
+    // Store current session for history import
+    const previousSession = this.currentSession;
+    
+    // Force creation of a new session (don't reuse existing)
+    const newSession = this.sessionRepo.create(
+      workdir,
+      provider,
+      model,
+      apiKeyHash
+    );
+    
+    sessionDebugLog.log(`✅ [createNewSession] New session created: id=${newSession.id}`);
+    
+    // Update current session reference
+    this.currentSession = newSession;
+    this.currentProvider = provider;
+    this.currentModel = model;
+    
+    let history: ChatEntry[] = [];
+    
+    // Import history from previous session if requested
+    if (importHistory && previousSession) {
+      sessionDebugLog.log(`📋 [createNewSession] Importing history from session ${previousSession.id}`);
+      
+      const messages = this.messageRepo.getBySession(previousSession.id);
+      
+      // Copy messages to new session
+      for (const message of messages) {
+        const newMessage = this.messageRepo.save({
+          session_id: newSession.id,
+          type: message.type,
+          role: message.role,
+          content: message.content,
+          content_type: message.content_type,
+          provider: message.provider,
+          model: message.model,
+          api_key_hash: message.api_key_hash,
+          tool_calls: message.tool_calls,
+          tool_call_id: message.tool_call_id,
+          is_streaming: false,
+          token_count: message.token_count,
+          timestamp: new Date().toISOString() // Use current timestamp for imported messages
+        });
+        
+        // Convert to ChatEntry
+        history.push(this.messageToEntry(newMessage));
+      }
+      
+      sessionDebugLog.log(`✅ [createNewSession] Imported ${messages.length} messages`);
+      
+      // Update stats for the new session
+      this.sessionRepo.updateSessionStats(newSession.id);
+    }
+    
+    sessionDebugLog.log(`✅ [createNewSession] COMPLETE: session=${newSession.id}, history=${history.length} messages\n`);
+    
+    return { session: newSession, history };
+  }
+
+  /**
    * Get current session
    */
   getCurrentSession(): Session | null {

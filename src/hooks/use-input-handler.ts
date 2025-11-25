@@ -305,6 +305,7 @@ export function useInputHandler({
     { command: "/search", description: "Search in conversation history" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
     { command: "/switch-session", description: "Switch to a different session by ID" },
+    { command: "/new-session", description: "Create a new session in current directory" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
     { command: "/apikey", description: "Manage API keys" },
@@ -377,6 +378,10 @@ Built-in Commands:
   /models     - Switch between available models
   /list_sessions - List all sessions in current directory
   /switch-session <id> - Switch to a different session by ID
+  /new-session [options] - Create a new session in current directory
+      --import-history   Import messages from current session
+      --model <name>     Start with specific model
+      --provider <name>  Start with specific provider
   /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
@@ -688,6 +693,123 @@ Examples:
           type: "assistant",
           content: `❌ Failed to switch session: ${error?.message || 'Unknown error'}\n\n` +
                    `💡 Use /list_sessions to see available sessions`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /new-session [options] - Create a new session
+    // ============================================
+    if (trimmedInput.startsWith("/new-session")) {
+      try {
+        const parts = trimmedInput.split(/\s+/);
+        const args = parts.slice(1);
+        
+        // Parse options
+        let importHistory = false;
+        let specificModel: string | undefined;
+        let specificProvider: string | undefined;
+        
+        for (let i = 0; i < args.length; i++) {
+          const arg = args[i];
+          
+          if (arg === '--import-history') {
+            importHistory = true;
+          } else if (arg === '--model' && args[i + 1]) {
+            specificModel = args[i + 1];
+            i++; // Skip next arg
+          } else if (arg === '--provider' && args[i + 1]) {
+            specificProvider = args[i + 1];
+            i++; // Skip next arg
+          }
+        }
+        
+        // Determine model and provider
+        const currentWorkdir = process.cwd();
+        const currentSession = sessionManager.getCurrentSession();
+        
+        const targetModel = specificModel || currentSession?.default_model || agent.getCurrentModel();
+        const targetProvider = specificProvider || 
+                               (specificModel ? providerManager.detectProvider(specificModel) : null) ||
+                               currentSession?.default_provider || 
+                               providerManager.detectProvider(agent.getCurrentModel()) || 
+                               'grok';
+        
+        if (!targetProvider) {
+          throw new Error(`Cannot determine provider for model: ${targetModel}`);
+        }
+        
+        // Get API key for the provider
+        const apiKey = agent.getApiKey();
+        
+        if (!apiKey) {
+          const errorEntry: ChatEntry = {
+            type: "assistant",
+            content: `❌ No API key found for provider: ${targetProvider}\n\n` +
+                     `Please configure it first:\n` +
+                     `/apikey ${targetProvider} <your-key>`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, errorEntry]);
+          clearInput();
+          return true;
+        }
+        
+        // Create the new session
+        const { session, history } = await sessionManager.createNewSession(
+          currentWorkdir,
+          targetProvider,
+          targetModel,
+          apiKey,
+          importHistory
+        );
+        
+        // Update agent with new session's model/provider
+        const providerConfig = providerManager.getProviderForModel(targetModel);
+        if (!providerConfig) {
+          throw new Error(`Unknown provider for model: ${targetModel}`);
+        }
+        
+        await agent.switchToModel(targetModel, apiKey, providerConfig.baseURL);
+        
+        // Replace chat history
+        setChatHistory(history);
+        
+        // Add confirmation message
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content: `✅ **New Session Created** #${session.id}\n\n` +
+                   `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `📂 Working Directory: ${session.working_dir}\n` +
+                   `🤖 Provider: ${session.default_provider}\n` +
+                   `📱 Model: ${session.default_model}\n` +
+                   `💬 Messages: ${history.length}${importHistory ? ' (imported)' : ''}\n` +
+                   `🕐 Created: ${new Date(session.created_at).toLocaleString()}\n\n` +
+                   (importHistory 
+                     ? `📋 **History Imported** from previous session\n` +
+                       `   All ${history.length} messages have been copied to the new session.\n\n`
+                     : `📄 **Fresh Start**\n` +
+                       `   This is a brand new conversation.\n\n`
+                   ) +
+                   `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `You can now start a new conversation!\n\n` +
+                   `💡 Use /list_sessions to see all sessions\n` +
+                   `💡 Use /switch-session <id> to switch back`,
+          timestamp: new Date(),
+        };
+        
+        setChatHistory((prev) => [...prev, confirmEntry]);
+        
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to create new session: ${error?.message || 'Unknown error'}\n\n` +
+                   `Usage: /new-session [--import-history] [--model <name>] [--provider <name>]`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);

@@ -64,6 +64,45 @@ export class SessionRepository {
   /**
    * Find or create session for current workdir and provider
    */
+  /**
+   * Create a new session (always creates, never reuses)
+   * Use this when you explicitly want a new session in the same directory
+   */
+  create(workdir: string, provider: string, model: string, apiKeyHash?: string): Session {
+    const sessionHash = this.generateSessionHash(workdir, provider);
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO sessions (
+        working_dir, 
+        default_provider, 
+        default_model, 
+        api_key_hash, 
+        session_hash,
+        status,
+        created_at,
+        last_activity
+      )
+      VALUES (?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `);
+    
+    const result = stmt.run(
+      workdir,
+      provider,
+      model,
+      apiKeyHash || null,
+      sessionHash
+    );
+    
+    const sessionId = result.lastInsertRowid as number;
+    const newSession = this.findById(sessionId);
+    
+    if (!newSession) {
+      throw new Error(`Failed to create session`);
+    }
+    
+    return newSession;
+  }
+
   findOrCreate(workdir: string, provider: string, model: string, apiKeyHash?: string): Session {
     const existingSession = this.findActiveSession(workdir, provider);
     
