@@ -8,5 +8,8 @@
     "time": "2025-11-26T09:48:42+01:00",
     "author": "zack",
     "subject": "fix(settings): improve model list migration logic"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251126_084846.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
 }
