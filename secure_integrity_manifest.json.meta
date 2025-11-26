@@ -1,12 +1,12 @@
 {
-  "committed_baseline_hash": "b9d75cfbc4f7bf8de4cb83d526ceff3d95b6eee5837882327ac77a3963ec141b",
-  "timestamp": "2025-11-25T22:27:29.730361+00:00",
-  "merkle_root": "2757826ff242cb82918cc01bdad4cf95715009a8e3ac0561c7136a902e30cb05",
-  "total_files": 1130,
+  "committed_baseline_hash": "9134e3e6215b1acdb4c1820ddb1db1fe54c918bf9a9ff21c894b10d26af4f622",
+  "timestamp": "2025-11-26T07:18:39.131286+00:00",
+  "merkle_root": "7c05ea80a29982d0a48f718e4a68f1877d5e899a02d9f1b9395d3f41f656bf51",
+  "total_files": 1137,
   "last_commit": {
-    "hash": "66f9f4daac74c7fe924fe26c2b9103942d4436d3",
-    "time": "2025-11-25T23:27:29+01:00",
+    "hash": "c724b01c1e8ff42ec82389c760ef3f740ea5e57c",
+    "time": "2025-11-26T08:18:38+01:00",
     "author": "zack",
-    "subject": "feat(sessions): Phase 4 complete - /new-session command with full multi-session workflow"
+    "subject": "docs(recap): Complete Phase 1-4 documentation (4,752 lines)"
   }
 }
