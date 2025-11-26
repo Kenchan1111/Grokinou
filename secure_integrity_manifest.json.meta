@@ -1,12 +1,12 @@
 {
-  "committed_baseline_hash": "9134e3e6215b1acdb4c1820ddb1db1fe54c918bf9a9ff21c894b10d26af4f622",
-  "timestamp": "2025-11-26T07:18:39.131286+00:00",
+  "committed_baseline_hash": "fb0221b014f4ed4e812416e4de442f7f0d3a6aecab7126eead923786e15ba186",
+  "timestamp": "2025-11-26T08:48:43.328863+00:00",
   "merkle_root": "7c05ea80a29982d0a48f718e4a68f1877d5e899a02d9f1b9395d3f41f656bf51",
   "total_files": 1137,
   "last_commit": {
-    "hash": "c724b01c1e8ff42ec82389c760ef3f740ea5e57c",
-    "time": "2025-11-26T08:18:38+01:00",
+    "hash": "d0827fefa9980d97a25701a0bc8dd9ed816236a4",
+    "time": "2025-11-26T09:48:42+01:00",
     "author": "zack",
-    "subject": "docs(recap): Complete Phase 1-4 documentation (4,752 lines)"
+    "subject": "fix(settings): improve model list migration logic"
   }
 }
