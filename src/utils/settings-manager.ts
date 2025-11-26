@@ -138,17 +138,25 @@ export class SettingsManager {
   private migrateModelsIfNeeded(): void {
     try {
       const currentModels = this.getUserSetting("models") || [];
+      const defaultCount = DEFAULT_USER_SETTINGS.models?.length || 35;
       
-      // Check if migration is needed (old list has < 10 models)
-      if (currentModels.length > 0 && currentModels.length < 10) {
-        // Only Grok models? Migrate!
-        const hasOnlyGrok = currentModels.every((m: string) => m.startsWith("grok"));
-        
-        if (hasOnlyGrok) {
-          console.log("🔄 Migrating model list to include all providers...");
-          this.updateUserSetting("models", DEFAULT_USER_SETTINGS.models);
-          console.log(`✅ Added ${DEFAULT_USER_SETTINGS.models!.length - currentModels.length} new models`);
-        }
+      // Check if migration is needed
+      // Migrate if:
+      // 1. List is significantly smaller than default (< 50% of default models)
+      // 2. OR list is empty
+      const needsMigration = 
+        currentModels.length === 0 || 
+        currentModels.length < (defaultCount / 2);
+      
+      if (needsMigration) {
+        console.log(`🔄 Migrating model list from ${currentModels.length} to ${defaultCount} models...`);
+        this.updateUserSetting("models", DEFAULT_USER_SETTINGS.models);
+        console.log(`✅ Model list updated: ${currentModels.length} → ${defaultCount} models`);
+      } else if (currentModels.length < defaultCount - 5) {
+        // List exists but is slightly outdated
+        // Don't auto-migrate (user might have customized), but log a warning
+        console.log(`ℹ️  Your model list has ${currentModels.length} models (default: ${defaultCount})`);
+        console.log(`   Run /models to see all available models, or manually update ~/.grok/user-settings.json`);
       }
     } catch (error) {
       // Silent fail - not critical
