@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "1a8e41a35fd8b5464e38affbfaad242bd554f2891d02f1704f9b388140e2124f",
-  "timestamp": "2025-11-27T21:21:08.272494+00:00",
-  "merkle_root": "64eb630885d3391fed1b9005026952b3a8a9468473625f92d205239dc2895f35",
-  "total_files": 1127,
+  "committed_baseline_hash": "ddfd46a6fdba1aa5c82e0fcb1cd07aa9697c08ace6fa9f0f304401e0048bee3c",
+  "timestamp": "2025-11-27T22:06:16.511557+00:00",
+  "merkle_root": "1573988fd4d17ab920260447c5bf6fcdc3511d4f5b2ac862958dddf05685f345",
+  "total_files": 1128,
   "last_commit": {
-    "hash": "55144ab9a3ac803001a9993d0639f57b2cd596c5",
-    "time": "2025-11-27T22:21:07+01:00",
+    "hash": "635f03f4266f8a055ade7ee644d511722134c946",
+    "time": "2025-11-27T23:06:15+01:00",
     "author": "zack",
-    "subject": "fix(rename-session): save old name before renaming to display correct values"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251127_212110.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "fix(switch-session): prevent auto-commit from hiding messages after session switch"
+  }
 }
