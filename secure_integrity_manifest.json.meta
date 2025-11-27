@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "32f9462fb4c6f66e74da861f0aed6c1a035e54d1847472f81c1b36524d729b0d",
-  "timestamp": "2025-11-27T05:31:48.642732+00:00",
+  "committed_baseline_hash": "2f7f3bd4d94f5ad921b3577769164eef49fe89007d14e13f1b0b46544d71bc76",
+  "timestamp": "2025-11-27T21:15:47.074072+00:00",
   "merkle_root": "64eb630885d3391fed1b9005026952b3a8a9468473625f92d205239dc2895f35",
   "total_files": 1127,
   "last_commit": {
-    "hash": "47e168b65c2228dc51e66d46f88905915bb9f7a6",
-    "time": "2025-11-27T06:31:48+01:00",
+    "hash": "8ebda80fe5f1cf1ae406aa6e134b4346853c30da",
+    "time": "2025-11-27T22:15:46+01:00",
     "author": "zack",
-    "subject": "feat(ui): implement interactive model menu with fuzzy matching (Option D)"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251127_053151.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "feat(init-menu): add real-time command autocomplete + session naming"
+  }
 }
