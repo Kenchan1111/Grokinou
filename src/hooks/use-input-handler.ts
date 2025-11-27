@@ -769,6 +769,9 @@ Examples:
           throw new Error('No active session found');
         }
         
+        // IMPORTANT: Save old name BEFORE renaming (renameSession updates the cache immediately)
+        const oldName = currentSession.session_name || 'Unnamed';
+        
         // Rename the session
         sessionManager.renameSession(currentSession.id, newName);
         
@@ -776,7 +779,7 @@ Examples:
           type: "assistant",
           content: `✅ Session Renamed\n\n` +
                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                   `📝 Old Name: ${currentSession.session_name || 'Unnamed'}\n` +
+                   `📝 Old Name: ${oldName}\n` +
                    `📝 New Name: ${newName}\n` +
                    `🔖 Session ID: ${currentSession.id}\n\n` +
                    `The session name has been updated successfully.`,
