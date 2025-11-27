@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "ddfd46a6fdba1aa5c82e0fcb1cd07aa9697c08ace6fa9f0f304401e0048bee3c",
-  "timestamp": "2025-11-27T22:06:16.511557+00:00",
+  "committed_baseline_hash": "1a55a86ebcc504d79dbc8fa17a5c225d151f1549c6ff0db44c8ab7ca4d323d08",
+  "timestamp": "2025-11-27T22:18:18.260856+00:00",
   "merkle_root": "1573988fd4d17ab920260447c5bf6fcdc3511d4f5b2ac862958dddf05685f345",
   "total_files": 1128,
   "last_commit": {
-    "hash": "635f03f4266f8a055ade7ee644d511722134c946",
-    "time": "2025-11-27T23:06:15+01:00",
+    "hash": "ac778338365f1411c93dbacd13d810b6e73ad44d",
+    "time": "2025-11-27T23:18:17+01:00",
     "author": "zack",
-    "subject": "fix(switch-session): prevent auto-commit from hiding messages after session switch"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251127_220619.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "feat(tools): add /list_tools command to display all available LLM tools"
+  }
 }
