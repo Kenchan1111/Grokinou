@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "fb0221b014f4ed4e812416e4de442f7f0d3a6aecab7126eead923786e15ba186",
-  "timestamp": "2025-11-26T08:48:43.328863+00:00",
-  "merkle_root": "7c05ea80a29982d0a48f718e4a68f1877d5e899a02d9f1b9395d3f41f656bf51",
-  "total_files": 1137,
+  "committed_baseline_hash": "32f9462fb4c6f66e74da861f0aed6c1a035e54d1847472f81c1b36524d729b0d",
+  "timestamp": "2025-11-27T05:31:48.642732+00:00",
+  "merkle_root": "64eb630885d3391fed1b9005026952b3a8a9468473625f92d205239dc2895f35",
+  "total_files": 1127,
   "last_commit": {
-    "hash": "d0827fefa9980d97a25701a0bc8dd9ed816236a4",
-    "time": "2025-11-26T09:48:42+01:00",
+    "hash": "47e168b65c2228dc51e66d46f88905915bb9f7a6",
+    "time": "2025-11-27T06:31:48+01:00",
     "author": "zack",
-    "subject": "fix(settings): improve model list migration logic"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251126_084846.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "feat(ui): implement interactive model menu with fuzzy matching (Option D)"
+  }
 }
