@@ -24,13 +24,14 @@
 | **3** | `/switch-session` | - | ✅ CWD sync | ✅ | ✅ |
 | **4.1** | `/new-session` | - | ✅ Multi-session | ✅ | ✅ |
 | **4.2** | `/new-session [opts]` | - | ✅ Date range + branching | ✅ | ✅ |
-| **4.3** | - | ✅ 4 tools | ✅ Git Rewind | ✅ | ✅ |
-| **4.4** | 🔜 Git commands | - | - | - | ⏳ |
+| **4.3** | - | ✅ 4 tools LLM | ✅ Git Rewind | ✅ | ✅ |
+| **4.4** | ✅ User commands | - | ✅ Layer 1 | ✅ | ✅ |
+| **4.5** | 🔜 Advanced | - | - | - | ⏳ |
 | **5** | 🔜 Fork/Archive | 🔜 3 tools | - | - | ⏳ |
 
 ---
 
-## ✅ Phase 1-4 : COMPLET (Nov 2025)
+## ✅ Phase 1-4.4 : COMPLET (Nov 2025)
 
 ### **Commandes Utilisateur Disponibles**
 
@@ -79,34 +80,124 @@ session_rewind({ dates, ... })    // Git rewind (critical permission)
 
 ---
 
-## ⏳ Phase 4.4 : User Git Commands (NEXT)
+## ✅ Phase 4.4 : User Session Commands (COMPLET)
 
-### **Objectif**
-Contrôle Git manuel via commandes utilisateur.
+**Objectif** : Permettre aux users de contrôler les sessions manuellement (Layer 1).
 
-### **Commandes à Implémenter**
+### **Architecture 3 Couches**
+
+```
+┌──────────────────────────────────────────┐
+│  Layer 1: USER COMMANDS ✅ (Phase 4.4)   │
+│  /list_sessions, /switch-session, etc.   │
+│  → Contrôle manuel direct                │
+└──────────────────────────────────────────┘
+              ↓
+┌──────────────────────────────────────────┐
+│  Layer 2: LLM TOOLS ✅ (Phase 4.3)       │
+│  session_list, session_switch, etc.      │
+│  → Automatisation avec permissions       │
+└──────────────────────────────────────────┘
+              ↓
+┌──────────────────────────────────────────┐
+│  Layer 3: CORE FUNCTIONS ✅              │
+│  SessionManager, GitRewindManager        │
+│  → Logique réutilisable (DRY)            │
+└──────────────────────────────────────────┘
+```
+
+### **Commandes User Implémentées**
+
+| Commande | Status | Ligne | Fonctionnalité |
+|----------|--------|-------|----------------|
+| `/list_sessions` | ✅ | 532 | Liste toutes sessions |
+| `/switch-session <id>` | ✅ | 628 | Bascule session + CWD |
+| `/new-session [opts]` | ✅ | 747 | Création avec options |
+
+### **Options `/new-session` Complètes**
 
 ```bash
-/git-status           # Status repo Git
-/git-commit <msg>     # Commit all changes
-/git-push             # Push to remote
-/git-init             # Init Git repo
-/git-remote-add <url> # Add remote
+/new-session
+  --directory <path>           # Créer dans répertoire spécifique
+  --import-history             # Importer historique
+  --from-session <id>          # Session source
+  --from-date <date>           # Date début (DD/MM/YYYY)
+  --to-date <date>             # Date fin
+  --date-range <start> <end>   # Plage dates
+  --model <name>               # Modèle spécifique
+  --provider <name>            # Provider spécifique
+
+# Exemples
+/new-session --directory ~/experimental
+/new-session --import-history --model deepseek-chat
+/new-session --from-session 5 --date-range 01/11/2025 03/11/2025
+/new-session --directory ~/rewind-nov --from-date 01/11/2025 --to-date 03/11/2025
 ```
 
-### **Architecture**
-```
-Layer 1 (User Commands) → Layer 3 (GitManager)
-                       ↑
-Layer 2 (LLM Tools) ───┘
+### **Fonctionnalités Avancées**
+
+- ✅ **Parsing dates flexible** : DD/MM/YYYY, YYYY-MM-DD, "today", "yesterday"
+- ✅ **Validation date range** : Empêche dates inversées
+- ✅ **Création auto répertoires** : `mkdir -p` si inexistant
+- ✅ **Switch agent automatique** : Met à jour modèle/provider
+- ✅ **Messages confirmation détaillés** : Stats complètes
+
+### **Décision de Design : Pas de Commandes Git User**
+
+❌ **PAS de `/git-status`, `/git-commit`, `/git-push`**
+
+**Rationale** :
+- LLMs connaissent déjà Git (via `bash` tool)
+- Commandes Git seraient redondantes et source de confusion
+- Grokinou se concentre sur SESSION management
+- Separation of Concerns : Grokinou = Sessions, Git = bash
+
+```typescript
+// ✅ CORRECT : LLM utilise bash pour Git
+await executeTool({ name: "bash", arguments: { command: "git status" } })
+
+// ✅ CORRECT : LLM utilise session_switch pour sessions
+await executeTool({ name: "session_switch", arguments: { session_id: 5 } })
 ```
 
-Réutiliser `GitManager` class (DRY).
+**Status** : ✅ **COMPLET**
+
+---
+
+## ⏳ Phase 4.5 : Advanced User Commands (FUTURE)
+
+### **Objectif**
+Parsing dates plus flexible et opérations batch.
+
+### **Commandes Prévues**
+
+```bash
+# Date parsing naturel
+/new-session --from-date "3 days ago"
+/new-session --date-range "last week"
+/new-session --date-range "November 2025"
+
+# Opérations batch
+/new-session --for-each-day-in-range 01/11 05/11
+/replay-session <id> --step-by-step
+
+# Metadata enrichie
+/tag-session <id> <tag>
+/search-sessions --tag=experimental
+/sessions --sort-by=messages --order=desc
+```
+
+### **Backend à Créer**
+
+- Date parsing naturel (chrono-node)
+- Batch operations
+- Tags/metadata
+- Advanced filtering
 
 ### **Estimation**
-- Temps : 2-3 heures
-- Lignes code : ~200
-- Lignes docs : ~150
+- Temps : 1 semaine
+- Lignes code : ~400
+- Lignes docs : ~200
 
 ---
 
@@ -179,51 +270,57 @@ SessionRepository.delete()
 
 ### **Haute Priorité** 🔴
 
-1. **Phase 4.4 : Git Commands**
-   - Besoin immédiat pour workflow complet
-   - Réutilise architecture existante
-   - Quick win (2-3h)
-
-2. **Tests Automatisés**
+1. **Tests Automatisés**
    - Unit tests SessionManager
    - Integration tests Git Rewind
    - E2E tests UI commands
+   - Test `/new-session` options
 
-3. **Error Handling**
+2. **Error Handling**
    - Validation robuste inputs
    - Messages erreur clairs
    - Rollback transactions SQLite
 
+3. **Documentation Mise à Jour**
+   - Update tous docs avec Phase 4.4 complete
+   - Tutorial complet Layer 1 + Layer 2
+   - Video demo (optionnel)
+
 ### **Moyenne Priorité** 🟡
 
-4. **Phase 5 : Fork/Archive**
+4. **Phase 4.5 : Advanced Commands**
+   - Date parsing naturel
+   - Batch operations
+   - Tags et metadata
+
+5. **Phase 5 : Fork/Archive**
    - Complète lifecycle management
    - Fork = use case important
    - Archive = cleaning nécessaire
 
-5. **Performance**
+6. **Performance**
    - Lazy loading historique
    - Pagination /list_sessions
    - Index BDD optimisés
 
-6. **UI Polish**
+7. **UI Polish**
    - Progress indicators
    - Confirmation dialogs
    - Undo/Redo
 
 ### **Basse Priorité** 🟢
 
-7. **Phase 6 : Advanced Search**
+8. **Phase 6 : Advanced Search**
    - Nice to have
    - Pas bloquant
    - Complexité élevée
 
-8. **Export/Import**
+9. **Export/Import**
    - Session → JSON/Markdown
    - Backup/Restore
    - Migration tools
 
-9. **Collaboration**
+10. **Collaboration**
    - Session sharing
    - Multi-user
    - Remote sync
@@ -331,13 +428,15 @@ git remote        →   Session sharing (future)
 
 ## 🎉 Accomplissements
 
-**Nov 2025 - Phases 1-4.3 :**
+**Nov 2025 - Phases 1-4.4 :**
 
 ✅ Migration SQLite complète  
 ✅ Multi-session management  
 ✅ Git-like conversation branching  
 ✅ Git rewind (sync conversation + code)  
-✅ LLM autonomous session management  
+✅ LLM autonomous session management (Layer 2)  
+✅ User manual session management (Layer 1)  
+✅ 3-Layer architecture (User + LLM + Core)  
 ✅ Permission system (4 levels)  
 ✅ Multi-provider support (5 providers)  
 ✅ 4,000+ lignes documentation  
@@ -363,6 +462,6 @@ git remote        →   Session sharing (future)
 
 ---
 
-**Last Updated :** 2025-11-25  
-**Next Milestone :** Phase 4.4 (Git Commands)  
+**Last Updated :** 2025-11-26  
+**Next Milestone :** Tests Automatisés + Phase 4.5 (Advanced) OU Phase 5 (Fork/Archive)  
 **Target Date :** Dec 2025

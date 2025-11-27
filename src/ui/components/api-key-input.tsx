@@ -4,6 +4,7 @@ import { GrokAgent } from "../../agent/grok-agent.js";
 import { getSettingsManager } from "../../utils/settings-manager.js";
 import { providerManager } from "../../utils/provider-manager.js";
 import type { StartupConfig } from "../../index.js";
+import { getAllModelsFlat, fuzzyMatch, formatModelMenu } from "./api-key-input-helpers.js";
 
 interface ApiKeyInputProps {
   onApiKeySet: (agent: GrokAgent) => void;
@@ -26,20 +27,27 @@ export default function ApiKeyInput({
       "⚙️  **Configuration Required**\n\n" +
       "No model is configured.\n\n" +
       "**Available commands:**\n" +
-      "• `/models` - List available models\n" +
+      "• `/models` - List available models (↑/↓ to navigate)\n" +
       "• `/apikey <provider> <key>` - Set API key\n" +
       "• `/model-default <model>` - Set global default model\n\n" +
       "**Example:**\n" +
       "```\n" +
       "/apikey openai sk-proj-...\n" +
       "/model-default gpt-4o\n" +
-      "```";
+      "```\n\n" +
+      "**Tip:** Type `/models deep` to filter models";
     
     return [{ type: 'system', content: configMessage }];
   });
   
   const [input, setInput] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // New states for interactive model menu (Option D - Hybrid)
+  const [showModelMenu, setShowModelMenu] = useState(false);
+  const [selectedModelIndex, setSelectedModelIndex] = useState(0);
+  const [modelList, setModelList] = useState<string[]>([]);
+  
   const { exit } = useApp();
 
   const handleSubmit = useCallback(async () => {
@@ -53,25 +61,38 @@ export default function ApiKeyInput({
     setIsProcessing(true);
 
     try {
-      // Handle /models command
+      // Handle /models command (Option D: Hybrid with fuzzy matching + interactive menu)
       if (userInput === '/models' || userInput.startsWith('/models ')) {
-        const providers = providerManager.getAllProviders();
-        let response = "📋 **Available Models:**\n\n";
+        const parts = userInput.split(/\s+/);
+        const query = parts.slice(1).join(' '); // Get search query if any
         
-        for (const [providerName, provider] of Object.entries(providers)) {
-          response += `**${providerName}** (${provider.baseURL}):\n`;
-          for (const model of provider.models) {
-            response += `  • ${model}\n`;
-          }
-          response += '\n';
+        const allModels = getAllModelsFlat();
+        const matchedModels = query ? fuzzyMatch(query, allModels) : allModels;
+        
+        if (matchedModels.length === 0) {
+          // No matches found
+          setMessages(prev => [...prev, { 
+            type: 'system', 
+            content: `❌ No models found matching "${query}"\n\nUse /models to see all available models.` 
+          }]);
+        } else if (matchedModels.length === 1 && query) {
+          // Exactly 1 match with a query - suggest it
+          setMessages(prev => [...prev, { 
+            type: 'system', 
+            content: `✅ Found: **${matchedModels[0]}**\n\nUse this command to set it as default:\n\`/model-default ${matchedModels[0]}\`` 
+          }]);
+        } else {
+          // Multiple matches or no query - show interactive menu
+          setModelList(matchedModels);
+          setSelectedModelIndex(0);
+          setShowModelMenu(true);
+          
+          const menuContent = formatModelMenu(matchedModels, 0);
+          setMessages(prev => [...prev, { 
+            type: 'system', 
+            content: menuContent
+          }]);
         }
-        
-        response += "\n**Next steps:**\n";
-        response += "1. Choose a model from the list above\n";
-        response += "2. Set your API key: `/apikey <provider> <your-key>`\n";
-        response += "   Example: `/apikey openai sk-proj-...`\n";
-        
-        setMessages(prev => [...prev, { type: 'system', content: response }]);
       }
       
       // Handle /apikey command
@@ -132,55 +153,78 @@ export default function ApiKeyInput({
         }
       }
       
-      // Handle /model-default command
+      // Handle /model-default command (Option D: with fuzzy matching)
       else if (userInput.startsWith('/model-default ')) {
         const parts = userInput.split(/\s+/);
         if (parts.length < 2) {
           setMessages(prev => [...prev, { 
             type: 'system', 
-            content: "❌ Usage: `/model-default <model-name>`\n\nExample: `/model-default gpt-4o`" 
+            content: "❌ Usage: `/model-default <model-name>`\n\nExample: `/model-default gpt-4o`\n\n**Tip:** Use `/models <query>` to find models" 
           }]);
         } else {
-          const model = parts.slice(1).join(' ');
-          const provider = providerManager.detectProvider(model);
+          const modelQuery = parts.slice(1).join(' ');
           
-          if (!provider) {
+          // Try fuzzy matching first
+          const allModels = getAllModelsFlat();
+          const matches = fuzzyMatch(modelQuery, allModels);
+          
+          if (matches.length === 0) {
+            // No matches
             setMessages(prev => [...prev, { 
               type: 'system', 
-              content: `❌ Unknown model: ${model}\n\nUse /models to see available models.` 
+              content: `❌ No models found matching "${modelQuery}"\n\nUse /models to see all available models.` 
             }]);
-          } else {
-            // Save default model
-            const manager = getSettingsManager();
-            manager.updateUserSetting('defaultModel', model);
+          } else if (matches.length === 1) {
+            // Exactly 1 match - use it
+            const model = matches[0];
+            const provider = providerManager.detectProvider(model);
             
-            // Check if we have an API key for this provider
-            const apiKey = manager.getApiKeyForProvider(provider);
-            
-            if (apiKey) {
-              // We can initialize the agent now!
-              const providerConfig = providerManager.getProviderForModel(model);
-              const baseURL = providerConfig?.baseURL || 'https://api.x.ai/v1';
-              const agent = new GrokAgent(apiKey, baseURL, model);
-              
+            if (!provider) {
               setMessages(prev => [...prev, { 
                 type: 'system', 
-                content: `✅ Default model set to ${model}\n🚀 Initializing agent...` 
+                content: `❌ Unknown provider for model: ${model}` 
               }]);
-              
-              // Small delay to show the message
-              setTimeout(() => {
-                onApiKeySet(agent);
-              }, 500);
             } else {
-              // Model saved, but need API key
-              setMessages(prev => [...prev, { 
-                type: 'system', 
-                content: `✅ Default model set to ${model}\n\n` +
-                  `**Next step:** Add your ${provider} API key\n` +
-                  `/apikey ${provider} <your-key>`
-              }]);
+              // Save default model
+              const manager = getSettingsManager();
+              manager.updateUserSetting('defaultModel', model);
+              
+              // Check if we have an API key for this provider
+              const apiKey = manager.getApiKeyForProvider(provider);
+              
+              if (apiKey) {
+                // We can initialize the agent now!
+                const providerConfig = providerManager.getProviderForModel(model);
+                const baseURL = providerConfig?.baseURL || 'https://api.x.ai/v1';
+                const agent = new GrokAgent(apiKey, baseURL, model);
+                
+                setMessages(prev => [...prev, { 
+                  type: 'system', 
+                  content: `✅ Default model set to **${model}**\n🚀 Initializing agent...` 
+                }]);
+                
+                // Small delay to show the message
+                setTimeout(() => {
+                  onApiKeySet(agent);
+                }, 500);
+              } else {
+                // Model saved, but need API key
+                setMessages(prev => [...prev, { 
+                  type: 'system', 
+                  content: `✅ Default model set to **${model}**\n\n` +
+                    `**Next step:** Add your ${provider} API key\n` +
+                    `/apikey ${provider} <your-key>`
+                }]);
+              }
             }
+          } else {
+            // Multiple matches - show suggestions
+            const suggestions = matches.slice(0, 5).map(m => `  • ${m}`).join('\n');
+            setMessages(prev => [...prev, { 
+              type: 'system', 
+              content: `❓ Multiple models match "${modelQuery}":\n\n${suggestions}\n\n` +
+                `Please be more specific or use /models to navigate interactively.` 
+            }]);
           }
         }
       }
@@ -225,10 +269,125 @@ export default function ApiKeyInput({
     }
   }, [input, isProcessing, onApiKeySet, startupConfig, exit]);
 
-  // Handle keyboard input
+  // Handle keyboard input (Option D: with interactive menu navigation)
   useInput((inputChar, key) => {
     if (isProcessing) return;
-
+    
+    // ============================================
+    // MODE 1: Interactive Model Menu Navigation
+    // ============================================
+    if (showModelMenu) {
+      // Navigate up
+      if (key.upArrow) {
+        setSelectedModelIndex(prev => {
+          const newIdx = Math.max(0, prev - 1);
+          // Update menu display with new selection
+          const menuContent = formatModelMenu(modelList, newIdx);
+          setMessages(prevMsgs => {
+            const newMsgs = [...prevMsgs];
+            // Replace last message (the menu) with updated version
+            if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].type === 'system') {
+              newMsgs[newMsgs.length - 1] = { type: 'system', content: menuContent };
+            }
+            return newMsgs;
+          });
+          return newIdx;
+        });
+        return;
+      }
+      
+      // Navigate down
+      if (key.downArrow) {
+        setSelectedModelIndex(prev => {
+          const newIdx = Math.min(modelList.length - 1, prev + 1);
+          // Update menu display with new selection
+          const menuContent = formatModelMenu(modelList, newIdx);
+          setMessages(prevMsgs => {
+            const newMsgs = [...prevMsgs];
+            // Replace last message (the menu) with updated version
+            if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].type === 'system') {
+              newMsgs[newMsgs.length - 1] = { type: 'system', content: menuContent };
+            }
+            return newMsgs;
+          });
+          return newIdx;
+        });
+        return;
+      }
+      
+      // Select model with Enter
+      if (key.return) {
+        const selectedModel = modelList[selectedModelIndex];
+        setShowModelMenu(false);
+        // Auto-fill /model-default command and submit
+        setInput(`/model-default ${selectedModel}`);
+        setMessages(prev => [...prev, { type: 'user', content: `/model-default ${selectedModel}` }]);
+        // Trigger handleSubmit with the selected model
+        setTimeout(() => {
+          // Call handleSubmit logic directly
+          setIsProcessing(true);
+          const provider = providerManager.detectProvider(selectedModel);
+          
+          if (!provider) {
+            setMessages(prev => [...prev, { 
+              type: 'system', 
+              content: `❌ Unknown provider for model: ${selectedModel}` 
+            }]);
+            setIsProcessing(false);
+          } else {
+            // Save default model
+            const manager = getSettingsManager();
+            manager.updateUserSetting('defaultModel', selectedModel);
+            
+            // Check if we have an API key for this provider
+            const apiKey = manager.getApiKeyForProvider(provider);
+            
+            if (apiKey) {
+              // We can initialize the agent now!
+              const providerConfig = providerManager.getProviderForModel(selectedModel);
+              const baseURL = providerConfig?.baseURL || 'https://api.x.ai/v1';
+              const agent = new GrokAgent(apiKey, baseURL, selectedModel);
+              
+              setMessages(prev => [...prev, { 
+                type: 'system', 
+                content: `✅ Default model set to **${selectedModel}**\n🚀 Initializing agent...` 
+              }]);
+              
+              // Small delay to show the message
+              setTimeout(() => {
+                onApiKeySet(agent);
+              }, 500);
+            } else {
+              // Model saved, but need API key
+              setMessages(prev => [...prev, { 
+                type: 'system', 
+                content: `✅ Default model set to **${selectedModel}**\n\n` +
+                  `**Next step:** Add your ${provider} API key\n` +
+                  `/apikey ${provider} <your-key>`
+              }]);
+              setIsProcessing(false);
+            }
+          }
+          setInput(''); // Clear input
+        }, 10);
+        return;
+      }
+      
+      // Cancel menu with Escape
+      if (key.escape) {
+        setShowModelMenu(false);
+        setMessages(prev => [...prev, { type: 'system', content: '❌ Model selection cancelled.' }]);
+        return;
+      }
+      
+      // Block other inputs when menu is active
+      return;
+    }
+    
+    // ============================================
+    // MODE 2: Normal Input Mode (Original behavior preserved)
+    // ============================================
+    
     if (key.return) {
       handleSubmit();
       return;
