@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-27T22:06:16.492419+00:00",
+  "timestamp": "2025-11-27T22:18:18.242630+00:00",
   "merkle_root": "1573988fd4d17ab920260447c5bf6fcdc3511d4f5b2ac862958dddf05685f345",
   "total_files": 1128,
   "files": {
@@ -13541,9 +13541,9 @@
       "ots_verified": null
     }
   },
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251127_220618.ots",
-  "merkle_root_anchored_at": "2025-11-27T22:06:18.134218+00:00",
+  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251127_221819.ots",
+  "merkle_root_anchored_at": "2025-11-27T22:18:19.978273+00:00",
   "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251127_220619.ots",
-  "baseline_anchored_at": "2025-11-27T22:06:19.773197+00:00"
+  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251127_221820.ots",
+  "baseline_anchored_at": "2025-11-27T22:18:20.998297+00:00"
 }
