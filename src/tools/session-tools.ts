@@ -11,61 +11,85 @@ import { SessionListItem } from '../db/types.js';
 /**
  * Tool: session_list
  * List all conversation sessions
+ * 
+ * This is a DUPLICATE of /list_sessions user command for intentional evolution.
+ * The code starts identical but can diverge based on LLM feedback.
  */
 export async function executeSessionList(): Promise<ToolResult> {
   try {
-    const sessions = sessionManager.listSessions();
-    
+    // Pass null to get sessions from ALL directories (not just current)
+    // Same behavior as /list_sessions user command
+    const sessions = sessionManager.listSessions(
+      null,
+      {
+        sortBy: 'last_activity',
+        sortOrder: 'DESC',
+        limit: 50  // Increased limit for multi-directory view
+      }
+    );
+
     if (sessions.length === 0) {
       return {
         success: true,
-        output: `📋 **No Sessions Found**
-
-No conversation sessions in the database yet.
-
-💡 Create your first session by starting a conversation!`
+        output: `📂 No sessions found\n\nStart chatting to create your first session!`
       };
     }
-    
-    // Format session list
-    const currentSession = sessionManager.getCurrentSession();
-    
-    let output = `📋 **Conversation Sessions** (${sessions.length} total)\n\n`;
+
+    // Group sessions by working directory (same as user command)
+    const sessionsByDir: Map<string, typeof sessions> = new Map();
+    sessions.forEach(session => {
+      const dir = session.working_dir;
+      if (!sessionsByDir.has(dir)) {
+        sessionsByDir.set(dir, []);
+      }
+      sessionsByDir.get(dir)!.push(session);
+    });
+
+    // Format sessions list grouped by directory
+    const dirCount = sessionsByDir.size;
+    let output = `📚 All Sessions (${dirCount} ${dirCount === 1 ? 'directory' : 'directories'})\n`;
     output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    for (const session of sessions) {
-      const isCurrent = currentSession?.id === session.id;
-      const statusEmoji = session.status === 'active' ? '🟢' : session.status === 'completed' ? '✅' : '📦';
+
+    // Iterate through directories (sorted by most recent activity)
+    const sortedDirs = Array.from(sessionsByDir.entries()).sort((a, b) => {
+      const latestA = Math.max(...a[1].map(s => new Date(s.last_activity).getTime()));
+      const latestB = Math.max(...b[1].map(s => new Date(s.last_activity).getTime()));
+      return latestB - latestA;
+    });
+
+    sortedDirs.forEach(([dir, dirSessions], dirIndex) => {
+      // Highlight current directory
+      const isCurrent = dir === process.cwd();
+      const dirMarker = isCurrent ? '📍' : '📁';
+      const dirLabel = isCurrent ? ` (current)` : '';
       
-      output += `${isCurrent ? '👉 ' : '   '}**Session #${session.id}** ${statusEmoji}\n`;
-      output += `   📂 Directory: ${session.working_dir}\n`;
-      output += `   🤖 Provider: ${session.default_provider} (${session.default_model})\n`;
-      output += `   💬 Messages: ${session.message_count || 0}\n`;
-      
-      if (session.session_name) {
-        output += `   📝 Name: ${session.session_name}\n`;
+      output += `${dirMarker} **${dir}**${dirLabel}\n`;
+      output += `   ${dirSessions.length} ${dirSessions.length === 1 ? 'session' : 'sessions'}\n\n`;
+
+      dirSessions.forEach((session) => {
+        const status = session.status === 'active' ? '🟢' : 
+                      session.status === 'completed' ? '⚪' : '📦';
+        const favorite = session.is_favorite ? '⭐' : '';
+        
+        output += `   ${status} #${session.id}${favorite}`;
+        
+        if (session.session_name) {
+          output += ` - ${session.session_name}`;
+        }
+        
+        output += ` (${session.default_model}, ${session.message_count} msgs)`;
+        output += ` - ${session.last_activity_relative}\n`;
+      });
+
+      // Add spacing between directories
+      if (dirIndex < sortedDirs.length - 1) {
+        output += `\n`;
       }
-      
-      if (session.first_message_preview) {
-        const preview = session.first_message_preview.substring(0, 60);
-        output += `   💭 First: "${preview}${session.first_message_preview.length > 60 ? '...' : ''}"\n`;
-      }
-      
-      output += `   📅 Created: ${new Date(session.created_at).toLocaleDateString()}\n`;
-      output += `   🕐 Last Active: ${new Date(session.last_activity).toLocaleString()}\n`;
-      
-      if (isCurrent) {
-        output += `   ✨ **CURRENT SESSION**\n`;
-      }
-      
-      output += `\n`;
-    }
-    
-    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    output += `💡 **Actions:**\n`;
-    output += `- Switch session: session_switch tool or /switch-session <id>\n`;
-    output += `- Create new: session_new tool or /new-session\n`;
-    output += `- Git rewind: session_rewind tool or /new-session --git-rewind\n`;
+    });
+
+    output += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    output += `\n💡 Use session_switch tool to switch (changes directory automatically)\n`;
+    output += `💡 Legend: 🟢 Active  ⚪ Completed  📦 Archived  ⭐ Favorite  📍 Current dir`;
     
     return {
       success: true,
@@ -84,72 +108,96 @@ No conversation sessions in the database yet.
  * Tool: session_switch
  * Switch to a different session
  * REQUIRES USER PERMISSION
+ * 
+ * This is a DUPLICATE of /switch-session user command for intentional evolution.
+ * The code starts identical but can diverge based on LLM feedback.
+ * Key features tested in user command:
+ * - Multi-directory switching
+ * - Automatic process.chdir() synchronization
+ * - Chat history loading
+ * - Model/provider context update
  */
 export async function executeSessionSwitch(args: { session_id: number }): Promise<ToolResult> {
   try {
     const { session_id } = args;
     
-    // Validate session exists
-    const sessions = sessionManager.listSessions();
-    const targetSession = sessions.find(s => s.id === session_id);
-    
-    if (!targetSession) {
+    // Validate session ID
+    if (isNaN(session_id)) {
       return {
         success: false,
-        output: `❌ Session #${session_id} not found.\n\n` +
-                `Available sessions: ${sessions.map(s => `#${s.id}`).join(', ')}\n\n` +
-                `💡 Use session_list to see all sessions`
+        output: `❌ Invalid session ID\n\n` +
+                `Session ID must be a number.\n\n` +
+                `💡 Use session_list to see available session IDs`
       };
     }
     
-    // Check if target directory exists
-    const fs = await import('fs');
-    if (!fs.existsSync(targetSession.working_dir)) {
-      return {
-        success: false,
-        output: `❌ Target directory does not exist: ${targetSession.working_dir}\n\n` +
-                `The session exists in database but its directory is missing.`
-      };
-    }
-    
-    // Perform switch
+    // Switch session (core logic from user command)
     const { session, history } = await sessionManager.switchSession(session_id);
     
-    // Change Node's CWD
-    process.chdir(targetSession.working_dir);
+    // CRITICAL: Change working directory to match the session's working_dir
+    // This prevents path confusion when the LLM thinks it's in one directory
+    // but the Node process is actually in another
+    const targetWorkdir = session.working_dir;
+    const currentWorkdir = process.cwd();
     
-    // Verify CWD change
-    const actualCwd = process.cwd();
-    if (actualCwd !== targetSession.working_dir) {
-      return {
-        success: false,
-        output: `❌ Failed to change directory to ${targetSession.working_dir}\n` +
-                `Current directory: ${actualCwd}`
-      };
+    if (targetWorkdir !== currentWorkdir) {
+      // Verify target directory exists
+      const fs = await import('fs');
+      if (!fs.existsSync(targetWorkdir)) {
+        return {
+          success: false,
+          output: `❌ Session's working directory does not exist: ${targetWorkdir}\n\n` +
+                  `The directory may have been moved or deleted.`
+        };
+      }
+      
+      // Change the Node process's current working directory
+      process.chdir(targetWorkdir);
+      
+      // Verify the change was successful
+      const newCwd = process.cwd();
+      if (newCwd !== targetWorkdir) {
+        return {
+          success: false,
+          output: `❌ Failed to change directory from ${currentWorkdir} to ${targetWorkdir}\n` +
+                  `Current directory is: ${newCwd}`
+        };
+      }
     }
+    
+    // Format confirmation message (adapted from user command)
+    const dirChanged = targetWorkdir !== currentWorkdir;
+    let output = `✅ Switched to Session #${session.id}\n\n`;
+    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    output += `📝 Name: ${session.session_name || 'Unnamed'}\n`;
+    output += `🤖 Provider: ${session.default_provider}\n`;
+    output += `📱 Model: ${session.default_model}\n`;
+    output += `💬 Messages: ${history.length}\n`;
+    output += `📁 Working Directory: ${session.working_dir}\n`;
+    output += `🕐 Last Activity: ${new Date(session.last_activity).toLocaleString()}\n\n`;
+    
+    if (dirChanged) {
+      output += `📂 **Directory Changed:**\n`;
+      output += `   From: ${currentWorkdir}\n`;
+      output += `   To:   ${targetWorkdir}\n\n`;
+      output += `⚠️  All relative paths now resolve to the new directory.\n\n`;
+    } else {
+      output += `📂 **Directory:** Already in ${targetWorkdir}\n\n`;
+    }
+    
+    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    output += `Conversation history loaded! Continue chatting...`;
     
     return {
       success: true,
-      output: `✅ **Session Switched** to #${session.id}\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `📂 **Working Directory:** ${session.working_dir}\n` +
-              `   ✅ Process CWD changed successfully\n\n` +
-              `🤖 **Provider:** ${session.default_provider}\n` +
-              `📱 **Model:** ${session.default_model}\n` +
-              `💬 **Messages:** ${history.length} loaded\n\n` +
-              `📅 **Session Info:**\n` +
-              `   Created: ${new Date(session.created_at).toLocaleDateString()}\n` +
-              `   Last Active: ${new Date(session.last_activity).toLocaleString()}\n` +
-              (session.session_name ? `   Name: ${session.session_name}\n` : '') +
-              `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `🎯 You can now continue working in this session context.\n` +
-              `All file paths are relative to: ${session.working_dir}`
+      output
     };
     
   } catch (error: any) {
     return {
       success: false,
-      output: `❌ Session switch failed: ${error.message}`
+      output: `❌ Failed to switch session: ${error.message}\n\n` +
+              `💡 Use session_list to see available sessions`
     };
   }
 }
@@ -157,6 +205,16 @@ export async function executeSessionSwitch(args: { session_id: number }): Promis
 /**
  * Tool: session_new
  * Create a new conversation session
+ * 
+ * This is a DUPLICATE of /new-session user command for intentional evolution.
+ * The code starts identical but can diverge based on LLM feedback.
+ * Key features tested in user command:
+ * - Directory creation and validation
+ * - History import with date filtering
+ * - Model/provider resolution
+ * - API key handling
+ * 
+ * NOTE: The agent must provide API key via context
  */
 export async function executeSessionNew(args: {
   directory: string;
@@ -178,40 +236,79 @@ export async function executeSessionNew(args: {
       provider
     } = args;
     
-    // Resolve directory path
-    const path = await import('path');
-    const targetWorkdir = directory.startsWith('/')
-      ? directory
-      : path.resolve(process.cwd(), directory);
+    // Parse date range if provided (same as user command)
+    let fromDate: Date | undefined;
+    let toDate: Date | undefined;
     
-    // Create directory if needed
-    const fs = await import('fs');
-    if (!fs.existsSync(targetWorkdir)) {
-      fs.mkdirSync(targetWorkdir, { recursive: true });
+    if (date_range_start) {
+      fromDate = parseDate(date_range_start);
+    }
+    if (date_range_end) {
+      toDate = parseDate(date_range_end);
     }
     
-    // Parse date range if provided
-    let dateRange: { start: Date; end: Date } | undefined;
-    if (date_range_start || date_range_end) {
-      dateRange = {
-        start: date_range_start ? parseDate(date_range_start) : new Date(0),
-        end: date_range_end ? parseDate(date_range_end) : new Date()
+    // Validate date range
+    if (fromDate && toDate && fromDate > toDate) {
+      return {
+        success: false,
+        output: `❌ Invalid date range: start date must be before end date\n\n` +
+                `Start: ${fromDate.toLocaleDateString()}\n` +
+                `End: ${toDate.toLocaleDateString()}`
       };
     }
     
-    // Determine model and provider
+    // Build date range for filtering
+    const dateRange = (fromDate || toDate) ? {
+      start: fromDate || new Date(0), // Beginning of time if not specified
+      end: toDate || new Date() // Now if not specified
+    } : undefined;
+    
+    // Determine target directory (default: current directory)
+    // Same resolution logic as user command
+    const targetWorkdir = directory.startsWith('/') 
+      ? directory 
+      : `${process.cwd()}/${directory}`;
+    
+    // Verify/create target directory (same as user command)
+    const fs = await import('fs');
+    if (!fs.existsSync(targetWorkdir)) {
+      // Create directory recursively
+      fs.mkdirSync(targetWorkdir, { recursive: true });
+    }
+    
+    // Determine model and provider (same logic as user command)
     const currentSession = sessionManager.getCurrentSession();
+    
+    // Note: Agent will need to inject API key via context
+    // This is handled by the agent calling this tool
+    const apiKey = undefined; // Agent provides via context
+    
     const targetModel = model || currentSession?.default_model || 'grok-beta';
     const targetProvider = provider || 
-                          (model ? providerManager.detectProvider(model) : null) ||
-                          currentSession?.default_provider ||
-                          'grok';
+                           (model ? providerManager.detectProvider(model) : null) ||
+                           currentSession?.default_provider || 
+                           (targetModel ? providerManager.detectProvider(targetModel) : null) ||
+                           'grok';
     
-    // Get API key (assume agent will provide it)
-    // This is a simplified version - in practice, the agent handler will provide the key
-    const apiKey = undefined; // Agent will provide
+    if (!targetProvider) {
+      return {
+        success: false,
+        output: `❌ Cannot determine provider for model: ${targetModel}\n\n` +
+                `Please specify provider explicitly.`
+      };
+    }
     
-    // Create session
+    // Check API key requirement
+    if (!apiKey) {
+      return {
+        success: false,
+        output: `❌ No API key found for provider: ${targetProvider}\n\n` +
+                `The agent must provide API key via context.\n` +
+                `Please ensure API key is configured for ${targetProvider}.`
+      };
+    }
+    
+    // Create the new session (core logic from user command)
     const { session, history } = await sessionManager.createNewSession(
       targetWorkdir,
       targetProvider,
@@ -224,36 +321,46 @@ export async function executeSessionNew(args: {
       }
     );
     
+    // Format confirmation message (adapted from user command)
+    const dirChanged = targetWorkdir !== process.cwd();
+    let output = `✅ **New Session Created** #${session.id}\n\n`;
+    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    output += `📂 Working Directory: ${session.working_dir}\n`;
+    if (dirChanged) {
+      output += `   (Created in new directory)\n`;
+    }
+    output += `🤖 Provider: ${session.default_provider}\n`;
+    output += `📱 Model: ${session.default_model}\n`;
+    output += `💬 Messages: ${history.length}${import_history ? ' (imported)' : ''}\n`;
+    output += `🕐 Created: ${new Date(session.created_at).toLocaleString()}\n\n`;
+    
+    if (import_history) {
+      output += `📋 **History Imported**\n`;
+      output += from_session_id ? `   Source: Session #${from_session_id}\n` : `   Source: Current session\n`;
+      if (dateRange) {
+        output += `   Date Range: ${dateRange.start.toLocaleDateString()} → ${dateRange.end.toLocaleDateString()}\n`;
+      }
+      output += `   Messages: ${history.length} imported\n\n`;
+    } else {
+      output += `📄 **Fresh Start**\n`;
+      output += `   This is a brand new conversation.\n\n`;
+    }
+    
+    output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    output += `You can now start a new conversation!\n\n`;
+    output += `💡 Use session_list to see all sessions\n`;
+    output += `💡 Use session_switch to go back to previous session`;
+    
     return {
       success: true,
-      output: `✅ **New Session Created** #${session.id}\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `📂 **Working Directory:** ${session.working_dir}\n` +
-              `   ${targetWorkdir !== process.cwd() ? '(Created in new directory)\n' : ''}\n` +
-              `🤖 **Provider:** ${session.default_provider}\n` +
-              `📱 **Model:** ${session.default_model}\n` +
-              `💬 **Messages:** ${history.length}${import_history ? ' (imported)' : ''}\n` +
-              `🕐 **Created:** ${new Date(session.created_at).toLocaleString()}\n\n` +
-              (import_history
-                ? `📋 **History Imported**\n` +
-                  (from_session_id ? `   Source: Session #${from_session_id}\n` : `   Source: Current session\n`) +
-                  (dateRange ? `   Date Range: ${dateRange.start.toLocaleDateString()} → ${dateRange.end.toLocaleDateString()}\n` : '') +
-                  `   Messages: ${history.length} imported\n\n`
-                : `📄 **Fresh Start**\n` +
-                  `   This is a brand new conversation.\n\n`
-              ) +
-              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `🎯 Session ready for new conversation!\n\n` +
-              `💡 **Next Steps:**\n` +
-              `- Start conversation in new context\n` +
-              `- Use session_list to see all sessions\n` +
-              `- Use session_switch to go back to previous session`
+      output
     };
     
   } catch (error: any) {
     return {
       success: false,
-      output: `❌ Session creation failed: ${error.message}`
+      output: `❌ Failed to create new session: ${error.message}\n\n` +
+              `Usage: session_new tool with required arguments`
     };
   }
 }

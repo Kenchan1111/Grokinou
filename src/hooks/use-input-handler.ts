@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useInput } from "ink";
 import { GrokAgent, ChatEntry } from "../agent/grok-agent.js";
 import { ConfirmationService } from "../utils/confirmation-service.js";
@@ -265,7 +265,15 @@ export function useInputHandler({
     return false; // Let default handling proceed
   };
 
+  // Guard against duplicate submissions
+  const isSubmittingRef = useRef(false);
+
   const handleInputSubmit = async (userInput: string) => {
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     if (userInput === "exit" || userInput === "quit") {
       process.exit(0);
       return;
@@ -275,12 +283,17 @@ export function useInputHandler({
     const expandedInput = pasteManager.expandPlaceholders(userInput);
 
     if (expandedInput.trim()) {
-      const directCommandResult = await handleDirectCommand(expandedInput);
-      if (!directCommandResult) {
-        await processUserMessage(expandedInput);
+      isSubmittingRef.current = true;
+      try {
+        const directCommandResult = await handleDirectCommand(expandedInput);
+        if (!directCommandResult) {
+          await processUserMessage(expandedInput);
+        }
+        // Clear pending pastes after successful submit
+        pasteManager.clearAll();
+      } finally {
+        isSubmittingRef.current = false;
       }
-      // Clear pending pastes after successful submit
-      pasteManager.clearAll();
     }
   };
 
@@ -850,6 +863,9 @@ Examples:
         const { getAllGrokTools } = await import("../grok/tools.js");
         const allTools = await getAllGrokTools();
         
+        // Check for conditional tools
+        const hasMorphKey = !!process.env.MORPH_API_KEY;
+        
         // Group tools by category
         const fileOps: string[] = [];
         const execution: string[] = [];
@@ -862,7 +878,9 @@ Examples:
         allTools.forEach((tool) => {
           const name = tool.function.name;
           const desc = tool.function.description;
-          const formattedTool = `   🔧 ${name}\n      ${desc.split('\n')[0].substring(0, 100)}${desc.length > 100 ? '...' : ''}`;
+          const firstLine = desc.split('\n')[0];
+          const truncatedDesc = firstLine.length > 100 ? firstLine.substring(0, 100) + '...' : firstLine;
+          const formattedTool = `   🔧 ${name}\n      ${truncatedDesc}`;
           
           // Categorize tools
           if (['view_file', 'create_file', 'str_replace_editor', 'edit_file', 'apply_patch'].includes(name)) {
@@ -883,9 +901,23 @@ Examples:
           }
         });
         
+        // Add Morph edit_file tool if not present (show as unavailable)
+        if (!hasMorphKey && !allTools.some(t => t.function.name === 'edit_file')) {
+          const morphTool = `   🔧 edit_file (Morph Fast Apply)\n` +
+                           `      ⚠️  NOT CONFIGURED - Requires MORPH_API_KEY environment variable\n` +
+                           `      AI-powered fast code editing with intelligent diff application`;
+          fileOps.push(morphTool);
+        }
+        
         let content = `🛠️  LLM Tools Available\n` +
                       `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                      `📊 Total Tools: ${allTools.length}\n\n`;
+                      `📊 Total Active Tools: ${allTools.length}\n`;
+        
+        if (!hasMorphKey) {
+          content += `⚠️  1 tool requires configuration\n`;
+        }
+        
+        content += `\n`;
         
         if (fileOps.length > 0) {
           content += `📁 File Operations (${fileOps.length}):\n${fileOps.join('\n\n')}\n\n`;
@@ -913,10 +945,23 @@ Examples:
         
         if (mcpTools.length > 0) {
           content += `🔌 MCP Tools (${mcpTools.length}):\n${mcpTools.join('\n\n')}\n\n`;
+        } else {
+          // Show MCP section even if empty, to inform users about the feature
+          content += `🔌 MCP Tools (0):\n` +
+                    `   ℹ️  No MCP servers configured\n` +
+                    `   📝 Configure external tools in ~/.grok/mcp-config.json\n` +
+                    `   🔗 Visit: https://modelcontextprotocol.io/introduction\n\n`;
         }
         
-        content += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                   `💡 Use /help to see user commands`;
+        content += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        
+        if (!hasMorphKey) {
+          content += `💡 To enable edit_file (Morph):\n` +
+                    `   export MORPH_API_KEY=your-api-key\n` +
+                    `   Get your key at: https://morph.so\n\n`;
+        }
+        
+        content += `💡 Use /help to see user commands`;
         
         const toolsEntry: ChatEntry = {
           type: "assistant",
