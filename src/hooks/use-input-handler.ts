@@ -344,6 +344,7 @@ export function useInputHandler({
     { command: "/switch-session", description: "Switch to a different session by ID" },
     { command: "/rename_session", description: "Rename the current session" },
     { command: "/new-session", description: "Create a new session in current directory" },
+    { command: "/list_tools", description: "List all tools available to LLMs" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
     { command: "/apikey", description: "Manage API keys" },
@@ -416,6 +417,7 @@ Built-in Commands:
   /models     - Switch between available models
   /list_sessions - List all sessions in current directory
   /switch-session <id> - Switch to a different session by ID
+  /rename_session <name> - Rename the current session
   /new-session [options] - Create a new session (Git-like branching)
       --directory <path>     Create session in different directory
       --import-history       Import messages from source session
@@ -428,6 +430,7 @@ Built-in Commands:
       
       Date formats: DD/MM/YYYY, YYYY-MM-DD, "today", "yesterday"
       Example: /new-session --directory ~/rewind --from-session 5 --date-range 01/11/2025 03/11/2025
+  /list_tools - List all tools available to LLMs (with descriptions)
   /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
@@ -829,6 +832,103 @@ Examples:
         const errorEntry: ChatEntry = {
           type: "assistant",
           content: `❌ Failed to rename session: ${error?.message || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /list_tools - List all tools available to LLMs
+    // ============================================
+    if (trimmedInput === "/list_tools") {
+      try {
+        // Dynamically import getAllGrokTools to get current tools
+        const { getAllGrokTools } = await import("../grok/tools.js");
+        const allTools = await getAllGrokTools();
+        
+        // Group tools by category
+        const fileOps: string[] = [];
+        const execution: string[] = [];
+        const search: string[] = [];
+        const taskMgmt: string[] = [];
+        const sessionMgmt: string[] = [];
+        const system: string[] = [];
+        const mcpTools: string[] = [];
+        
+        allTools.forEach((tool) => {
+          const name = tool.function.name;
+          const desc = tool.function.description;
+          const formattedTool = `   🔧 ${name}\n      ${desc.split('\n')[0].substring(0, 100)}${desc.length > 100 ? '...' : ''}`;
+          
+          // Categorize tools
+          if (['view_file', 'create_file', 'str_replace_editor', 'edit_file', 'apply_patch'].includes(name)) {
+            fileOps.push(formattedTool);
+          } else if (['bash'].includes(name)) {
+            execution.push(formattedTool);
+          } else if (['search'].includes(name)) {
+            search.push(formattedTool);
+          } else if (['create_todo_list', 'update_todo_list'].includes(name)) {
+            taskMgmt.push(formattedTool);
+          } else if (['session_list', 'session_switch', 'session_new', 'session_rewind'].includes(name)) {
+            sessionMgmt.push(formattedTool);
+          } else if (['get_my_identity'].includes(name)) {
+            system.push(formattedTool);
+          } else {
+            // MCP or other external tools
+            mcpTools.push(formattedTool);
+          }
+        });
+        
+        let content = `🛠️  LLM Tools Available\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                      `📊 Total Tools: ${allTools.length}\n\n`;
+        
+        if (fileOps.length > 0) {
+          content += `📁 File Operations (${fileOps.length}):\n${fileOps.join('\n\n')}\n\n`;
+        }
+        
+        if (execution.length > 0) {
+          content += `⚡ Execution (${execution.length}):\n${execution.join('\n\n')}\n\n`;
+        }
+        
+        if (search.length > 0) {
+          content += `🔍 Search (${search.length}):\n${search.join('\n\n')}\n\n`;
+        }
+        
+        if (taskMgmt.length > 0) {
+          content += `📋 Task Management (${taskMgmt.length}):\n${taskMgmt.join('\n\n')}\n\n`;
+        }
+        
+        if (sessionMgmt.length > 0) {
+          content += `🔀 Session Management (${sessionMgmt.length}):\n${sessionMgmt.join('\n\n')}\n\n`;
+        }
+        
+        if (system.length > 0) {
+          content += `🤖 System (${system.length}):\n${system.join('\n\n')}\n\n`;
+        }
+        
+        if (mcpTools.length > 0) {
+          content += `🔌 MCP Tools (${mcpTools.length}):\n${mcpTools.join('\n\n')}\n\n`;
+        }
+        
+        content += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `💡 Use /help to see user commands`;
+        
+        const toolsEntry: ChatEntry = {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        };
+        
+        setChatHistory((prev) => [...prev, toolsEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to list tools: ${error?.message || 'Unknown error'}`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);

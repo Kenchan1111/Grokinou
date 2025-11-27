@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-27T21:21:08.251214+00:00",
-  "merkle_root": "64eb630885d3391fed1b9005026952b3a8a9468473625f92d205239dc2895f35",
-  "total_files": 1127,
+  "timestamp": "2025-11-27T22:06:16.492419+00:00",
+  "merkle_root": "1573988fd4d17ab920260447c5bf6fcdc3511d4f5b2ac862958dddf05685f345",
+  "total_files": 1128,
   "files": {
     "ARCHITECTURE_ANALYSIS.md": {
       "path": "ARCHITECTURE_ANALYSIS.md",
@@ -13527,12 +13527,23 @@
       "blockchain_block_heights": null,
       "blockchain_block_roots": null,
       "ots_verified": null
+    },
+    "secure_integrity_manifest_full.json": {
+      "path": "secure_integrity_manifest_full.json",
+      "sha256": "84c33f71aff27df49b80ad7d6366c18b7fbb0e52730d131caa66bf6830fd7f2f",
+      "size": 62295,
+      "mtime": "2025-11-25T20:36:44.316664+00:00",
+      "ots_receipt": null,
+      "blockchain_tx": null,
+      "blockchain_txids": null,
+      "blockchain_block_heights": null,
+      "blockchain_block_roots": null,
+      "ots_verified": null
     }
   },
-  "previous_manifest_digest": "1a8e41a35fd8b5464e38affbfaad242bd554f2891d02f1704f9b388140e2124f",
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251127_212109.ots",
-  "merkle_root_anchored_at": "2025-11-27T21:21:09.730265+00:00",
+  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251127_220618.ots",
+  "merkle_root_anchored_at": "2025-11-27T22:06:18.134218+00:00",
   "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251127_212110.ots",
-  "baseline_anchored_at": "2025-11-27T21:21:10.793601+00:00"
+  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251127_220619.ots",
+  "baseline_anchored_at": "2025-11-27T22:06:19.773197+00:00"
 }
