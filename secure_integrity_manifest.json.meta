@@ -8,5 +8,8 @@
     "time": "2025-11-27T22:21:07+01:00",
     "author": "zack",
     "subject": "fix(rename-session): save old name before renaming to display correct values"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251127_212110.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
 }
