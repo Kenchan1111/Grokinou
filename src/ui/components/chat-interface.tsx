@@ -144,6 +144,14 @@ function ChatInterfaceWithAgent({
     setChatHistory(value);
   }, []);
 
+  const stableCommittedHistorySetter = useCallback((value: React.SetStateAction<ChatEntry[]>) => {
+    setCommittedHistory(value);
+  }, []);
+
+  const stableActiveMessagesSetter = useCallback((value: React.SetStateAction<ChatEntry[]>) => {
+    setActiveMessages(value);
+  }, []);
+
   const stableProcessingSetter = useCallback((value: boolean) => {
     setIsProcessing(value);
   }, []);
@@ -360,10 +368,14 @@ function ChatInterfaceWithAgent({
     setCommittedHistory(prev => [...prev, entry]);
   }, []);
   
+  // Track if we're in the middle of a switch to prevent auto-commit
+  const isSwitchingRef = useRef(false);
+  
   // Commit automatique quand un message est terminé
   useEffect(() => {
     // Si on n'est pas en train de streamer et qu'il y a des messages actifs
-    if (!isStreaming && !isProcessing && activeMessages.length > 0) {
+    // ET qu'on n'est PAS en train de switcher de session
+    if (!isStreaming && !isProcessing && activeMessages.length > 0 && !isSwitchingRef.current) {
       // Commit tous les messages actifs dans l'historique statique
       setCommittedHistory(prev => [...prev, ...activeMessages]);
       setActiveMessages([]);
@@ -616,6 +628,9 @@ function ChatInterfaceWithAgent({
             agent={agent}
             chatHistory={chatHistory}
             setChatHistory={stableChatHistorySetter}
+            setCommittedHistory={stableCommittedHistorySetter}
+            setActiveMessages={stableActiveMessagesSetter}
+            isSwitchingRef={isSwitchingRef}
             setIsProcessing={stableProcessingSetter}
             setIsStreaming={stableStreamingSetter}
             setStreamingContent={stableStreamingContentSetter}

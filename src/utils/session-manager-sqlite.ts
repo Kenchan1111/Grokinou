@@ -281,12 +281,12 @@ export class SessionManagerSQLite {
   /**
    * List sessions with enriched metadata
    * 
-   * @param workdir - Filter by working directory (defaults to current)
+   * @param workdir - Filter by working directory (defaults to current, null = all directories)
    * @param options - Additional filtering options
    * @returns Array of enriched session list items
    */
   listSessions(
-    workdir?: string,
+    workdir?: string | null,
     options?: {
       status?: ('active' | 'completed' | 'archived')[];
       favoriteOnly?: boolean;
@@ -296,7 +296,10 @@ export class SessionManagerSQLite {
       limit?: number;
     }
   ): SessionListItem[] {
-    const targetWorkdir = workdir || process.cwd();
+    // If workdir is explicitly null, don't filter by directory (list all)
+    // If workdir is undefined, default to current directory
+    // If workdir is a string, use that directory
+    const targetWorkdir = workdir === null ? null : (workdir || process.cwd());
     return this.sessionRepo.listSessions(targetWorkdir, options);
   }
 

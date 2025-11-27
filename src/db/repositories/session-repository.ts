@@ -336,12 +336,12 @@ export class SessionRepository {
   /**
    * List sessions with enriched metadata for display/search
    * 
-   * @param workdir - Filter by working directory (optional)
+   * @param workdir - Filter by working directory (null = all directories, undefined = current, string = specific)
    * @param options - Additional filtering options
    * @returns Array of enriched session list items
    */
   listSessions(
-    workdir?: string,
+    workdir?: string | null,
     options?: {
       status?: ('active' | 'completed' | 'archived')[];
       favoriteOnly?: boolean;
@@ -373,8 +373,10 @@ export class SessionRepository {
     `;
     const params: any[] = [];
     
-    // Filter by working directory
-    if (workdir) {
+    // Filter by working directory (only if explicitly provided as a string)
+    // If workdir is null, list ALL sessions from all directories
+    // If workdir is undefined or empty string, don't filter (list all)
+    if (workdir !== null && workdir !== undefined && workdir !== '') {
       query += ' AND s.working_dir = ?';
       params.push(workdir);
     }

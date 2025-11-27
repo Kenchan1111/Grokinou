@@ -47,6 +47,9 @@ interface UseInputHandlerProps {
   agent: GrokAgent;
   chatHistory: ChatEntry[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatEntry[]>>;
+  setCommittedHistory?: React.Dispatch<React.SetStateAction<ChatEntry[]>>;  // NEW: for switch-session sync
+  setActiveMessages?: React.Dispatch<React.SetStateAction<ChatEntry[]>>;    // NEW: for atomic switch
+  isSwitchingRef?: React.MutableRefObject<boolean>;                          // NEW: prevent auto-commit during switch
   setIsProcessing: (processing: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
   setStreamingContent: (value: string | ((prev: string) => string)) => void;
@@ -77,6 +80,9 @@ export function useInputHandler({
   agent,
   chatHistory,
   setChatHistory,
+  setCommittedHistory,
+  setActiveMessages,
+  isSwitchingRef,
   setIsProcessing,
   setIsStreaming,
   setStreamingContent,
@@ -528,25 +534,25 @@ Examples:
     }
 
     // ============================================
-    // /list_sessions - List all sessions in current directory
+    // /list_sessions - List ALL sessions from ALL directories
     // ============================================
     if (trimmedInput === "/list_sessions") {
       try {
+        // Pass null to get sessions from ALL directories (not just current)
         const sessions = sessionManager.listSessions(
-          process.cwd(),
+          null,
           {
             sortBy: 'last_activity',
             sortOrder: 'DESC',
-            limit: 20
+            limit: 50  // Increased limit for multi-directory view
           }
         );
 
         if (sessions.length === 0) {
           const noSessionEntry: ChatEntry = {
             type: "assistant",
-            content: `📂 No sessions found in current directory\n\n` +
-                     `📁 Working Directory: ${process.cwd()}\n\n` +
-                     `Start chatting to create a new session!`,
+            content: `📂 No sessions found\n\n` +
+                     `Start chatting to create your first session!`,
             timestamp: new Date(),
           };
           setChatHistory((prev) => [...prev, noSessionEntry]);
@@ -554,54 +560,61 @@ Examples:
           return true;
         }
 
-        // Format sessions list
-        let content = `📚 Sessions in Current Directory\n` +
-                      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                      `📁 Working Directory: ${process.cwd()}\n` +
-                      `📊 Total Sessions: ${sessions.length}\n\n`;
+        // Group sessions by working directory
+        const sessionsByDir: Map<string, typeof sessions> = new Map();
+        sessions.forEach(session => {
+          const dir = session.working_dir;
+          if (!sessionsByDir.has(dir)) {
+            sessionsByDir.set(dir, []);
+          }
+          sessionsByDir.get(dir)!.push(session);
+        });
 
-        sessions.forEach((session, index) => {
-          const status = session.status === 'active' ? '🟢' : 
-                        session.status === 'completed' ? '⚪' : '📦';
-          const favorite = session.is_favorite ? '⭐' : '';
+        // Format sessions list grouped by directory
+        const dirCount = sessionsByDir.size;
+        let content = `📚 All Sessions (${dirCount} ${dirCount === 1 ? 'directory' : 'directories'})\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        // Iterate through directories (sorted by most recent activity)
+        const sortedDirs = Array.from(sessionsByDir.entries()).sort((a, b) => {
+          const latestA = Math.max(...a[1].map(s => new Date(s.last_activity).getTime()));
+          const latestB = Math.max(...b[1].map(s => new Date(s.last_activity).getTime()));
+          return latestB - latestA;
+        });
+
+        sortedDirs.forEach(([dir, dirSessions], dirIndex) => {
+          // Highlight current directory
+          const isCurrent = dir === process.cwd();
+          const dirMarker = isCurrent ? '📍' : '📁';
+          const dirLabel = isCurrent ? ` (current)` : '';
           
-          content += `${status} Session #${session.id}${favorite}\n`;
-          
-          if (session.session_name) {
-            content += `   📝 Name: ${session.session_name}\n`;
-          }
-          
-          content += `   🤖 Provider: ${session.default_provider}\n`;
-          content += `   📱 Model: ${session.default_model}\n`;
-          content += `   💬 Messages: ${session.message_count}\n`;
-          
-          if (session.total_tokens > 0) {
-            const tokenDisplay = session.total_tokens.toLocaleString('en-US');
-            content += `   🎯 Tokens: ${tokenDisplay}\n`;
-          }
-          
-          content += `   🕐 Last Activity: ${session.last_activity_relative}\n`;
-          
-          if (session.age_days !== undefined) {
-            content += `   📅 Age: ${session.age_days} days\n`;
-          }
-          
-          if (session.first_message_preview) {
-            const preview = session.first_message_preview.length > 60 
-              ? session.first_message_preview.substring(0, 60) + '...'
-              : session.first_message_preview;
-            content += `   💭 First Message: "${preview}"\n`;
-          }
-          
-          if (index < sessions.length - 1) {
-            content += `   ─────────────────────────────────\n`;
+          content += `${dirMarker} **${dir}**${dirLabel}\n`;
+          content += `   ${dirSessions.length} ${dirSessions.length === 1 ? 'session' : 'sessions'}\n\n`;
+
+          dirSessions.forEach((session, sessionIndex) => {
+            const status = session.status === 'active' ? '🟢' : 
+                          session.status === 'completed' ? '⚪' : '📦';
+            const favorite = session.is_favorite ? '⭐' : '';
+            
+            content += `   ${status} #${session.id}${favorite}`;
+            
+            if (session.session_name) {
+              content += ` - ${session.session_name}`;
+            }
+            
+            content += ` (${session.default_model}, ${session.message_count} msgs)`;
+            content += ` - ${session.last_activity_relative}\n`;
+          });
+
+          // Add spacing between directories
+          if (dirIndex < sortedDirs.length - 1) {
+            content += `\n`;
           }
         });
 
         content += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-        content += `\n💡 Legend:\n`;
-        content += `   🟢 Active  ⚪ Completed  📦 Archived  ⭐ Favorite\n`;
-        content += `\n💡 To switch to a session, use: /switch-session <id>`;
+        content += `\n💡 Use \`/switch-session <id>\` to switch (changes directory automatically)\n`;
+        content += `💡 Legend: 🟢 Active  ⚪ Completed  📦 Archived  ⭐ Favorite  📍 Current dir`;
 
         const sessionListEntry: ChatEntry = {
           type: "assistant",
@@ -658,6 +671,11 @@ Examples:
       }
       
       try {
+        // CRITICAL: Set switching flag to prevent auto-commit during state updates
+        if (isSwitchingRef) {
+          isSwitchingRef.current = true;
+        }
+        
         // Switch session
         const { session, history } = await sessionManager.switchSession(sessionId);
         
@@ -699,10 +717,7 @@ Examples:
         const apiKey = agent.getApiKey(); // Keep current API key
         await agent.switchToModel(session.default_model, apiKey, providerConfig.baseURL);
         
-        // Replace chat history with the new session's history
-        setChatHistory(history);
-        
-        // Add confirmation message with directory change notice
+        // Add confirmation message
         const dirChanged = targetWorkdir !== currentWorkdir;
         const confirmEntry: ChatEntry = {
           type: "assistant",
@@ -726,9 +741,33 @@ Examples:
           timestamp: new Date(),
         };
         
+        // CRITICAL: Replace chat history with the new session's history
+        // We update chatHistory first with just the loaded history (no confirmation yet)
+        // This ensures committedHistory and chatHistory are in sync momentarily
+        setChatHistory(history);
+        
+        // Then update committedHistory to match (all loaded messages are "committed")
+        if (setCommittedHistory) {
+          setCommittedHistory(history);
+        }
+        
+        // Finally add the confirmation message
+        // This makes activeMessages = [confirmEntry] via the automatic useEffect calculation
         setChatHistory((prev) => [...prev, confirmEntry]);
         
+        // Allow auto-commit to resume after a small delay (let React finish batching)
+        setTimeout(() => {
+          if (isSwitchingRef) {
+            isSwitchingRef.current = false;
+          }
+        }, 100);
+        
       } catch (error: any) {
+        // Reset switching flag on error
+        if (isSwitchingRef) {
+          isSwitchingRef.current = false;
+        }
+        
         const errorEntry: ChatEntry = {
           type: "assistant",
           content: `❌ Failed to switch session: ${error?.message || 'Unknown error'}\n\n` +

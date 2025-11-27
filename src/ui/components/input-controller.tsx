@@ -11,6 +11,9 @@ interface InputControllerProps {
   agent: GrokAgent;
   chatHistory: ChatEntry[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatEntry[]>>;
+  setCommittedHistory?: React.Dispatch<React.SetStateAction<ChatEntry[]>>;  // NEW: for switch-session sync
+  setActiveMessages?: React.Dispatch<React.SetStateAction<ChatEntry[]>>;    // NEW: for atomic switch
+  isSwitchingRef?: React.MutableRefObject<boolean>;                          // NEW: prevent auto-commit during switch
   setIsProcessing: (processing: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
   setStreamingContent: (value: string | ((prev: string) => string)) => void;
@@ -34,6 +37,9 @@ const InputControllerComponent = (props: InputControllerProps) => {
     agent,
     chatHistory,
     setChatHistory,
+    setCommittedHistory,
+    setActiveMessages,
+    isSwitchingRef,
     setIsProcessing,
     setIsStreaming,
     setStreamingContent,
@@ -64,6 +70,9 @@ const InputControllerComponent = (props: InputControllerProps) => {
     agent,
     chatHistory,
     setChatHistory,
+    setCommittedHistory,
+    setActiveMessages,
+    isSwitchingRef,
     setIsProcessing,
     setIsStreaming,
     setStreamingContent,
