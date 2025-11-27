@@ -26,6 +26,7 @@ interface ChatInterfaceProps {
   agent?: GrokAgent;
   initialMessage?: string;
   startupConfig?: StartupConfig;
+  initialSessionName?: string;
 }
 
 // Separate memoized streaming display to prevent input flickering
@@ -91,9 +92,11 @@ StreamingDisplay.displayName = 'StreamingDisplay';
 function ChatInterfaceWithAgent({
   agent,
   initialMessage,
+  initialSessionName,
 }: {
   agent: GrokAgent;
   initialMessage?: string;
+  initialSessionName?: string;
 }) {
   const SHOW_STATUS = true; // Show spinner and token counter
   
@@ -307,6 +310,18 @@ function ChatInterfaceWithAgent({
             const historyToSet = statusMessage ? [statusMessage] : [];
             setCommittedHistory(historyToSet);
             setChatHistory(historyToSet);
+            
+            // Set initial session name if provided
+            if (initialSessionName) {
+              try {
+                const currentSession = sessionManager.getCurrentSession();
+                if (currentSession) {
+                  sessionManager.renameSession(currentSession.id, initialSessionName);
+                }
+              } catch (error) {
+                console.error('Failed to set initial session name:', error);
+              }
+            }
           }
           
           // Restore model state if saved (optional)
@@ -323,7 +338,7 @@ function ChatInterfaceWithAgent({
         setChatHistory([]);
       }
     })();
-  }, [agent]);
+  }, [agent, initialSessionName]);
 
   // Le logo est maintenant affiché AVANT le démarrage d'Ink dans index.ts
   // Plus besoin de le générer ici !
@@ -683,9 +698,11 @@ export default function ChatInterface({
   const [currentAgent, setCurrentAgent] = useState<GrokAgent | null>(
     agent || null
   );
+  const [sessionName, setSessionName] = useState<string | undefined>(undefined);
 
-  const handleApiKeySet = (newAgent: GrokAgent) => {
+  const handleApiKeySet = (newAgent: GrokAgent, initialSessionName?: string) => {
     setCurrentAgent(newAgent);
+    setSessionName(initialSessionName);
   };
 
   if (!currentAgent) {
@@ -702,6 +719,7 @@ export default function ChatInterface({
     <ChatInterfaceWithAgent
       agent={currentAgent}
       initialMessage={initialMessage}
+      initialSessionName={sessionName}
     />
   );
 }

@@ -336,6 +336,7 @@ export function useInputHandler({
     { command: "/search", description: "Search in conversation history" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
     { command: "/switch-session", description: "Switch to a different session by ID" },
+    { command: "/rename_session", description: "Rename the current session" },
     { command: "/new-session", description: "Create a new session in current directory" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
@@ -732,6 +733,60 @@ Examples:
           type: "assistant",
           content: `❌ Failed to switch session: ${error?.message || 'Unknown error'}\n\n` +
                    `💡 Use /list_sessions to see available sessions`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /rename_session <new_name> - Rename the current session
+    // ============================================
+    if (trimmedInput.startsWith("/rename_session")) {
+      const parts = trimmedInput.split(/\s+/);
+      const newName = parts.slice(1).join(' ').trim();
+      
+      if (!newName) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Usage: /rename_session <new_name>\n\n` +
+                   `Example: /rename_session My Project Alpha\n\n` +
+                   `💡 The new name will replace the current session name`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      
+      try {
+        const currentSession = sessionManager.getCurrentSession();
+        
+        if (!currentSession) {
+          throw new Error('No active session found');
+        }
+        
+        // Rename the session
+        sessionManager.renameSession(currentSession.id, newName);
+        
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content: `✅ Session Renamed\n\n` +
+                   `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                   `📝 Old Name: ${currentSession.session_name || 'Unnamed'}\n` +
+                   `📝 New Name: ${newName}\n` +
+                   `🔖 Session ID: ${currentSession.id}\n\n` +
+                   `The session name has been updated successfully.`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, confirmEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to rename session: ${error?.message || 'Unknown error'}`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);

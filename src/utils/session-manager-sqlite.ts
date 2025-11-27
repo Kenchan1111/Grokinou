@@ -301,6 +301,26 @@ export class SessionManagerSQLite {
   }
 
   /**
+   * Rename the specified session
+   * @param sessionId - Session ID to rename
+   * @param newName - New name for the session
+   */
+  renameSession(sessionId: number, newName: string): void {
+    sessionDebugLog.log(`\n📝 [renameSession] CALLED with:`);
+    sessionDebugLog.log(`   sessionId=${sessionId}`);
+    sessionDebugLog.log(`   newName="${newName}"`);
+    
+    this.sessionRepo.updateSessionName(sessionId, newName);
+    
+    // Update current session cache if it's the one being renamed
+    if (this.currentSession && this.currentSession.id === sessionId) {
+      this.currentSession.session_name = newName;
+    }
+    
+    sessionDebugLog.log(`✅ [renameSession] Session ${sessionId} renamed to "${newName}"`);
+  }
+
+  /**
    * Switch to a different session
    * 
    * @param sessionId - ID of the session to switch to
