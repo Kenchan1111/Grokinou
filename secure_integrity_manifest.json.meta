@@ -8,5 +8,8 @@
     "time": "2025-11-27T06:31:48+01:00",
     "author": "zack",
     "subject": "feat(ui): implement interactive model menu with fuzzy matching (Option D)"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251127_053151.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
 }
