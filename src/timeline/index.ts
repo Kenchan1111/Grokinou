@@ -43,6 +43,7 @@ export { LLMHook, getLLMHook, type LLMHookConfig } from './hooks/llm-hook.js';
 export { ToolHook, getToolHook, type ToolHookConfig } from './hooks/tool-hook.js';
 export { SessionHook, getSessionHook, type SessionHookConfig } from './hooks/session-hook.js';
 export { FileHook, getFileHook, type FileHookConfig } from './hooks/file-hook.js';
+export { GitHook, getGitHook, type GitHookConfig } from './hooks/git-hook.js';
 
 // Storage
 export { MerkleDAG, getMerkleDAG, type BlobStoreResult, type BlobRetrieveResult } from './storage/merkle-dag.js';
@@ -52,6 +53,7 @@ import { getLLMHook as _getLLMHook } from './hooks/llm-hook.js';
 import { getToolHook as _getToolHook } from './hooks/tool-hook.js';
 import { getSessionHook as _getSessionHook } from './hooks/session-hook.js';
 import { getFileHook as _getFileHook } from './hooks/file-hook.js';
+import { getGitHook as _getGitHook } from './hooks/git-hook.js';
 import { getTimelineDb as _getTimelineDb } from './database.js';
 import { getEventBus as _getEventBus } from './event-bus.js';
 
@@ -69,6 +71,7 @@ export async function initTimeline(config?: {
   enableToolHook?: boolean;
   enableSessionHook?: boolean;
   enableFileHook?: boolean;
+  enableGitHook?: boolean;
 }): Promise<boolean> {
   try {
     // Initialize database
@@ -96,6 +99,11 @@ export async function initTimeline(config?: {
     if (config?.enableFileHook !== false) {
       const fileHook = _getFileHook({ enabled: true });
       await fileHook.startWatching();
+    }
+    
+    // Initialize git hook (if enabled)
+    if (config?.enableGitHook !== false) {
+      _getGitHook({ enabled: true });
     }
     
     console.log('✅ Timeline module initialized');

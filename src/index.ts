@@ -62,6 +62,7 @@ async function initializeTimeline(): Promise<void> {
       enableToolHook: true,
       enableSessionHook: true,
       enableFileHook: true, // Watch for file changes
+      enableGitHook: true, // Track git operations
     });
   } catch (error) {
     // Timeline is optional - don't fail app startup if it fails

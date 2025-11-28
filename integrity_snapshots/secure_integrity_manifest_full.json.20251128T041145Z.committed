@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-28T04:11:41.930515+00:00",
-  "merkle_root": "566d2f581cc40f34e2bd0bf438f1720f0ae88054ef80b48831b7a8ff3c665130",
-  "total_files": 171,
+  "timestamp": "2025-11-28T04:11:32.421966+00:00",
+  "merkle_root": "9495e189e8adcb0ad7c260911a0a4b52c736598ede97fca25fe20642f7bd1826",
+  "total_files": 168,
   "files": {
     ".env.example": {
       "path": ".env.example",
@@ -90,9 +90,9 @@
     },
     "SECURITY_INTEGRITY_BASELINE.sha256.committed.sig": {
       "path": "SECURITY_INTEGRITY_BASELINE.sha256.committed.sig",
-      "sha256": "ca6b78690777f036ba88bca34ff7525bed6444fc5722e55dc2d6ca95bbf3e5a0",
+      "sha256": "7b47681da9b37b57bce1e100ec8f6d4fb24f3bb37410ca92ae582ab979396351",
       "size": 639,
-      "mtime": "2025-11-28T04:11:41.851899+00:00",
+      "mtime": "2025-11-28T04:11:05.631833+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -724,42 +724,6 @@
       "blockchain_block_roots": null,
       "ots_verified": null
     },
-    "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041109Z.committed": {
-      "path": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041109Z.committed",
-      "sha256": "b749982ccf2c9061ef3a5ee39b67e240d316e3b9ad2c40089347295799703001",
-      "size": 77936,
-      "mtime": "2025-11-28T04:10:56.574816+00:00",
-      "ots_receipt": null,
-      "blockchain_tx": null,
-      "blockchain_txids": null,
-      "blockchain_block_heights": null,
-      "blockchain_block_roots": null,
-      "ots_verified": null
-    },
-    "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041141Z.committed": {
-      "path": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041141Z.committed",
-      "sha256": "364af9b5d990c24251f9962bf4a0a0fc538c3dc53f446d5a4e2509756ac77b39",
-      "size": 79136,
-      "mtime": "2025-11-28T04:11:32.422882+00:00",
-      "ots_receipt": null,
-      "blockchain_tx": null,
-      "blockchain_txids": null,
-      "blockchain_block_heights": null,
-      "blockchain_block_roots": null,
-      "ots_verified": null
-    },
-    "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041141Z.committed.sig": {
-      "path": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041141Z.committed.sig",
-      "sha256": "0c705194ee903c744abaea1883d8a0836c3233c7a4fdfba119141504390e61ae",
-      "size": 677,
-      "mtime": "2025-11-28T04:11:41.835899+00:00",
-      "ots_receipt": null,
-      "blockchain_tx": null,
-      "blockchain_txids": null,
-      "blockchain_block_heights": null,
-      "blockchain_block_roots": null,
-      "ots_verified": null
-    },
     "package-lock.json": {
       "path": "package-lock.json",
       "sha256": "5f3c0f47ddddb507d28a70545485d269ade751d43a487acbffc94a1cda712a76",
@@ -822,9 +786,9 @@
     },
     "secure_integrity_manifest_full.json.committed.sig": {
       "path": "secure_integrity_manifest_full.json.committed.sig",
-      "sha256": "be1a8a5c65cde2d3fd1ab56796f3554bf73b8f1fbdde4fdbf5247f251ec53ebb",
+      "sha256": "96112027b9586a1abc97c5ab11c4d0b78856d4f4abe7f2b0fe598f603b5c3aa9",
       "size": 640,
-      "mtime": "2025-11-28T04:11:41.832899+00:00",
+      "mtime": "2025-11-28T04:11:05.605833+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -2057,10 +2021,5 @@
       "ots_verified": null
     }
   },
-  "previous_manifest_digest": "364af9b5d990c24251f9962bf4a0a0fc538c3dc53f446d5a4e2509756ac77b39",
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251128_041143.ots",
-  "merkle_root_anchored_at": "2025-11-28T04:11:43.524502+00:00",
-  "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251128_041144.ots",
-  "baseline_anchored_at": "2025-11-28T04:11:44.928725+00:00"
+  "previous_manifest_digest": "b749982ccf2c9061ef3a5ee39b67e240d316e3b9ad2c40089347295799703001"
 }
