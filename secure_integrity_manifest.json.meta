@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "4a851cd5d180a90919d321c649826f826bccdbbeee79515e5199b529f8cdaa1f",
-  "timestamp": "2025-11-28T01:07:16.494330+00:00",
-  "merkle_root": "33e873c2f6a474f759c6ede7ec789da9c801f8ec453e6ce9dc834f2c611f5ae7",
-  "total_files": 144,
+  "committed_baseline_hash": "0f7d2127dc542dcc82f4d3813bd3fbef5531d294856a549776bd518167a5162d",
+  "timestamp": "2025-11-28T01:35:30.801559+00:00",
+  "merkle_root": "86ab425fae9914dfd556b26c4bdfb53f41414edef45bbd0d0c156b8415e78b35",
+  "total_files": 146,
   "last_commit": {
-    "hash": "5bc71785a3cbd86d968042c3f7cad86c00d56320",
-    "time": "2025-11-28T02:07:15+01:00",
+    "hash": "251eaa417ba71218af1d22c6ce5479185c771e72",
+    "time": "2025-11-28T02:35:30+01:00",
     "author": "zack",
-    "subject": "security(integrity): complete audit remediation - all H1/H2 fixes"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_010719.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "test(integrity): validate refactored script with all fixes"
+  }
 }
