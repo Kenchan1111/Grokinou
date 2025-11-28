@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "2dfd3c2a4e3c4df26d7299789cc211330692a4b7e1c838dad731a56b89b8b16c",
-  "timestamp": "2025-11-27T22:42:34.792248+00:00",
+  "committed_baseline_hash": "48e8650e018c50094a1c6ba82f91995f9e43b311fbef5e182057a8f8f19b59c7",
+  "timestamp": "2025-11-28T00:03:17.056324+00:00",
   "merkle_root": "1573988fd4d17ab920260447c5bf6fcdc3511d4f5b2ac862958dddf05685f345",
   "total_files": 1128,
   "last_commit": {
-    "hash": "67bd08c4c2cd9199eccd2d8bae8caf96d2ea7072",
-    "time": "2025-11-27T23:42:34+01:00",
+    "hash": "2c99565047da926d5e085b14539e101c6e11e353",
+    "time": "2025-11-28T01:03:16+01:00",
     "author": "zack",
-    "subject": "refactor(session-tools): synchronize LLM tools with tested user commands"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251127_224237.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "Test sans --full"
+  }
 }
