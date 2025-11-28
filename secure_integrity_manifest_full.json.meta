@@ -8,5 +8,10 @@
     "time": "2025-11-28T05:16:19+01:00",
     "author": "zack",
     "subject": "feat(timeline): Phase 5 - Git Hook + Timeline System Complete"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_041621.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T041622Z.committed.sigstore.bundle.json",
+  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041622Z.committed",
+  "sigstore_rekor_index": 730286546,
+  "sigstore_chain_entry": 2
 }
