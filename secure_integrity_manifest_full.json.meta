@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "35992f83f90139b37fd6f866785f2ae9121b86bb609d022b47fc8e7e15ec0ecf",
-  "timestamp": "2025-11-28T04:24:07.749961+00:00",
-  "merkle_root": "10cea46d91ba52a45876149ee9550c0789b8a86dbf110c2867e53922f7f44983",
-  "total_files": 181,
+  "committed_baseline_hash": "551fb53402a4288228df60d469606a107260eb9a2b80434ac596dedf90885d7c",
+  "timestamp": "2025-11-28T07:25:39.934960+00:00",
+  "merkle_root": "b387976ca9c214f1d4cc1f83eeea55a64128bfeac857452b94c6fcecf8338179",
+  "total_files": 186,
   "last_commit": {
-    "hash": "cd1618f28d02c0aef4e9f9e30b8089961ea5d789",
-    "time": "2025-11-28T05:24:07+01:00",
+    "hash": "e3839aad9fc36c02485e3203defb52292694f38c",
+    "time": "2025-11-28T08:25:39+01:00",
     "author": "zack",
-    "subject": "feat(timeline): Phase 6 - Rewind Engine Complete"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_042410.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T042411Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T042411Z.committed",
-  "sigstore_rekor_index": 730307807,
-  "sigstore_chain_entry": 3
+    "subject": "feat(timeline): Phase 7 - LLM Tools Complete"
+  }
 }
