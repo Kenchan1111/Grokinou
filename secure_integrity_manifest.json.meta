@@ -1,12 +1,12 @@
 {
-  "committed_baseline_hash": "92b6b78de7942fca0ba3e2c5089c683a895ae236df647c6a7fcd8169019684fe",
-  "timestamp": "2025-11-28T00:29:03.861414+00:00",
-  "merkle_root": "8c887696d51f1ab07a7f207c4f735a7b8ad7b6879a0be7355cb75b449297c7c8",
+  "committed_baseline_hash": "fa3a14e065a2514ea16400131c8768e4a845216199ae6e4697f98298d859924b",
+  "timestamp": "2025-11-28T00:29:26.147891+00:00",
+  "merkle_root": "e051f0c1f1fd53612b366d654353314225c63519f3c190e3fcc579881331f8d2",
   "total_files": 143,
   "last_commit": {
-    "hash": "e5672286244113bf3ca239bd3223dc2d941193e4",
-    "time": "2025-11-28T01:29:03+01:00",
+    "hash": "e25ef18ac494ef79cb73f3e5e79a754c60d1fd74",
+    "time": "2025-11-28T01:29:25+01:00",
     "author": "zack",
-    "subject": "test: suspicious alteration"
+    "subject": "test: detect tampering"
   }
 }
