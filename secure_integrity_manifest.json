@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-28T01:01:13.181010+00:00",
-  "merkle_root": "77629b6ed314e650584d4203b44432e9f6d2a234de6ec9e15dfd4724ccadd4a1",
+  "timestamp": "2025-11-28T01:06:13.935653+00:00",
+  "merkle_root": "33e873c2f6a474f759c6ede7ec789da9c801f8ec453e6ce9dc834f2c611f5ae7",
   "total_files": 144,
   "files": {
     "ARCHITECTURE_ANALYSIS.md": {
@@ -1733,5 +1733,5 @@
       "ots_verified": null
     }
   },
-  "previous_manifest_digest": "b54a49281827ef8e5f538cf667d5c6d71d6d6c48cc57dcf015be278a0f3a0d4a"
+  "previous_manifest_digest": "956aaeb5c8e8c2d1de328142375e83f2e18d102b5a9d155947df59a3b23890f5"
 }
