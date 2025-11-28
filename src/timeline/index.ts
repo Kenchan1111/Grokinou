@@ -28,8 +28,15 @@ export { EventBus, getEventBus, type EventBusOptions, type EventListener } from 
 export { TimelineLogger, getTimelineLogger, type EventInput, type LogResult } from './timeline-logger.js';
 
 // Event Types
-export { EventType, Event, isEventInCategory, getEventDescription, EVENT_CATEGORIES } from './event-types.js';
+export { 
+  EventType, 
+  EventCategory,
+  isEventInCategory, 
+  getEventDescription, 
+  EVENT_CATEGORIES 
+} from './event-types.js';
 export type {
+  TimelineEvent,
   LLMMessagePayload,
   ToolCallPayload,
   FileModifiedPayload,
@@ -47,6 +54,11 @@ export { GitHook, getGitHook, type GitHookConfig } from './hooks/git-hook.js';
 
 // Storage
 export { MerkleDAG, getMerkleDAG, type BlobStoreResult, type BlobRetrieveResult } from './storage/merkle-dag.js';
+
+// Query & Rewind
+export { QueryEngine, getQueryEngine, type QueryFilter, type QueryResult, type EventStats } from './query-engine.js';
+export { SnapshotManager, getSnapshotManager, type SnapshotConfig, type SnapshotMetadata, type SnapshotData } from './snapshot-manager.js';
+export { RewindEngine, getRewindEngine, type RewindOptions, type RewindResult } from './rewind-engine.js';
 
 // Internal imports for functions
 import { getLLMHook as _getLLMHook } from './hooks/llm-hook.js';

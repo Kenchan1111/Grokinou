@@ -212,6 +212,36 @@ export interface RewindStartedPayload {
 }
 
 /**
+ * Timeline Event Structure
+ * 
+ * Represents a single event in the timeline.
+ */
+export interface TimelineEvent {
+  id: string;
+  timestamp: number;
+  sequence_number: number;
+  event_type: EventType;
+  actor: string;
+  aggregate_id: string;
+  aggregate_type: string;
+  causation_id: string | null;
+  correlation_id: string | null;
+  payload: Record<string, any>;
+}
+
+/**
+ * Event Category Enum
+ */
+export enum EventCategory {
+  SESSION = 'SESSION',
+  LLM = 'LLM',
+  TOOL = 'TOOL',
+  FILE = 'FILE',
+  GIT = 'GIT',
+  REWIND = 'REWIND',
+}
+
+/**
  * Event Category Groupings
  * 
  * For filtering and querying events by category.
@@ -285,8 +315,11 @@ export const EVENT_CATEGORIES = {
 /**
  * Helper: Check if event type belongs to a category
  */
-export function isEventInCategory(eventType: EventType, category: keyof typeof EVENT_CATEGORIES): boolean {
-  return (EVENT_CATEGORIES[category] as readonly EventType[]).includes(eventType);
+export function isEventInCategory(eventType: EventType, category: EventCategory | keyof typeof EVENT_CATEGORIES): boolean {
+  const categoryKey = typeof category === 'string' && category in EVENT_CATEGORIES 
+    ? category as keyof typeof EVENT_CATEGORIES
+    : category as keyof typeof EVENT_CATEGORIES;
+  return (EVENT_CATEGORIES[categoryKey] as readonly EventType[]).includes(eventType);
 }
 
 /**
