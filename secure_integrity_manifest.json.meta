@@ -8,5 +8,8 @@
     "time": "2025-11-28T02:35:30+01:00",
     "author": "zack",
     "subject": "test(integrity): validate refactored script with all fixes"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_013533.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
 }
