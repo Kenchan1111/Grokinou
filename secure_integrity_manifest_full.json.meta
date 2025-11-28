@@ -8,5 +8,10 @@
     "time": "2025-11-28T05:11:41+01:00",
     "author": "zack",
     "subject": "feat(security): Sigstore Chain of Custody operational"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_041144.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T041145Z.committed.sigstore.bundle.json",
+  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041145Z.committed",
+  "sigstore_rekor_index": 730278343,
+  "sigstore_chain_entry": 1
 }
