@@ -1,15 +1,12 @@
 {
   "committed_baseline_hash": "1a632639803a7e0f951f720fc671e954df6ada63dc5720de31ad29e438fa0f1d",
-  "timestamp": "2025-11-28T00:31:38.406980+00:00",
-  "merkle_root": "e051f0c1f1fd53612b366d654353314225c63519f3c190e3fcc579881331f8d2",
-  "total_files": 143,
+  "timestamp": "2025-11-28T00:40:02.621247+00:00",
+  "merkle_root": "a5159b4fc327120953ae2ebeb5a5937c20ebfdf28cbb86ef358b3d6f3755b734",
+  "total_files": 144,
   "last_commit": {
-    "hash": "f9015c7fc8c9628740216aefa3193b1cceaa9adb",
-    "time": "2025-11-28T01:31:37+01:00",
+    "hash": "3d645062be9d4ff5e57ce6e8958afa1b33595293",
+    "time": "2025-11-28T01:40:02+01:00",
     "author": "zack",
-    "subject": "feat(integrity): add differential verification to detect tampering"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_003141.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "docs: add testing coherence documentation"
+  }
 }
