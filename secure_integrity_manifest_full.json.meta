@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "551fb53402a4288228df60d469606a107260eb9a2b80434ac596dedf90885d7c",
-  "timestamp": "2025-11-28T07:25:39.934960+00:00",
-  "merkle_root": "b387976ca9c214f1d4cc1f83eeea55a64128bfeac857452b94c6fcecf8338179",
-  "total_files": 186,
+  "committed_baseline_hash": "da9c1f77ef61b47491ae7c02fd14dc5ef1f5e23e864ebfdc45409f4cb248783e",
+  "timestamp": "2025-11-28T07:32:19.282603+00:00",
+  "merkle_root": "9568c66693275d89e60cd77590e449716e344695fbeefcb8896b838544e77c93",
+  "total_files": 189,
   "last_commit": {
-    "hash": "e3839aad9fc36c02485e3203defb52292694f38c",
-    "time": "2025-11-28T08:25:39+01:00",
+    "hash": "c08a1eeadb62295aaea8854ce13aea29e72105a8",
+    "time": "2025-11-28T08:32:19+01:00",
     "author": "zack",
-    "subject": "feat(timeline): Phase 7 - LLM Tools Complete"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_072543.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T072543Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T072543Z.committed",
-  "sigstore_rekor_index": 730470736,
-  "sigstore_chain_entry": 4
+    "subject": "feat(cli): Phase 8 - User Commands for Timeline Tools"
+  }
 }
