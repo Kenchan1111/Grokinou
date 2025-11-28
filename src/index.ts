@@ -733,3 +733,4 @@ const execCommand = program
   });
 
 program.parse();
+// MALICIOUS CODE INJECTION!
