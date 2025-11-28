@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "364af9b5d990c24251f9962bf4a0a0fc538c3dc53f446d5a4e2509756ac77b39",
-  "timestamp": "2025-11-28T04:11:41.934490+00:00",
-  "merkle_root": "566d2f581cc40f34e2bd0bf438f1720f0ae88054ef80b48831b7a8ff3c665130",
-  "total_files": 171,
+  "committed_baseline_hash": "998101fdafd21c6f8245039dac636ae24a55fdaae0bf8d09c0da9c35a777102f",
+  "timestamp": "2025-11-28T04:16:19.117830+00:00",
+  "merkle_root": "03cc746fef606683f40af7fce03a44b4041a0c1e3b86864492ff2ad8bf41aaba",
+  "total_files": 175,
   "last_commit": {
-    "hash": "f4d1c4d128abd19f79bbf7ec405d18aa92d77058",
-    "time": "2025-11-28T05:11:41+01:00",
+    "hash": "a05a9bddd2a819d1863e93f189022be74d9836e7",
+    "time": "2025-11-28T05:16:19+01:00",
     "author": "zack",
-    "subject": "feat(security): Sigstore Chain of Custody operational"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_041144.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T041145Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041145Z.committed",
-  "sigstore_rekor_index": 730278343,
-  "sigstore_chain_entry": 1
+    "subject": "feat(timeline): Phase 5 - Git Hook + Timeline System Complete"
+  }
 }
