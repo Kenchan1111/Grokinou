@@ -8,5 +8,10 @@
     "time": "2025-11-28T08:25:39+01:00",
     "author": "zack",
     "subject": "feat(timeline): Phase 7 - LLM Tools Complete"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_072543.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T072543Z.committed.sigstore.bundle.json",
+  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T072543Z.committed",
+  "sigstore_rekor_index": 730470736,
+  "sigstore_chain_entry": 4
 }
