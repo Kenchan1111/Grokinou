@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-28T00:40:02.615968+00:00",
-  "merkle_root": "a5159b4fc327120953ae2ebeb5a5937c20ebfdf28cbb86ef358b3d6f3755b734",
+  "timestamp": "2025-11-28T01:01:13.181010+00:00",
+  "merkle_root": "77629b6ed314e650584d4203b44432e9f6d2a234de6ec9e15dfd4724ccadd4a1",
   "total_files": 144,
   "files": {
     "ARCHITECTURE_ANALYSIS.md": {
@@ -381,6 +381,18 @@
       "sha256": "79bff6b4d6e6383e23c217765a4a43c7b7deed62b6c70cfb70ccd6b279d07d5d",
       "size": 10953,
       "mtime": "2025-11-20T22:04:48.004166+00:00",
+      "ots_receipt": null,
+      "blockchain_tx": null,
+      "blockchain_txids": null,
+      "blockchain_block_heights": null,
+      "blockchain_block_roots": null,
+      "ots_verified": null
+    },
+    "SECURITY_AUDIT_INTEGRITY_SYSTEM.md": {
+      "path": "SECURITY_AUDIT_INTEGRITY_SYSTEM.md",
+      "sha256": "9b15c13a8ff59b48d0ac2ce4c424b537a3854541193426d273a2b2875484cbb9",
+      "size": 25957,
+      "mtime": "2025-11-28T00:56:16.743334+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -1719,24 +1731,7 @@
       "blockchain_block_heights": null,
       "blockchain_block_roots": null,
       "ots_verified": null
-    },
-    "TEST_COHERENCE.md": {
-      "path": "TEST_COHERENCE.md",
-      "sha256": "9b8a014a13993a8a2cd2627871709e6107d513708a41e6139cc79b2807c2f523",
-      "size": 26,
-      "mtime": "2025-11-28T00:39:53.119343+00:00",
-      "ots_receipt": null,
-      "blockchain_tx": null,
-      "blockchain_txids": null,
-      "blockchain_block_heights": null,
-      "blockchain_block_roots": null,
-      "ots_verified": null
     }
   },
-  "previous_manifest_digest": "1a632639803a7e0f951f720fc671e954df6ada63dc5720de31ad29e438fa0f1d",
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251128_004003.ots",
-  "merkle_root_anchored_at": "2025-11-28T00:40:03.799986+00:00",
-  "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251128_004004.ots",
-  "baseline_anchored_at": "2025-11-28T00:40:04.790832+00:00"
+  "previous_manifest_digest": "b54a49281827ef8e5f538cf667d5c6d71d6d6c48cc57dcf015be278a0f3a0d4a"
 }
