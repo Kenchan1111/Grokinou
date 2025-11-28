@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-28T00:11:04.097024+00:00",
-  "merkle_root": "e37f9b9d4f94cef84627e92a63511dc15d877ae4b2ac6673005962537998ebc6",
+  "timestamp": "2025-11-28T00:30:24.070472+00:00",
+  "merkle_root": "e051f0c1f1fd53612b366d654353314225c63519f3c190e3fcc579881331f8d2",
   "total_files": 143,
   "files": {
     "ARCHITECTURE_ANALYSIS.md": {
@@ -282,9 +282,9 @@
     },
     "README.md": {
       "path": "README.md",
-      "sha256": "e0076ae9ecc4de98d44ba3e3f4bc9636ef8753b5debd0fcd36a4b27cd4a90f9b",
-      "size": 13448,
-      "mtime": "2025-11-28T00:10:39.016845+00:00",
+      "sha256": "03233eccbc8ac4b237e39f468d2b34ececd393f7252dfa9685d117e83bba0690",
+      "size": 13459,
+      "mtime": "2025-11-28T00:28:55.757772+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -882,9 +882,9 @@
     },
     "src/index.ts": {
       "path": "src/index.ts",
-      "sha256": "c9b2ba239990106539cf5aff34b3f97e0b5f3229fba4afe7bdd58624586a00b8",
-      "size": 23241,
-      "mtime": "2025-11-25T20:53:38.006722+00:00",
+      "sha256": "9de5bc3636c97d2a4b00e7a8641a5e211a3224a2b0a531f367d4155cc182c74b",
+      "size": 23270,
+      "mtime": "2025-11-28T00:29:16.400513+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -1721,10 +1721,10 @@
       "ots_verified": null
     }
   },
-  "previous_manifest_digest": "fe5871023547b7f2bc3caa20a56c416acca8bfee9bc804968d155399ae9fc3db",
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251128_001105.ots",
-  "merkle_root_anchored_at": "2025-11-28T00:11:05.657858+00:00",
+  "previous_manifest_digest": "c0992740f89043bff4eac025d2390c0c0ec8ec6bcea09219cac606795ba62a59",
+  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251128_003025.ots",
+  "merkle_root_anchored_at": "2025-11-28T00:30:25.287635+00:00",
   "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251128_001107.ots",
-  "baseline_anchored_at": "2025-11-28T00:11:07.261011+00:00"
+  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251128_003027.ots",
+  "baseline_anchored_at": "2025-11-28T00:30:27.098806+00:00"
 }
