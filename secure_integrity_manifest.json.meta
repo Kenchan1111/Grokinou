@@ -1,12 +1,12 @@
 {
-  "committed_baseline_hash": "48e8650e018c50094a1c6ba82f91995f9e43b311fbef5e182057a8f8f19b59c7",
-  "timestamp": "2025-11-28T00:03:17.056324+00:00",
-  "merkle_root": "1573988fd4d17ab920260447c5bf6fcdc3511d4f5b2ac862958dddf05685f345",
-  "total_files": 1128,
+  "committed_baseline_hash": "fe5871023547b7f2bc3caa20a56c416acca8bfee9bc804968d155399ae9fc3db",
+  "timestamp": "2025-11-28T00:11:04.102172+00:00",
+  "merkle_root": "e37f9b9d4f94cef84627e92a63511dc15d877ae4b2ac6673005962537998ebc6",
+  "total_files": 143,
   "last_commit": {
-    "hash": "2c99565047da926d5e085b14539e101c6e11e353",
-    "time": "2025-11-28T01:03:16+01:00",
+    "hash": "7f9a36f7c9f24129c9622ec42e35930c89026501",
+    "time": "2025-11-28T01:11:03+01:00",
     "author": "zack",
-    "subject": "Test sans --full"
+    "subject": "security(integrity): include TypeScript source files in baseline"
   }
 }
