@@ -2,22 +2,22 @@
   "payloadType": "application/vnd.integrity.artifact+json",
   "payload": {
     "artifact_path": "secure_integrity_manifest.json.meta",
-    "artifact_hash": "30f225c6a7b07a4a07daa069d43a4f52444eb86435b5c8c6222c7aab655d6767",
-    "artifact_size": 449
+    "artifact_hash": "645d621f16de44cd54b6365d9d1bff6c6d0b501952a5f70b4efc75e90c3bdf67",
+    "artifact_size": 445
   },
   "signatures": [
     {
-      "timestamp": "2025-11-28T00:28:41.191790+00:00",
+      "timestamp": "2025-11-28T00:29:03.867806+00:00",
       "algorithm": "SHA256"
     }
   ],
   "signature": {
-    "timestamp": "2025-11-28T00:28:41.191790+00:00",
+    "timestamp": "2025-11-28T00:29:03.867806+00:00",
     "algorithm": "SHA256"
   },
   "metadata": {
-    "git_commit": "dd4b587edb9b2176acb2098770466916a2a98d4e",
+    "git_commit": "e5672286244113bf3ca239bd3223dc2d941193e4",
     "git_author": "zack",
-    "git_time": "2025-11-28T01:28:40+01:00"
+    "git_time": "2025-11-28T01:29:03+01:00"
   }
 }
