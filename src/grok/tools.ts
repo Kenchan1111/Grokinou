@@ -424,6 +424,58 @@ function buildGrokTools(): GrokTool[] {
     tools.splice(3, 0, MORPH_EDIT_TOOL); // Insert after str_replace_editor
   }
   
+  // Add timeline tools
+  tools.push(
+    {
+      type: "function",
+      function: {
+        name: "timeline_query",
+        description: "Query timeline event log to understand what happened (file modifications, git operations, conversations)",
+        parameters: {
+          type: "object",
+          properties: {
+            startTime: { type: "string", description: "Start timestamp (ISO)" },
+            endTime: { type: "string", description: "End timestamp (ISO)" },
+            categories: { type: "array", items: { type: "string" }, description: "Event categories" },
+            sessionId: { type: "number", description: "Filter by session ID" },
+            limit: { type: "number", description: "Max results (default: 100)" },
+            statsOnly: { type: "boolean", description: "Return only statistics" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "rewind_to",
+        description: "TIME MACHINE: Rewind to timestamp. **ALWAYS get user permission first.**",
+        parameters: {
+          type: "object",
+          properties: {
+            targetTimestamp: { type: "string", description: "Target timestamp (ISO)" },
+            outputDir: { type: "string", description: "Output directory" },
+            includeFiles: { type: "boolean", description: "Include files" },
+            reason: { type: "string", description: "Reason" },
+          },
+          required: ["targetTimestamp"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_time_points",
+        description: "List available snapshots and recent events for rewinding",
+        parameters: { 
+          type: "object" as const, 
+          properties: {}, 
+          required: [] 
+        },
+      },
+    }
+  );
+  
   return tools;
 }
 

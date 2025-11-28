@@ -5,3 +5,5 @@ export { TodoTool } from "./todo-tool.js";
 export { ConfirmationTool } from "./confirmation-tool.js";
 export { SearchTool } from "./search.js";
 export { ApplyPatchTool } from "./apply-patch.js";
+export * from './timeline-query-tool.js';
+export * from './rewind-to-tool.js';

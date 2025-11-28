@@ -1070,6 +1070,31 @@ Current working directory: ${process.cwd()}`,
           }
           break;
         }
+        
+        // ============================================
+        // TIMELINE & TIME MACHINE TOOLS
+        // ============================================
+        
+        case "timeline_query": {
+          const queryArgs = JSON.parse(toolCall.function.arguments);
+          const { executeTimelineQuery } = await import('../tools/timeline-query-tool.js');
+          result = await executeTimelineQuery(queryArgs);
+          break;
+        }
+        
+        case "rewind_to": {
+          const rewindArgs = JSON.parse(toolCall.function.arguments);
+          const { executeRewindTo } = await import('../tools/rewind-to-tool.js');
+          result = await executeRewindTo(rewindArgs);
+          break;
+        }
+        
+        case "list_time_points": {
+          const { getAvailableTimePoints } = await import('../tools/rewind-to-tool.js');
+          const timePoints = await getAvailableTimePoints();
+          result = { success: true, ...timePoints };
+          break;
+        }
 
         default:
           // Check if this is an MCP tool
