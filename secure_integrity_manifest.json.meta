@@ -8,5 +8,8 @@
     "time": "2025-11-28T01:31:37+01:00",
     "author": "zack",
     "subject": "feat(integrity): add differential verification to detect tampering"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_003141.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
 }
