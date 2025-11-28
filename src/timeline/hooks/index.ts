@@ -10,3 +10,4 @@
 export { LLMHook, getLLMHook, type LLMHookConfig } from './llm-hook.js';
 export { ToolHook, getToolHook, type ToolHookConfig } from './tool-hook.js';
 export { SessionHook, getSessionHook, type SessionHookConfig } from './session-hook.js';
+export { FileHook, getFileHook, type FileHookConfig } from './file-hook.js';

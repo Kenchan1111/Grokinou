@@ -42,11 +42,16 @@ export type {
 export { LLMHook, getLLMHook, type LLMHookConfig } from './hooks/llm-hook.js';
 export { ToolHook, getToolHook, type ToolHookConfig } from './hooks/tool-hook.js';
 export { SessionHook, getSessionHook, type SessionHookConfig } from './hooks/session-hook.js';
+export { FileHook, getFileHook, type FileHookConfig } from './hooks/file-hook.js';
+
+// Storage
+export { MerkleDAG, getMerkleDAG, type BlobStoreResult, type BlobRetrieveResult } from './storage/merkle-dag.js';
 
 // Internal imports for functions
 import { getLLMHook as _getLLMHook } from './hooks/llm-hook.js';
 import { getToolHook as _getToolHook } from './hooks/tool-hook.js';
 import { getSessionHook as _getSessionHook } from './hooks/session-hook.js';
+import { getFileHook as _getFileHook } from './hooks/file-hook.js';
 import { getTimelineDb as _getTimelineDb } from './database.js';
 import { getEventBus as _getEventBus } from './event-bus.js';
 
@@ -56,14 +61,15 @@ import { getEventBus as _getEventBus } from './event-bus.js';
  * Call this once at application startup.
  * 
  * @param config - Optional configuration
- * @returns True if initialization succeeded
+ * @returns Promise that resolves to true if initialization succeeded
  */
-export function initTimeline(config?: {
+export async function initTimeline(config?: {
   dbPath?: string;
   enableLLMHook?: boolean;
   enableToolHook?: boolean;
   enableSessionHook?: boolean;
-}): boolean {
+  enableFileHook?: boolean;
+}): Promise<boolean> {
   try {
     // Initialize database
     const db = _getTimelineDb({ dbPath: config?.dbPath });
@@ -84,6 +90,12 @@ export function initTimeline(config?: {
     
     if (config?.enableSessionHook !== false) {
       _getSessionHook({ enabled: true });
+    }
+    
+    // Initialize and start file hook (if enabled)
+    if (config?.enableFileHook !== false) {
+      const fileHook = _getFileHook({ enabled: true });
+      await fileHook.startWatching();
     }
     
     console.log('✅ Timeline module initialized');

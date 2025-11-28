@@ -55,12 +55,13 @@ function ensureUserSettingsDirectory(): void {
 }
 
 // Initialize timeline module (silent, non-blocking)
-function initializeTimeline(): void {
+async function initializeTimeline(): Promise<void> {
   try {
-    initTimeline({
+    await initTimeline({
       enableLLMHook: true,
       enableToolHook: true,
       enableSessionHook: true,
+      enableFileHook: true, // Watch for file changes
     });
   } catch (error) {
     // Timeline is optional - don't fail app startup if it fails
