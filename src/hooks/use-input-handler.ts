@@ -357,6 +357,9 @@ export function useInputHandler({
     { command: "/switch-session", description: "Switch to a different session by ID" },
     { command: "/rename_session", description: "Rename the current session" },
     { command: "/new-session", description: "Create a new session in current directory" },
+    { command: "/timeline", description: "Query timeline events (files, git, conversations)" },
+    { command: "/rewind", description: "Time machine: rewind to specific timestamp" },
+    { command: "/snapshots", description: "List available snapshots for rewinding" },
     { command: "/list_tools", description: "List all tools available to LLMs" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
@@ -855,6 +858,273 @@ Examples:
     }
 
     // ============================================
+    // /timeline - Query timeline events
+    // ============================================
+    if (trimmedInput.startsWith("/timeline")) {
+      try {
+        const { executeTimelineQuery } = await import("../tools/timeline-query-tool.js");
+        
+        // Parse command arguments
+        const args = trimmedInput.slice(9).trim(); // Remove "/timeline"
+        const params: any = {};
+        
+        // Parse args: /timeline --start "2 hours ago" --category FILE --limit 50 --stats
+        const matches = args.matchAll(/--(\w+)\s+(?:"([^"]+)"|(\S+))/g);
+        for (const match of matches) {
+          const key = match[1];
+          const value = match[2] || match[3];
+          
+          if (key === 'start' || key === 'startTime') {
+            params.startTime = value;
+          } else if (key === 'end' || key === 'endTime') {
+            params.endTime = value;
+          } else if (key === 'category' || key === 'categories') {
+            params.categories = [value];
+          } else if (key === 'session' || key === 'sessionId') {
+            params.sessionId = parseInt(value);
+          } else if (key === 'limit') {
+            params.limit = parseInt(value);
+          } else if (key === 'search') {
+            params.searchText = value;
+          }
+        }
+        
+        // Check for --stats flag
+        if (args.includes('--stats')) {
+          params.statsOnly = true;
+        }
+        
+        // If no args, show help
+        if (!args || args === '--help') {
+          const helpEntry: ChatEntry = {
+            type: "assistant",
+            content: `📅 Timeline Query Command\n\n` +
+                     `Usage: /timeline [options]\n\n` +
+                     `Options:\n` +
+                     `  --start <time>      Start time (ISO format or relative)\n` +
+                     `  --end <time>        End time (ISO format)\n` +
+                     `  --category <cat>    Category: SESSION, LLM, TOOL, FILE, GIT, REWIND\n` +
+                     `  --session <id>      Filter by session ID\n` +
+                     `  --limit <n>         Max results (default: 100)\n` +
+                     `  --search <text>     Search text in event payloads\n` +
+                     `  --stats             Show statistics only\n\n` +
+                     `Examples:\n` +
+                     `  /timeline --category FILE --limit 20\n` +
+                     `  /timeline --start "2025-11-28T10:00:00Z" --category GIT\n` +
+                     `  /timeline --session 5 --stats\n` +
+                     `  /timeline --search "error" --limit 10`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, helpEntry]);
+          clearInput();
+          return true;
+        }
+        
+        // Execute query
+        const result = await executeTimelineQuery(params);
+        
+        let content = '';
+        if (result.success) {
+          if (result.stats) {
+            content = `📊 Timeline Statistics\n\n` +
+                     `Total Events: ${result.stats.totalEvents}\n\n` +
+                     `By Category:\n${Object.entries(result.stats.eventsByCategory).map(([k, v]) => `  ${k}: ${v}`).join('\n')}\n\n` +
+                     `By Actor:\n${Object.entries(result.stats.eventsByActor).slice(0, 10).map(([k, v]) => `  ${k}: ${v}`).join('\n')}\n\n` +
+                     `Time Range:\n  Earliest: ${result.stats.timeRange.earliest}\n  Latest: ${result.stats.timeRange.latest}`;
+          } else if (result.events) {
+            content = `📅 Timeline Events (${result.events.length} of ${result.total})\n\n`;
+            result.events.forEach((event, i) => {
+              content += `${i + 1}. [${event.timestamp}] ${event.description}\n`;
+              content += `   Actor: ${event.actor} | Aggregate: ${event.aggregate}\n`;
+              if (Object.keys(event.payload).length > 0) {
+                content += `   Payload: ${JSON.stringify(event.payload).substring(0, 100)}...\n`;
+              }
+              content += '\n';
+            });
+            if (result.hasMore) {
+              content += `\n💡 More results available. Use --limit to see more.`;
+            }
+          }
+        } else {
+          content = `❌ Query failed: ${result.error}`;
+        }
+        
+        const resultEntry: ChatEntry = {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, resultEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Timeline query failed: ${error?.message || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+    
+    // ============================================
+    // /rewind - Time machine: rewind to timestamp
+    // ============================================
+    if (trimmedInput.startsWith("/rewind")) {
+      try {
+        const { executeRewindTo } = await import("../tools/rewind-to-tool.js");
+        
+        // Parse command: /rewind <timestamp> [--output <dir>] [--no-files]
+        const args = trimmedInput.slice(7).trim();
+        
+        if (!args || args === '--help') {
+          const helpEntry: ChatEntry = {
+            type: "assistant",
+            content: `⏰ Rewind Command (Time Machine)\n\n` +
+                     `Usage: /rewind <timestamp> [options]\n\n` +
+                     `Options:\n` +
+                     `  <timestamp>         Target time (ISO format: "2025-11-28T12:00:00Z")\n` +
+                     `  --output <dir>      Custom output directory\n` +
+                     `  --no-files          Don't include file contents\n` +
+                     `  --no-conversations  Don't include conversation history\n` +
+                     `  --no-git            Don't include git state\n\n` +
+                     `Examples:\n` +
+                     `  /rewind "2025-11-28T10:00:00Z"\n` +
+                     `  /rewind "2025-11-27T18:00:00Z" --output ~/recovered\n` +
+                     `  /rewind "2025-11-28T12:00:00Z" --no-files\n\n` +
+                     `⚠️ This creates a NEW directory with reconstructed state (non-destructive)`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, helpEntry]);
+          clearInput();
+          return true;
+        }
+        
+        // Extract timestamp (first quoted string or first arg)
+        const timestampMatch = args.match(/"([^"]+)"|^(\S+)/);
+        if (!timestampMatch) {
+          throw new Error('Missing timestamp. Usage: /rewind "2025-11-28T12:00:00Z"');
+        }
+        
+        const targetTimestamp = timestampMatch[1] || timestampMatch[2];
+        const params: any = { targetTimestamp };
+        
+        // Parse options
+        if (args.includes('--no-files')) params.includeFiles = false;
+        if (args.includes('--no-conversations')) params.includeConversations = false;
+        if (args.includes('--no-git')) params.includeGit = false;
+        
+        const outputMatch = args.match(/--output\s+(?:"([^"]+)"|(\S+))/);
+        if (outputMatch) {
+          params.outputDir = outputMatch[1] || outputMatch[2];
+        }
+        
+        // Execute rewind
+        const infoEntry: ChatEntry = {
+          type: "assistant",
+          content: `⏳ Starting rewind to ${targetTimestamp}...\n` +
+                   `This may take a few moments...`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, infoEntry]);
+        
+        const result = await executeRewindTo(params);
+        
+        let content = '';
+        if (result.success) {
+          content = `✅ Rewind Complete!\n\n` +
+                   `${result.summary}\n\n` +
+                   `📊 Stats:\n` +
+                   `  Events Replayed: ${result.eventsReplayed}\n` +
+                   `  Files Restored: ${result.filesRestored}\n` +
+                   `  Duration: ${result.durationMs}ms\n` +
+                   `  Snapshot Used: ${result.snapshotUsed || 'None (full replay)'}\n\n` +
+                   `Next Steps:\n${result.nextSteps?.join('\n')}`;
+        } else {
+          content = `❌ Rewind failed: ${result.error}`;
+        }
+        
+        const resultEntry: ChatEntry = {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, resultEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Rewind failed: ${error?.message || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+    
+    // ============================================
+    // /snapshots - List available snapshots
+    // ============================================
+    if (trimmedInput === "/snapshots" || trimmedInput.startsWith("/snapshots")) {
+      try {
+        const { getAvailableTimePoints } = await import("../tools/rewind-to-tool.js");
+        
+        const timePoints = await getAvailableTimePoints();
+        
+        let content = `📸 Available Time Points for Rewinding\n\n`;
+        
+        // Show snapshots
+        content += `━━━ Snapshots (Optimized Rewind Points) ━━━\n\n`;
+        if (timePoints.snapshots.length === 0) {
+          content += `No snapshots available yet.\n\n`;
+        } else {
+          timePoints.snapshots.forEach((snapshot, i) => {
+            content += `${i + 1}. ${snapshot.timestamp}\n`;
+            content += `   Events: ${snapshot.eventCount}`;
+            if (snapshot.sessionName) {
+              content += ` | Session: ${snapshot.sessionName}`;
+            }
+            content += '\n\n';
+          });
+        }
+        
+        // Show recent events
+        content += `━━━ Recent Events (Precise Rewind) ━━━\n\n`;
+        if (timePoints.recentEvents.length === 0) {
+          content += `No recent events.\n\n`;
+        } else {
+          timePoints.recentEvents.slice(0, 10).forEach((event, i) => {
+            content += `${i + 1}. [${event.timestamp}] ${event.description}\n`;
+          });
+          if (timePoints.recentEvents.length > 10) {
+            content += `\n... and ${timePoints.recentEvents.length - 10} more\n`;
+          }
+        }
+        
+        content += `\n💡 Use /rewind "<timestamp>" to time-travel to any point above.`;
+        
+        const resultEntry: ChatEntry = {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, resultEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to list snapshots: ${error?.message || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+
+    // ============================================
     // /list_tools - List all tools available to LLMs
     // ============================================
     if (trimmedInput === "/list_tools") {
@@ -893,6 +1163,8 @@ Examples:
             taskMgmt.push(formattedTool);
           } else if (['session_list', 'session_switch', 'session_new', 'session_rewind'].includes(name)) {
             sessionMgmt.push(formattedTool);
+          } else if (['timeline_query', 'rewind_to', 'list_time_points'].includes(name)) {
+            sessionMgmt.push(formattedTool); // Timeline tools in session management
           } else if (['get_my_identity'].includes(name)) {
             system.push(formattedTool);
           } else {
