@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "fe5871023547b7f2bc3caa20a56c416acca8bfee9bc804968d155399ae9fc3db",
-  "timestamp": "2025-11-28T00:11:04.102172+00:00",
+  "committed_baseline_hash": "6867d632556ea6b31ef25da96fac74122f988e54afb687b4640490aed7f48a86",
+  "timestamp": "2025-11-28T00:28:41.185490+00:00",
   "merkle_root": "e37f9b9d4f94cef84627e92a63511dc15d877ae4b2ac6673005962537998ebc6",
   "total_files": 143,
   "last_commit": {
-    "hash": "7f9a36f7c9f24129c9622ec42e35930c89026501",
-    "time": "2025-11-28T01:11:03+01:00",
+    "hash": "dd4b587edb9b2176acb2098770466916a2a98d4e",
+    "time": "2025-11-28T01:28:40+01:00",
     "author": "zack",
-    "subject": "security(integrity): include TypeScript source files in baseline"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_001107.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest.json.committed"
+    "subject": "test: differential verification"
+  }
 }
