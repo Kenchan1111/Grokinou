@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "1d7c598d207abaea217a8a8ba940cea70435373f3f4d388defa21156ea0c25a9",
-  "timestamp": "2025-11-25T20:36:41.094136+00:00",
-  "merkle_root": "1b52bc9bcd93c34ef1435aa8003df0f69e5f429628344070df009682e8053e01",
-  "total_files": 141,
+  "committed_baseline_hash": "b749982ccf2c9061ef3a5ee39b67e240d316e3b9ad2c40089347295799703001",
+  "timestamp": "2025-11-28T04:11:05.705180+00:00",
+  "merkle_root": "a1d0fd47aedd34ed3bea86b1e1951452d19f8a80e345ff92ed2d3f775ba0824d",
+  "total_files": 168,
   "last_commit": {
-    "hash": "05a9899295f2771c2d2249c3c4fcb1741b6aeda2",
-    "time": "2025-11-25T21:36:41+01:00",
+    "hash": "21b7c857f6660e33e07ea6f8a1a89cc78662740e",
+    "time": "2025-11-28T05:11:05+01:00",
     "author": "zack",
-    "subject": "feat(sessions): implement /switch command for session navigation (Phase 3 complete)"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251125_203645.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "secure_integrity_manifest_full.json.committed"
+    "subject": "feat(security): Test Sigstore Chain of Custody"
+  }
 }
