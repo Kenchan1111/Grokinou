@@ -1,18 +1,18 @@
 {
   "payloadType": "application/vnd.integrity.artifact+json",
   "payload": {
-    "artifact_path": "SECURITY_INTEGRITY_BASELINE.sha256.committed",
-    "artifact_hash": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-    "artifact_size": 12563
+    "artifact_path": "integrity_snapshots/secure_integrity_manifest.json.20251128T004002Z.committed",
+    "artifact_hash": "1a632639803a7e0f951f720fc671e954df6ada63dc5720de31ad29e438fa0f1d",
+    "artifact_size": 62802
   },
   "signatures": [
     {
-      "timestamp": "2025-11-28T00:40:02.063360+00:00",
+      "timestamp": "2025-11-28T00:40:02.044588+00:00",
       "algorithm": "SHA256"
     }
   ],
   "signature": {
-    "timestamp": "2025-11-28T00:40:02.063360+00:00",
+    "timestamp": "2025-11-28T00:40:02.044588+00:00",
     "algorithm": "SHA256"
   },
   "metadata": {
