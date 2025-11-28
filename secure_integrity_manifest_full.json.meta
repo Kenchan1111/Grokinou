@@ -8,5 +8,10 @@
     "time": "2025-11-28T08:32:19+01:00",
     "author": "zack",
     "subject": "feat(cli): Phase 8 - User Commands for Timeline Tools"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_073222.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T073222Z.committed.sigstore.bundle.json",
+  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T073222Z.committed",
+  "sigstore_rekor_index": 730472072,
+  "sigstore_chain_entry": 5
 }
