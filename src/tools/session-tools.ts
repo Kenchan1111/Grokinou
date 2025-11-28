@@ -321,18 +321,43 @@ export async function executeSessionNew(args: {
       }
     );
     
+    // CRITICAL: Change working directory if creating session in different directory
+    // Same behavior as user command and /switch-session for consistency
+    const currentWorkdir = process.cwd();
+    const dirChanged = targetWorkdir !== currentWorkdir;
+    
+    if (dirChanged) {
+      // Change the Node process's current working directory
+      process.chdir(targetWorkdir);
+      
+      // Verify the change was successful
+      const newCwd = process.cwd();
+      if (newCwd !== targetWorkdir) {
+        return {
+          success: false,
+          output: `❌ Failed to change directory from ${currentWorkdir} to ${targetWorkdir}\n` +
+                  `Current directory is: ${newCwd}`
+        };
+      }
+    }
+    
     // Format confirmation message (adapted from user command)
-    const dirChanged = targetWorkdir !== process.cwd();
     let output = `✅ **New Session Created** #${session.id}\n\n`;
     output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     output += `📂 Working Directory: ${session.working_dir}\n`;
-    if (dirChanged) {
-      output += `   (Created in new directory)\n`;
-    }
     output += `🤖 Provider: ${session.default_provider}\n`;
     output += `📱 Model: ${session.default_model}\n`;
     output += `💬 Messages: ${history.length}${import_history ? ' (imported)' : ''}\n`;
     output += `🕐 Created: ${new Date(session.created_at).toLocaleString()}\n\n`;
+    
+    if (dirChanged) {
+      output += `📂 **Directory Changed:**\n`;
+      output += `   From: ${currentWorkdir}\n`;
+      output += `   To:   ${targetWorkdir}\n\n`;
+      output += `⚠️  All relative paths now resolve to the new directory.\n\n`;
+    } else {
+      output += `📂 **Directory:** Already in ${targetWorkdir}\n\n`;
+    }
     
     if (import_history) {
       output += `📋 **History Imported**\n`;

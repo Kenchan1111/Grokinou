@@ -1116,21 +1116,45 @@ Examples:
         
         await agent.switchToModel(targetModel, apiKey, providerConfig.baseURL);
         
+        // CRITICAL: Change working directory if creating session in different directory
+        // Same behavior as /switch-session for consistency
+        const currentWorkdir = process.cwd();
+        const dirChanged = targetWorkdir !== currentWorkdir;
+        
+        if (dirChanged) {
+          // Change the Node process's current working directory
+          process.chdir(targetWorkdir);
+          
+          // Verify the change was successful
+          const newCwd = process.cwd();
+          if (newCwd !== targetWorkdir) {
+            throw new Error(
+              `Failed to change directory from ${currentWorkdir} to ${targetWorkdir}\n` +
+              `Current directory is: ${newCwd}`
+            );
+          }
+        }
+        
         // Replace chat history
         setChatHistory(history);
         
         // Add confirmation message
-        const dirChanged = targetWorkdir !== process.cwd();
         const confirmEntry: ChatEntry = {
           type: "assistant",
           content: `✅ **New Session Created** #${session.id}\n\n` +
                    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
                    `📂 Working Directory: ${session.working_dir}\n` +
-                   (dirChanged ? `   (Created in new directory)\n` : '') +
                    `🤖 Provider: ${session.default_provider}\n` +
                    `📱 Model: ${session.default_model}\n` +
                    `💬 Messages: ${history.length}${importHistory ? ' (imported)' : ''}\n` +
                    `🕐 Created: ${new Date(session.created_at).toLocaleString()}\n\n` +
+                   (dirChanged 
+                     ? `📂 **Directory Changed:**\n` +
+                       `   From: ${currentWorkdir}\n` +
+                       `   To:   ${targetWorkdir}\n\n` +
+                       `⚠️  All relative paths now resolve to the new directory.\n\n`
+                     : `📂 **Directory:** Already in ${targetWorkdir}\n\n`
+                   ) +
                    (importHistory 
                      ? `📋 **History Imported**\n` +
                        (fromSessionId ? `   Source: Session #${fromSessionId}\n` : `   Source: Current session\n`) +
@@ -1612,7 +1636,19 @@ Respond with ONLY the commit message, no additional text.`;
       setChatHistory((prev) => [...prev, userEntry]);
 
       try {
+        // Temporarily enable auto-mode for direct bash commands
+        // These commands should execute immediately without confirmation
+        const confirmationService = ConfirmationService.getInstance();
+        const previousFlags = confirmationService.getSessionFlags();
+        const wasAutoEnabled = previousFlags.bashCommands;
+        
+        // Enable bashCommands flag for direct execution
+        confirmationService.setSessionFlag('bashCommands', true);
+        
         const result = await agent.executeBashCommand(trimmedInput);
+        
+        // Restore previous flag state
+        confirmationService.setSessionFlag('bashCommands', wasAutoEnabled);
 
         const commandEntry: ChatEntry = {
           type: "tool_result",
