@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "998101fdafd21c6f8245039dac636ae24a55fdaae0bf8d09c0da9c35a777102f",
-  "timestamp": "2025-11-28T04:16:19.117830+00:00",
-  "merkle_root": "03cc746fef606683f40af7fce03a44b4041a0c1e3b86864492ff2ad8bf41aaba",
-  "total_files": 175,
+  "committed_baseline_hash": "35992f83f90139b37fd6f866785f2ae9121b86bb609d022b47fc8e7e15ec0ecf",
+  "timestamp": "2025-11-28T04:24:07.749961+00:00",
+  "merkle_root": "10cea46d91ba52a45876149ee9550c0789b8a86dbf110c2867e53922f7f44983",
+  "total_files": 181,
   "last_commit": {
-    "hash": "a05a9bddd2a819d1863e93f189022be74d9836e7",
-    "time": "2025-11-28T05:16:19+01:00",
+    "hash": "cd1618f28d02c0aef4e9f9e30b8089961ea5d789",
+    "time": "2025-11-28T05:24:07+01:00",
     "author": "zack",
-    "subject": "feat(timeline): Phase 5 - Git Hook + Timeline System Complete"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_041621.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T041622Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041622Z.committed",
-  "sigstore_rekor_index": 730286546,
-  "sigstore_chain_entry": 2
+    "subject": "feat(timeline): Phase 6 - Rewind Engine Complete"
+  }
 }
