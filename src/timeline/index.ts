@@ -23,12 +23,12 @@
  */
 
 // Core
-export { TimelineDatabase, getTimelineDb, type TimelineDatabaseConfig } from './database';
-export { EventBus, getEventBus, type EventBusOptions, type EventListener } from './event-bus';
-export { TimelineLogger, getTimelineLogger, type EventInput, type LogResult } from './timeline-logger';
+export { TimelineDatabase, getTimelineDb, type TimelineDatabaseConfig } from './database.js';
+export { EventBus, getEventBus, type EventBusOptions, type EventListener } from './event-bus.js';
+export { TimelineLogger, getTimelineLogger, type EventInput, type LogResult } from './timeline-logger.js';
 
 // Event Types
-export { EventType, Event, isEventInCategory, getEventDescription, EVENT_CATEGORIES } from './event-types';
+export { EventType, Event, isEventInCategory, getEventDescription, EVENT_CATEGORIES } from './event-types.js';
 export type {
   LLMMessagePayload,
   ToolCallPayload,
@@ -36,19 +36,19 @@ export type {
   GitCommitPayload,
   SessionCreatedPayload,
   RewindStartedPayload,
-} from './event-types';
+} from './event-types.js';
 
 // Hooks
-export { LLMHook, getLLMHook, type LLMHookConfig } from './hooks/llm-hook';
-export { ToolHook, getToolHook, type ToolHookConfig } from './hooks/tool-hook';
-export { SessionHook, getSessionHook, type SessionHookConfig } from './hooks/session-hook';
+export { LLMHook, getLLMHook, type LLMHookConfig } from './hooks/llm-hook.js';
+export { ToolHook, getToolHook, type ToolHookConfig } from './hooks/tool-hook.js';
+export { SessionHook, getSessionHook, type SessionHookConfig } from './hooks/session-hook.js';
 
 // Internal imports for functions
-import { getLLMHook as _getLLMHook } from './hooks/llm-hook';
-import { getToolHook as _getToolHook } from './hooks/tool-hook';
-import { getSessionHook as _getSessionHook } from './hooks/session-hook';
-import { getTimelineDb as _getTimelineDb } from './database';
-import { getEventBus as _getEventBus } from './event-bus';
+import { getLLMHook as _getLLMHook } from './hooks/llm-hook.js';
+import { getToolHook as _getToolHook } from './hooks/tool-hook.js';
+import { getSessionHook as _getSessionHook } from './hooks/session-hook.js';
+import { getTimelineDb as _getTimelineDb } from './database.js';
+import { getEventBus as _getEventBus } from './event-bus.js';
 
 /**
  * Initialize timeline module

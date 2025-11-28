@@ -16,8 +16,8 @@
  */
 
 import crypto from 'crypto';
-import { TimelineDatabase } from './database';
-import { Event, EventType } from './event-types';
+import { TimelineDatabase } from './database.js';
+import { Event, EventType } from './event-types.js';
 
 /**
  * Event to be logged (without generated fields)

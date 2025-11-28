@@ -27,6 +27,8 @@ import {
 } from "../utils/session-manager-sqlite.js";
 import { providerManager } from "../utils/provider-manager.js";
 import { debugLog } from "../utils/debug-logger.js";
+import { getLLMHook } from "../timeline/hooks/llm-hook.js";
+import { getToolHook } from "../timeline/hooks/tool-hook.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -64,6 +66,8 @@ export class GrokAgent extends EventEmitter {
   private maxToolRounds: number;
   private persistSession: boolean = true;
   private autoRestoreSession: boolean = true;
+  private llmHook = getLLMHook();
+  private toolHook = getToolHook();
 
   constructor(
     apiKey: string,
@@ -367,6 +371,22 @@ Current working directory: ${process.cwd()}`,
     this.chatHistory.push(userEntry);
     await this.persist(userEntry);
     this.messages.push({ role: "user", content: message });
+    
+    // 🕐 Timeline: Capture user message
+    try {
+      const session = sessionManager.getCurrentSession();
+      if (session) {
+        await this.llmHook.captureUserMessage(
+          message,
+          session.id,
+          this.grokClient.getCurrentModel(),
+          providerManager.detectProvider(this.grokClient.getCurrentModel())
+        );
+      }
+    } catch (error) {
+      // Don't fail the request if timeline logging fails
+      debugLog.log('⚠️  Timeline logging failed for user message:', error);
+    }
 
     const newEntries: ChatEntry[] = [userEntry];
     const maxToolRounds = this.maxToolRounds; // Prevent infinite loops
@@ -505,6 +525,22 @@ Current working directory: ${process.cwd()}`,
             content: assistantMessage.content || "",
           });
           newEntries.push(finalEntry);
+          
+          // 🕐 Timeline: Capture assistant message
+          try {
+            const session = sessionManager.getCurrentSession();
+            if (session) {
+              await this.llmHook.captureAssistantMessage(
+                assistantMessage.content || "",
+                session.id,
+                this.grokClient.getCurrentModel(),
+                providerManager.detectProvider(this.grokClient.getCurrentModel())
+              );
+            }
+          } catch (error) {
+            debugLog.log('⚠️  Timeline logging failed for assistant message:', error);
+          }
+          
           break; // Exit the loop
         }
       }
@@ -530,6 +566,22 @@ Current working directory: ${process.cwd()}`,
       };
       this.chatHistory.push(errorEntry);
       await this.persist(errorEntry);
+      
+      // 🕐 Timeline: Capture LLM error
+      try {
+        const session = sessionManager.getCurrentSession();
+        if (session) {
+          await this.llmHook.captureError(
+            error,
+            session.id,
+            this.grokClient.getCurrentModel(),
+            providerManager.detectProvider(this.grokClient.getCurrentModel())
+          );
+        }
+      } catch (timelineError) {
+        debugLog.log('⚠️  Timeline logging failed for LLM error:', timelineError);
+      }
+      
       return [userEntry, errorEntry];
     }
   }
@@ -832,53 +884,81 @@ Current working directory: ${process.cwd()}`,
   }
 
   private async executeTool(toolCall: GrokToolCall): Promise<ToolResult> {
+    const startTime = Date.now();
+    let startEventId: string = '';
+    
+    // 🕐 Timeline: Capture tool call started
+    try {
+      const session = sessionManager.getCurrentSession();
+      if (session) {
+        const args = JSON.parse(toolCall.function.arguments);
+        startEventId = await this.toolHook.captureToolCallStarted(
+          toolCall.function.name,
+          args,
+          session.id
+        );
+      }
+    } catch (error) {
+      debugLog.log('⚠️  Timeline logging failed for tool start:', error);
+    }
+    
     try {
       const args = JSON.parse(toolCall.function.arguments);
 
+      let result: ToolResult;
+      
       switch (toolCall.function.name) {
         case "view_file":
           const range: [number, number] | undefined =
             args.start_line && args.end_line
               ? [args.start_line, args.end_line]
               : undefined;
-          return await this.textEditor.view(args.path, range);
+          result = await this.textEditor.view(args.path, range);
+          break;
 
         case "create_file":
-          return await this.textEditor.create(args.path, args.content);
+          result = await this.textEditor.create(args.path, args.content);
+          break;
 
         case "str_replace_editor":
-          return await this.textEditor.strReplace(
+          result = await this.textEditor.strReplace(
             args.path,
             args.old_str,
             args.new_str,
             args.replace_all
           );
+          break;
 
         case "edit_file":
           if (!this.morphEditor) {
-            return {
+            result = {
               success: false,
               error:
                 "Morph Fast Apply not available. Please set MORPH_API_KEY environment variable to use this feature.",
             };
+          } else {
+            result = await this.morphEditor.editFile(
+              args.target_file,
+              args.instructions,
+              args.code_edit
+            );
           }
-          return await this.morphEditor.editFile(
-            args.target_file,
-            args.instructions,
-            args.code_edit
-          );
+          break;
 
         case "bash":
-          return await this.bash.execute(args.command);
+          result = await this.bash.execute(args.command);
+          break;
 
         case "create_todo_list":
-          return await this.todoTool.createTodoList(args.todos);
+          result = await this.todoTool.createTodoList(args.todos);
+          break;
 
         case "update_todo_list":
-          return await this.todoTool.updateTodoList(args.updates);
+          result = await this.todoTool.updateTodoList(args.updates);
+          break;
 
         case "search":
-          return await this.search.search(args.query, {
+          result = await this.search.search(args.query, {
             searchType: args.search_type,
             includePattern: args.include_pattern,
             excludePattern: args.exclude_pattern,
@@ -889,16 +969,19 @@ Current working directory: ${process.cwd()}`,
             fileTypes: args.file_types,
             includeHidden: args.include_hidden,
           });
+          break;
         case "apply_patch":
           if (!this.applyPatch) {
             const mod = await import("../tools/apply-patch.js");
             this.applyPatch = new mod.ApplyPatchTool();
           }
-          return await this.applyPatch.apply(args.patch, !!args.dry_run);
+          result = await this.applyPatch.apply(args.patch, !!args.dry_run);
+          break;
 
         case "get_my_identity":
           const getMyIdentity = await import("../tools/get-my-identity.js");
-          return await getMyIdentity.get_my_identity(args, this);
+          result = await getMyIdentity.get_my_identity(args, this);
+          break;
         
         // ============================================
         // SESSION MANAGEMENT TOOLS
@@ -906,13 +989,14 @@ Current working directory: ${process.cwd()}`,
         
         case "session_list": {
           const sessionTools = await import('../tools/session-tools.js');
-          return await sessionTools.executeSessionList();
+          result = await sessionTools.executeSessionList();
+          break;
         }
         
         case "session_switch": {
           const switchArgs = JSON.parse(toolCall.function.arguments) as { session_id: number };
           const sessionTools = await import('../tools/session-tools.js');
-          const result = await sessionTools.executeSessionSwitch(switchArgs);
+          result = await sessionTools.executeSessionSwitch(switchArgs);
           
           if (result.success) {
             // Update agent's context after switch
@@ -932,14 +1016,13 @@ Current working directory: ${process.cwd()}`,
               }
             }
           }
-          
-          return result;
+          break;
         }
         
         case "session_new": {
           const newArgs = JSON.parse(toolCall.function.arguments);
           const sessionTools = await import('../tools/session-tools.js');
-          const result = await sessionTools.executeSessionNew(newArgs);
+          result = await sessionTools.executeSessionNew(newArgs);
           
           if (result.success) {
             // Update agent's context
@@ -959,14 +1042,13 @@ Current working directory: ${process.cwd()}`,
               }
             }
           }
-          
-          return result;
+          break;
         }
         
         case "session_rewind": {
           const rewindArgs = JSON.parse(toolCall.function.arguments);
           const sessionTools = await import('../tools/session-tools.js');
-          const result = await sessionTools.executeSessionRewind(rewindArgs);
+          result = await sessionTools.executeSessionRewind(rewindArgs);
           
           if (result.success) {
             // Update agent's context
@@ -986,26 +1068,77 @@ Current working directory: ${process.cwd()}`,
               }
             }
           }
-          
-          return result;
+          break;
         }
 
         default:
           // Check if this is an MCP tool
           if (toolCall.function.name.startsWith("mcp__")) {
-            return await this.executeMCPTool(toolCall);
+            result = await this.executeMCPTool(toolCall);
+          } else {
+            result = {
+              success: false,
+              error: `Unknown tool: ${toolCall.function.name}`,
+            };
           }
-
-          return {
-            success: false,
-            error: `Unknown tool: ${toolCall.function.name}`,
-          };
       }
+      
+      // 🕐 Timeline: Capture tool call success
+      try {
+        const session = sessionManager.getCurrentSession();
+        if (session) {
+          const duration = Date.now() - startTime;
+          if (result.success) {
+            await this.toolHook.captureToolCallSuccess(
+              toolCall.function.name,
+              args,
+              result.output || result.error || 'Success',
+              session.id,
+              duration,
+              startEventId
+            );
+          } else {
+            await this.toolHook.captureToolCallFailed(
+              toolCall.function.name,
+              args,
+              result.error || 'Unknown error',
+              session.id,
+              duration,
+              startEventId
+            );
+          }
+        }
+      } catch (error) {
+        debugLog.log('⚠️  Timeline logging failed for tool result:', error);
+      }
+      
+      return result;
     } catch (error: any) {
-      return {
+      const duration = Date.now() - startTime;
+      const errorResult: ToolResult = {
         success: false,
         error: `Tool execution error: ${error.message}`,
       };
+      
+      // 🕐 Timeline: Capture tool call failed
+      try {
+        const session = sessionManager.getCurrentSession();
+        if (session) {
+          const args = JSON.parse(toolCall.function.arguments);
+          await this.toolHook.captureToolCallFailed(
+            toolCall.function.name,
+            args,
+            error.message,
+            session.id,
+            duration,
+            startEventId
+          );
+        }
+      } catch (timelineError) {
+        debugLog.log('⚠️  Timeline logging failed for tool error:', timelineError);
+      }
+      
+      return errorResult;
     }
   }
 

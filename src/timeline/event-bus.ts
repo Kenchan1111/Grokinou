@@ -20,8 +20,8 @@
  */
 
 import crypto from 'crypto';
-import { TimelineLogger, EventInput, LogResult } from './timeline-logger';
-import { EventType, Event } from './event-types';
+import { TimelineLogger, EventInput, LogResult } from './timeline-logger.js';
+import { EventType, Event } from './event-types.js';
 
 /**
  * Event Listener Function

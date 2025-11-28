@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { getSessionHook } from '../timeline/hooks/session-hook.js';
 
 export interface SessionState {
   version: number;
@@ -62,6 +63,7 @@ export class SessionManagerSQLite {
   private currentSession: Session | null = null;
   private currentProvider: string = 'grok';
   private currentModel: string = 'grok-code-fast-1';
+  private sessionHook = getSessionHook();
 
   private constructor() {
     this.sessionRepo = new SessionRepository(db.getDb());
@@ -129,6 +131,19 @@ export class SessionManagerSQLite {
         apiKeyHash
       );
       sessionDebugLog.log(`🆕 [initSession] New session created: id=${this.currentSession.id}`);
+      
+      // 🕐 Timeline: Capture session created
+      try {
+        this.sessionHook.captureSessionCreated(
+          this.currentSession.id,
+          this.currentSession.session_name,
+          workdir,
+          model,
+          provider
+        ).catch(err => sessionDebugLog.log('⚠️  Timeline logging failed:', err));
+      } catch (error) {
+        sessionDebugLog.log('⚠️  Timeline logging failed for session created:', error);
+      }
     }
     
     sessionDebugLog.log(`✅ [initSession] FINAL currentSession: id=${this.currentSession.id}\n`);
@@ -313,11 +328,26 @@ export class SessionManagerSQLite {
     sessionDebugLog.log(`   sessionId=${sessionId}`);
     sessionDebugLog.log(`   newName="${newName}"`);
     
+    // Get old name before update
+    const session = this.sessionRepo.findById(sessionId);
+    const oldName = session?.session_name || '';
+    
     this.sessionRepo.updateSessionName(sessionId, newName);
     
     // Update current session cache if it's the one being renamed
     if (this.currentSession && this.currentSession.id === sessionId) {
       this.currentSession.session_name = newName;
+    }
+    
+    // 🕐 Timeline: Capture session renamed
+    try {
+      this.sessionHook.captureSessionRenamed(
+        sessionId,
+        oldName,
+        newName
+      ).catch(err => sessionDebugLog.log('⚠️  Timeline logging failed:', err));
+    } catch (error) {
+      sessionDebugLog.log('⚠️  Timeline logging failed for session renamed:', error);
     }
     
     sessionDebugLog.log(`✅ [renameSession] Session ${sessionId} renamed to "${newName}"`);
@@ -332,6 +362,8 @@ export class SessionManagerSQLite {
    */
   async switchSession(sessionId: number): Promise<{ session: Session; history: ChatEntry[] }> {
     sessionDebugLog.log(`\n🔄 [switchSession] CALLED with sessionId=${sessionId}`);
+    
+    const fromSessionId = this.currentSession?.id;
     
     // Find the session
     const targetSession = this.sessionRepo.findById(sessionId);
@@ -377,6 +409,19 @@ export class SessionManagerSQLite {
     sessionDebugLog.log(`   currentProvider="${this.currentProvider}"`);
     sessionDebugLog.log(`   currentModel="${this.currentModel}"`);
     sessionDebugLog.log(`   history.length=${history.length}`);
+    
+    // 🕐 Timeline: Capture session switched
+    if (fromSessionId) {
+      try {
+        this.sessionHook.captureSessionSwitched(
+          fromSessionId,
+          sessionId,
+          targetSession.working_dir
+        ).catch(err => sessionDebugLog.log('⚠️  Timeline logging failed:', err));
+      } catch (error) {
+        sessionDebugLog.log('⚠️  Timeline logging failed for session switch:', error);
+      }
+    }
     
     return {
       session: this.currentSession,

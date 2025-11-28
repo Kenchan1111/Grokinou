@@ -11,6 +11,7 @@ import { ConfirmationService } from "./utils/confirmation-service.js";
 import { createMCPCommand } from "./commands/mcp.js";
 import type { ChatCompletionMessageParam } from "openai/resources/chat";
 import { loadTomlConfig, applyKeyValue, resolveEffectiveConfig } from "./utils/config.js";
+import { initTimeline } from "./timeline/index.js";
 
 // Load environment variables
 dotenv.config();
@@ -50,6 +51,20 @@ function ensureUserSettingsDirectory(): void {
     manager.loadUserSettings();
   } catch (error) {
     // Silently ignore errors during setup
+  }
+}
+
+// Initialize timeline module (silent, non-blocking)
+function initializeTimeline(): void {
+  try {
+    initTimeline({
+      enableLLMHook: true,
+      enableToolHook: true,
+      enableSessionHook: true,
+    });
+  } catch (error) {
+    // Timeline is optional - don't fail app startup if it fails
+    console.error('⚠️  Timeline initialization failed (non-critical):', error);
   }
 }
 
@@ -582,6 +597,7 @@ program
       console.log("\x1b[90mLoading session...\x1b[0m\n");
 
       ensureUserSettingsDirectory();
+      initializeTimeline();
 
       // Support variadic positional arguments for multi-word initial message
       let initialMessage = Array.isArray(message)

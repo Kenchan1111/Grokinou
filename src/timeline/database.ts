@@ -17,6 +17,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { TIMELINE_SCHEMA } from './schema.js';
 
 /**
  * Timeline Database Configuration
@@ -87,12 +88,8 @@ export class TimelineDatabase {
    */
   private initializeSchema(): void {
     try {
-      // Read schema file
-      const schemaPath = path.join(__dirname, 'schema.sql');
-      const schema = fs.readFileSync(schemaPath, 'utf-8');
-      
-      // Execute schema
-      this.db.exec(schema);
+      // Execute embedded schema
+      this.db.exec(TIMELINE_SCHEMA);
       
       // Verify schema version
       const currentVersion = this.getMetadata('schema_version');

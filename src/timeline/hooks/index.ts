@@ -7,6 +7,6 @@
  * @version 1.0.0
  */
 
-export { LLMHook, getLLMHook, type LLMHookConfig } from './llm-hook';
-export { ToolHook, getToolHook, type ToolHookConfig } from './tool-hook';
-export { SessionHook, getSessionHook, type SessionHookConfig } from './session-hook';
+export { LLMHook, getLLMHook, type LLMHookConfig } from './llm-hook.js';
+export { ToolHook, getToolHook, type ToolHookConfig } from './tool-hook.js';
+export { SessionHook, getSessionHook, type SessionHookConfig } from './session-hook.js';

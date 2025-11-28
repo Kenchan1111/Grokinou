@@ -12,9 +12,9 @@
  * @version 1.0.0
  */
 
-import { EventBus } from '../event-bus';
-import { EventType } from '../event-types';
-import type { ToolCallPayload } from '../event-types';
+import { EventBus } from '../event-bus.js';
+import { EventType } from '../event-types.js';
+import type { ToolCallPayload } from '../event-types.js';
 
 /**
  * Tool Hook Configuration
