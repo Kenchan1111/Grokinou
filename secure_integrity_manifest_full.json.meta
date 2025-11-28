@@ -1,13 +1,12 @@
 {
-  "committed_baseline_hash": "b749982ccf2c9061ef3a5ee39b67e240d316e3b9ad2c40089347295799703001",
-  "timestamp": "2025-11-28T04:11:05.705180+00:00",
-  "merkle_root": "a1d0fd47aedd34ed3bea86b1e1951452d19f8a80e345ff92ed2d3f775ba0824d",
-  "total_files": 168,
+  "committed_baseline_hash": "364af9b5d990c24251f9962bf4a0a0fc538c3dc53f446d5a4e2509756ac77b39",
+  "timestamp": "2025-11-28T04:11:41.934490+00:00",
+  "merkle_root": "566d2f581cc40f34e2bd0bf438f1720f0ae88054ef80b48831b7a8ff3c665130",
+  "total_files": 171,
   "last_commit": {
-    "hash": "21b7c857f6660e33e07ea6f8a1a89cc78662740e",
-    "time": "2025-11-28T05:11:05+01:00",
+    "hash": "f4d1c4d128abd19f79bbf7ec405d18aa92d77058",
+    "time": "2025-11-28T05:11:41+01:00",
     "author": "zack",
-    "subject": "feat(security): Test Sigstore Chain of Custody"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_041108.tsr"
+    "subject": "feat(security): Sigstore Chain of Custody operational"
+  }
 }
