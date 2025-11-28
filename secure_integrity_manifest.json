@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-28T00:30:24.070472+00:00",
-  "merkle_root": "e051f0c1f1fd53612b366d654353314225c63519f3c190e3fcc579881331f8d2",
-  "total_files": 143,
+  "timestamp": "2025-11-28T00:40:02.615968+00:00",
+  "merkle_root": "a5159b4fc327120953ae2ebeb5a5937c20ebfdf28cbb86ef358b3d6f3755b734",
+  "total_files": 144,
   "files": {
     "ARCHITECTURE_ANALYSIS.md": {
       "path": "ARCHITECTURE_ANALYSIS.md",
@@ -884,7 +884,7 @@
       "path": "src/index.ts",
       "sha256": "9de5bc3636c97d2a4b00e7a8641a5e211a3224a2b0a531f367d4155cc182c74b",
       "size": 23270,
-      "mtime": "2025-11-28T00:29:16.400513+00:00",
+      "mtime": "2025-11-28T00:39:51.318377+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -1719,12 +1719,24 @@
       "blockchain_block_heights": null,
       "blockchain_block_roots": null,
       "ots_verified": null
+    },
+    "TEST_COHERENCE.md": {
+      "path": "TEST_COHERENCE.md",
+      "sha256": "9b8a014a13993a8a2cd2627871709e6107d513708a41e6139cc79b2807c2f523",
+      "size": 26,
+      "mtime": "2025-11-28T00:39:53.119343+00:00",
+      "ots_receipt": null,
+      "blockchain_tx": null,
+      "blockchain_txids": null,
+      "blockchain_block_heights": null,
+      "blockchain_block_roots": null,
+      "ots_verified": null
     }
   },
-  "previous_manifest_digest": "c0992740f89043bff4eac025d2390c0c0ec8ec6bcea09219cac606795ba62a59",
-  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251128_003025.ots",
-  "merkle_root_anchored_at": "2025-11-28T00:30:25.287635+00:00",
+  "previous_manifest_digest": "1a632639803a7e0f951f720fc671e954df6ada63dc5720de31ad29e438fa0f1d",
+  "merkle_root_ots_receipt": "logs/anchors/ots/merkle_root_commit_20251128_004003.ots",
+  "merkle_root_anchored_at": "2025-11-28T00:40:03.799986+00:00",
   "baseline_sha_digest": "4d428327fd116f9043a805b0b1f07f07f3fe1f84d69ae639de1d7e92cbf96d3a",
-  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251128_003027.ots",
-  "baseline_anchored_at": "2025-11-28T00:30:27.098806+00:00"
+  "baseline_ots_receipt": "logs/anchors/ots/baseline_sha_committed_20251128_004004.ots",
+  "baseline_anchored_at": "2025-11-28T00:40:04.790832+00:00"
 }
