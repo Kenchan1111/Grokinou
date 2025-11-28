@@ -987,9 +987,14 @@ Examples:
     // /new-session [options] - Create a new session
     // ============================================
     if (trimmedInput.startsWith("/new-session")) {
+      // DEBUG: Log the full command
+      console.log('🐛 [DEBUG] /new-session command:', trimmedInput);
+      
       try {
         const parts = trimmedInput.split(/\s+/);
         const args = parts.slice(1);
+        
+        console.log('🐛 [DEBUG] Parsed args:', args);
         
         // Parse options
         let importHistory = false;
@@ -1053,6 +1058,9 @@ Examples:
           ? (targetDirectory.startsWith('/') ? targetDirectory : `${process.cwd()}/${targetDirectory}`)
           : process.cwd();
         
+        console.log('🐛 [DEBUG] Target directory:', targetWorkdir);
+        console.log('🐛 [DEBUG] Current directory:', process.cwd());
+        
         // Verify/create target directory
         const fs = await import('fs');
         if (!fs.existsSync(targetWorkdir)) {
@@ -1096,6 +1104,14 @@ Examples:
         }
         
         // Create the new session
+        console.log('🐛 [DEBUG] Calling createNewSession with:', {
+          workdir: targetWorkdir,
+          provider: targetProvider,
+          model: targetModel,
+          importHistory,
+          fromSessionId
+        });
+        
         const { session, history } = await sessionManager.createNewSession(
           targetWorkdir,
           targetProvider,
@@ -1107,6 +1123,9 @@ Examples:
             dateRange
           }
         );
+        
+        console.log('🐛 [DEBUG] Session created:', session.id);
+        console.log('🐛 [DEBUG] History length:', history.length);
         
         // Update agent with new session's model/provider
         const providerConfig = providerManager.getProviderForModel(targetModel);
@@ -1136,9 +1155,11 @@ Examples:
         }
         
         // Replace chat history
+        console.log('🐛 [DEBUG] Replacing chat history with', history.length, 'messages');
         setChatHistory(history);
         
         // Add confirmation message
+        console.log('🐛 [DEBUG] Creating confirmation message');
         const confirmEntry: ChatEntry = {
           type: "assistant",
           content: `✅ **New Session Created** #${session.id}\n\n` +
@@ -1170,12 +1191,19 @@ Examples:
           timestamp: new Date(),
         };
         
+        console.log('🐛 [DEBUG] Adding confirmation message');
         setChatHistory((prev) => [...prev, confirmEntry]);
         
+        console.log('🐛 [DEBUG] /new-session COMPLETE');
+        
       } catch (error: any) {
+        console.error('🔴 [ERROR] /new-session failed:', error);
+        console.error('🔴 [ERROR] Stack:', error.stack);
+        
         const errorEntry: ChatEntry = {
           type: "assistant",
           content: `❌ Failed to create new session: ${error?.message || 'Unknown error'}\n\n` +
+                   `Stack trace:\n${error.stack}\n\n` +
                    `Usage: /new-session [--import-history] [--model <name>] [--provider <name>]`,
           timestamp: new Date(),
         };
