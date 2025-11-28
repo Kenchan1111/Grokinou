@@ -8,5 +8,6 @@
     "time": "2025-11-28T05:11:05+01:00",
     "author": "zack",
     "subject": "feat(security): Test Sigstore Chain of Custody"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_041108.tsr"
 }
