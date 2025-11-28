@@ -42,6 +42,17 @@ Thumbs.db
 logs/
 *.log
 
+# Documentation (sauf README.md)
+*.md
+!README.md
+
+# Analysis and audit reports (local only)
+SECURITY_AUDIT_*.md
+ARCHITECTURE_TIME_MACHINE_ANALYSIS.md
+IMPLEMENTATION_TIMELINE_*.md
+TIMELINE_BLOCKCHAIN_ANALYSIS.md
+BRUTAL_HONEST_REVIEW_*.md
+
 # Runtime data
 pids/
 *.pid
