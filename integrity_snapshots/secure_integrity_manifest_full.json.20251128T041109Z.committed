@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "timestamp": "2025-11-28T04:11:32.421966+00:00",
-  "merkle_root": "9495e189e8adcb0ad7c260911a0a4b52c736598ede97fca25fe20642f7bd1826",
-  "total_files": 168,
+  "timestamp": "2025-11-28T04:10:56.574241+00:00",
+  "merkle_root": "2ca4e052af353000a4d140da5aa3aac0f3c8d7da587f8d4c9dd59dacd3d1a125",
+  "total_files": 166,
   "files": {
     ".env.example": {
       "path": ".env.example",
@@ -90,9 +90,9 @@
     },
     "SECURITY_INTEGRITY_BASELINE.sha256.committed.sig": {
       "path": "SECURITY_INTEGRITY_BASELINE.sha256.committed.sig",
-      "sha256": "7b47681da9b37b57bce1e100ec8f6d4fb24f3bb37410ca92ae582ab979396351",
+      "sha256": "95955d3cc34001e50f8fbefea93bcddedc10732f77cd1e8e3e514e9d7882c938",
       "size": 639,
-      "mtime": "2025-11-28T04:11:05.631833+00:00",
+      "mtime": "2025-11-28T04:02:17.277768+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -700,30 +700,6 @@
       "blockchain_block_roots": null,
       "ots_verified": null
     },
-    "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041105Z.committed": {
-      "path": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041105Z.committed",
-      "sha256": "b749982ccf2c9061ef3a5ee39b67e240d316e3b9ad2c40089347295799703001",
-      "size": 77936,
-      "mtime": "2025-11-28T04:10:56.574816+00:00",
-      "ots_receipt": null,
-      "blockchain_tx": null,
-      "blockchain_txids": null,
-      "blockchain_block_heights": null,
-      "blockchain_block_roots": null,
-      "ots_verified": null
-    },
-    "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041105Z.committed.sig": {
-      "path": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T041105Z.committed.sig",
-      "sha256": "3f0535ec5454985ad3da89f2df48404937574d7cd75410125fc66c67a98bfe64",
-      "size": 677,
-      "mtime": "2025-11-28T04:11:05.609833+00:00",
-      "ots_receipt": null,
-      "blockchain_tx": null,
-      "blockchain_txids": null,
-      "blockchain_block_heights": null,
-      "blockchain_block_roots": null,
-      "ots_verified": null
-    },
     "package-lock.json": {
       "path": "package-lock.json",
       "sha256": "5f3c0f47ddddb507d28a70545485d269ade751d43a487acbffc94a1cda712a76",
@@ -786,9 +762,9 @@
     },
     "secure_integrity_manifest_full.json.committed.sig": {
       "path": "secure_integrity_manifest_full.json.committed.sig",
-      "sha256": "96112027b9586a1abc97c5ab11c4d0b78856d4f4abe7f2b0fe598f603b5c3aa9",
+      "sha256": "6a6f377af1e5f09a370c2f2c6376187469e1f850470fb7ab8d7f0f95eaecec48",
       "size": 640,
-      "mtime": "2025-11-28T04:11:05.605833+00:00",
+      "mtime": "2025-11-28T04:02:17.257768+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -798,9 +774,9 @@
     },
     "secure_integrity_manifest_full.json.meta.sig": {
       "path": "secure_integrity_manifest_full.json.meta.sig",
-      "sha256": "489f16011e4b8aebe15f329d55e7589706e790c85c426de0c8364bb35a0b92df",
+      "sha256": "9bca01294ac06aa4046c1c3e53fa894206a5753cce812499f3bbc8500ab67270",
       "size": 633,
-      "mtime": "2025-11-28T04:11:05.711833+00:00",
+      "mtime": "2025-11-25T20:36:41.098619+00:00",
       "ots_receipt": null,
       "blockchain_tx": null,
       "blockchain_txids": null,
@@ -2020,6 +1996,5 @@
       "blockchain_block_roots": null,
       "ots_verified": null
     }
-  },
-  "previous_manifest_digest": "b749982ccf2c9061ef3a5ee39b67e240d316e3b9ad2c40089347295799703001"
+  }
 }
