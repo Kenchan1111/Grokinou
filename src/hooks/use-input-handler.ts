@@ -436,17 +436,32 @@ Built-in Commands:
   /switch-session <id> - Switch to a different session by ID
   /rename_session <name> - Rename the current session
   /new-session [options] - Create a new session (Git-like branching)
+      Directory Options:
       --directory <path>     Create session in different directory
+      
+      Initialization Options (choose one):
+      --clone-git            Clone current Git repository to target directory
+      --copy-files           Copy files from current directory (excluding .git)
+      --from-rewind <time>   Initialize from a rewind state (uses event sourcing)
+      
+      History Import Options:
       --import-history       Import messages from source session
       --from-session <id>    Import from specific session (default: current)
       --from-date <date>     Import messages from this date onwards
       --to-date <date>       Import messages up to this date
       --date-range <start> <end>  Import messages between dates
+      
+      Model Options:
       --model <name>         Start with specific model
       --provider <name>      Start with specific provider
       
       Date formats: DD/MM/YYYY, YYYY-MM-DD, "today", "yesterday"
-      Example: /new-session --directory ~/rewind --from-session 5 --date-range 01/11/2025 03/11/2025
+      
+      Examples:
+        /new-session --directory ~/project --clone-git
+        /new-session --copy-files --import-history
+        /new-session --from-rewind "2025-11-28T10:00:00Z" --directory ~/recovered
+        /new-session --from-session 5 --date-range 01/11/2025 03/11/2025
   /list_tools - List all tools available to LLMs (with descriptions)
   /search <query> - Search in conversation history
   /exit       - Exit application
@@ -1519,6 +1534,9 @@ Examples:
         let fromSessionId: number | undefined;
         let fromDate: Date | undefined;
         let toDate: Date | undefined;
+        let cloneGit = false;
+        let copyFiles = false;
+        let fromRewind: string | undefined;
         
         for (let i = 0; i < args.length; i++) {
           const arg = args[i];
@@ -1554,6 +1572,13 @@ Examples:
             toDate = parseDate(args[i + 2]);
             importHistory = true; // Implicit
             i += 2; // Skip next 2 args
+          } else if (arg === '--clone-git') {
+            cloneGit = true;
+          } else if (arg === '--copy-files') {
+            copyFiles = true;
+          } else if (arg === '--from-rewind' && args[i + 1]) {
+            fromRewind = args[i + 1];
+            i++; // Skip next arg
           }
         }
         
@@ -1585,6 +1610,120 @@ Examples:
             fs.mkdirSync(targetWorkdir, { recursive: true });
           } else {
             throw new Error(`Directory does not exist: ${targetWorkdir}`);
+          }
+        }
+        
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Handle directory initialization options
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        
+        // --from-rewind: Use rewind to initialize directory (highest priority)
+        if (fromRewind) {
+          const infoEntry: ChatEntry = {
+            type: "assistant",
+            content: `⏳ Initializing directory from rewind at ${fromRewind}...\n` +
+                     `This may take a moment...`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, infoEntry]);
+          
+          const { executeRewindTo } = await import("../tools/rewind-to-tool.js");
+          const rewindResult = await executeRewindTo({
+            targetTimestamp: fromRewind,
+            outputDir: targetWorkdir,
+            includeFiles: true,
+            includeConversations: importHistory,
+            gitMode: 'full', // Always use full git mode for from-rewind
+            createSession: false, // We'll create session ourselves
+          });
+          
+          if (!rewindResult.success) {
+            throw new Error(`Rewind failed: ${rewindResult.error}`);
+          }
+          
+          const rewindInfoEntry: ChatEntry = {
+            type: "assistant",
+            content: `✅ Directory initialized from rewind\n` +
+                     `   Files Restored: ${rewindResult.filesRestored}\n` +
+                     `   Events Replayed: ${rewindResult.eventsReplayed}\n` +
+                     `   Duration: ${rewindResult.durationMs}ms`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, rewindInfoEntry]);
+        }
+        // --clone-git: Clone current git repository
+        else if (cloneGit) {
+          const infoEntry: ChatEntry = {
+            type: "assistant",
+            content: `⏳ Cloning Git repository to ${targetWorkdir}...\n` +
+                     `This may take a moment...`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, infoEntry]);
+          
+          const { exec } = await import('child_process');
+          const { promisify } = await import('util');
+          const execAsync = promisify(exec);
+          
+          const currentDir = process.cwd();
+          const gitDir = `${currentDir}/.git`;
+          
+          if (!fs.existsSync(gitDir)) {
+            throw new Error('Not in a Git repository. Cannot use --clone-git');
+          }
+          
+          try {
+            // Clone the current repo to target directory
+            await execAsync(`git clone "${currentDir}" "${targetWorkdir}_temp"`);
+            
+            // Move contents from temp to target
+            await execAsync(`cp -r "${targetWorkdir}_temp/"* "${targetWorkdir}/" 2>/dev/null || true`);
+            await execAsync(`cp -r "${targetWorkdir}_temp/".* "${targetWorkdir}/" 2>/dev/null || true`);
+            
+            // Remove temp directory
+            await execAsync(`rm -rf "${targetWorkdir}_temp"`);
+            
+            const cloneInfoEntry: ChatEntry = {
+              type: "assistant",
+              content: `✅ Git repository cloned successfully`,
+              timestamp: new Date(),
+            };
+            setChatHistory((prev) => [...prev, cloneInfoEntry]);
+          } catch (error: any) {
+            throw new Error(`Git clone failed: ${error.message}`);
+          }
+        }
+        // --copy-files: Copy files from current directory (excluding .git)
+        else if (copyFiles) {
+          const infoEntry: ChatEntry = {
+            type: "assistant",
+            content: `⏳ Copying files to ${targetWorkdir}...\n` +
+                     `This may take a moment...`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, infoEntry]);
+          
+          const { exec } = await import('child_process');
+          const { promisify } = await import('util');
+          const execAsync = promisify(exec);
+          
+          const currentDir = process.cwd();
+          
+          try {
+            // Copy all files except .git, node_modules, and hidden files
+            await execAsync(
+              `rsync -av --exclude='.git' --exclude='node_modules' --exclude='.*' "${currentDir}/" "${targetWorkdir}/" 2>/dev/null || ` +
+              `cp -r "${currentDir}/"* "${targetWorkdir}/" 2>/dev/null || true`
+            );
+            
+            const copyInfoEntry: ChatEntry = {
+              type: "assistant",
+              content: `✅ Files copied successfully (excluding .git)`,
+              timestamp: new Date(),
+            };
+            setChatHistory((prev) => [...prev, copyInfoEntry]);
+          } catch (error: any) {
+            throw new Error(`File copy failed: ${error.message}`);
           }
         }
         
@@ -1689,6 +1828,19 @@ Examples:
         // Finally add the confirmation message
         // This makes activeMessages = [confirmEntry] via the automatic useEffect calculation
         console.log('🐛 [DEBUG] Creating confirmation message');
+        
+        // Determine initialization mode
+        let initMode = '';
+        if (fromRewind) {
+          initMode = `🕰️  **Directory Initialized:** From rewind at ${fromRewind}\n\n`;
+        } else if (cloneGit) {
+          initMode = `📦 **Directory Initialized:** Git repository cloned\n\n`;
+        } else if (copyFiles) {
+          initMode = `📄 **Directory Initialized:** Files copied from ${process.cwd()}\n\n`;
+        } else {
+          initMode = `📁 **Directory Initialized:** Empty (or existing files)\n\n`;
+        }
+        
         const confirmEntry: ChatEntry = {
           type: "assistant",
           content: `✅ **New Session Created** #${session.id}\n\n` +
@@ -1698,6 +1850,7 @@ Examples:
                    `📱 Model: ${session.default_model}\n` +
                    `💬 Messages: ${history.length}${importHistory ? ' (imported)' : ''}\n` +
                    `🕐 Created: ${new Date(session.created_at).toLocaleString()}\n\n` +
+                   initMode +
                    (dirChanged 
                      ? `📂 **Directory Changed:**\n` +
                        `   From: ${currentWorkdir}\n` +
