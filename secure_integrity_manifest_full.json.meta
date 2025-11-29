@@ -8,5 +8,6 @@
     "time": "2025-11-29T08:59:26+01:00",
     "author": "zack",
     "subject": "chore(integrity): anchor rewind bonus features (9e9467f) - TSA+Sigstore"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251129_075930.tsr"
 }
