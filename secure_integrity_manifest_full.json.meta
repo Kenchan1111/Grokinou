@@ -8,5 +8,10 @@
     "time": "2025-11-29T09:13:54+01:00",
     "author": "zack",
     "subject": "chore(integrity): anchor new-session features (350066b) - TSA+Sigstore+OTS"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251129_081358.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251129T081359Z.committed.sigstore.bundle.json",
+  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251129T081359Z.committed",
+  "sigstore_rekor_index": 731408740,
+  "sigstore_chain_entry": 7
 }
