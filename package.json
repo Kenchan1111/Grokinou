@@ -24,7 +24,12 @@
     "start:bun": "bun run dist/index.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "install:bun": "bun install"
+    "install:bun": "bun install",
+    "test": "npm run build && npx tsc test/*.test.ts --outDir test --module esnext --skipLibCheck && npm run test:run",
+    "test:run": "node test/user-commands.test.js && node test/llm-tools.test.js",
+    "test:user-commands": "npm run build && npx tsc test/user-commands.test.ts --outDir test --module esnext --skipLibCheck && node test/user-commands.test.js",
+    "test:llm-tools": "npm run build && npx tsc test/llm-tools.test.ts --outDir test --module esnext --skipLibCheck && node test/llm-tools.test.js",
+    "test:all": "npm test"
   },
   "keywords": [
     "cli",
