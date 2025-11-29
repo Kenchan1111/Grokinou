@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "da9c1f77ef61b47491ae7c02fd14dc5ef1f5e23e864ebfdc45409f4cb248783e",
-  "timestamp": "2025-11-28T07:32:19.282603+00:00",
-  "merkle_root": "9568c66693275d89e60cd77590e449716e344695fbeefcb8896b838544e77c93",
-  "total_files": 189,
+  "committed_baseline_hash": "06da87bee05e478de231755c6025971c421e39b8703070247a58034bf2137d2e",
+  "timestamp": "2025-11-29T07:59:26.115150+00:00",
+  "merkle_root": "8649fbe6cbf26b6c3dcf0ddfc332500bd7463fecfde25b23cb182a9e69eabc00",
+  "total_files": 193,
   "last_commit": {
-    "hash": "c08a1eeadb62295aaea8854ce13aea29e72105a8",
-    "time": "2025-11-28T08:32:19+01:00",
+    "hash": "2c973923f2fe3de883a8a421882b30a2abd4edb5",
+    "time": "2025-11-29T08:59:26+01:00",
     "author": "zack",
-    "subject": "feat(cli): Phase 8 - User Commands for Timeline Tools"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251128_073222.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251128T073222Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251128T073222Z.committed",
-  "sigstore_rekor_index": 730472072,
-  "sigstore_chain_entry": 5
+    "subject": "chore(integrity): anchor rewind bonus features (9e9467f) - TSA+Sigstore"
+  }
 }
