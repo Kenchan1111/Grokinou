@@ -35,6 +35,30 @@ const writeFile = promisify(fs.writeFile);
 const copyFile = promisify(fs.copyFile);
 
 /**
+ * File comparison result
+ */
+export interface FileComparison {
+  path: string;
+  status: 'added' | 'deleted' | 'modified' | 'unchanged';
+  rewindHash?: string;
+  compareHash?: string;
+  sizeDiff?: number;
+}
+
+/**
+ * Comparison report
+ */
+export interface ComparisonReport {
+  compareDirectory: string;
+  totalFiles: number;
+  added: number;
+  deleted: number;
+  modified: number;
+  unchanged: number;
+  files: FileComparison[];
+}
+
+/**
  * Rewind result
  */
 export interface RewindResult {
@@ -46,7 +70,19 @@ export interface RewindResult {
   outputDirectory: string;
   duration: number;
   error?: string;
+  sessionCreated?: {
+    sessionId: number;
+    sessionName: string;
+  };
+  comparisonReport?: ComparisonReport;
+  autoCheckedOut?: boolean;
+  previousWorkingDir?: string;
 }
+
+/**
+ * Git materialization mode
+ */
+export type GitMode = 'none' | 'metadata' | 'full';
 
 /**
  * Rewind options
@@ -74,8 +110,36 @@ export interface RewindOptions {
 
   /**
    * Include git state (default: true)
+   * @deprecated Use gitMode instead
    */
   includeGit?: boolean;
+
+  /**
+   * Git materialization mode (default: 'metadata')
+   * - 'none': No git information
+   * - 'metadata': Just git_state.json with commit/branch info
+   * - 'full': Full .git repository with checkout at target commit
+   */
+  gitMode?: GitMode;
+
+  /**
+   * Create a new session in the rewinded directory (default: false)
+   * This automatically creates a grokinou session in the output directory,
+   * bridging /rewind and /new-session functionality
+   */
+  createSession?: boolean;
+
+  /**
+   * Automatically change working directory to rewinded directory (default: false)
+   * This makes the rewinded state the active working directory
+   */
+  autoCheckout?: boolean;
+
+  /**
+   * Compare rewinded state with another directory (optional)
+   * Generates a comparison report between rewinded state and target directory
+   */
+  compareWith?: string;
 
   /**
    * Progress callback
@@ -157,7 +221,11 @@ export class RewindEngine {
       outputDir,
       includeFiles = true,
       includeConversations = true,
-      includeGit = true,
+      includeGit = true, // Deprecated, for backward compatibility
+      gitMode = includeGit ? 'metadata' : 'none', // Default to metadata if includeGit=true
+      createSession = false,
+      autoCheckout = false,
+      compareWith,
       onProgress,
     } = options;
 
@@ -301,10 +369,25 @@ export class RewindEngine {
         }
       }
 
-      // Write git state
-      if (includeGit) {
-        const gitFile = path.join(finalOutputDir, 'git_state.json');
-        await writeFile(gitFile, JSON.stringify(currentGit, null, 2));
+      // Write git state based on gitMode
+      if (gitMode !== 'none') {
+        if (gitMode === 'metadata') {
+          // Just write git_state.json with metadata
+          const gitFile = path.join(finalOutputDir, 'git_state.json');
+          await writeFile(gitFile, JSON.stringify(currentGit, null, 2));
+        } else if (gitMode === 'full') {
+          // Materialize full git repository
+          reportProgress('Materializing Git repository', 85);
+          await this.materializeGitRepository(
+            finalOutputDir,
+            currentGit,
+            onProgress
+          );
+          
+          // Also write metadata for reference
+          const gitFile = path.join(finalOutputDir, 'git_state.json');
+          await writeFile(gitFile, JSON.stringify(currentGit, null, 2));
+        }
       }
 
       // Write file manifest
@@ -325,7 +408,92 @@ export class RewindEngine {
         },
       });
 
-      reportProgress('Rewind completed successfully', 100);
+      reportProgress('Rewind completed successfully', 90);
+
+      // Compare with another directory if requested
+      let comparisonReport: ComparisonReport | undefined;
+      
+      if (compareWith) {
+        reportProgress('Comparing with target directory', 92);
+        
+        try {
+          comparisonReport = await this.compareDirectories(
+            finalOutputDir,
+            compareWith,
+            currentFiles
+          );
+          
+          console.log(`📊 Comparison: ${comparisonReport.added} added, ${comparisonReport.modified} modified, ${comparisonReport.deleted} deleted`);
+        } catch (error) {
+          console.error('Failed to compare directories:', error);
+          // Don't fail the whole rewind
+        }
+      }
+
+      // Create session in rewinded directory if requested
+      let sessionCreated: { sessionId: number; sessionName: string } | undefined;
+      
+      if (createSession) {
+        reportProgress('Creating session in rewinded directory', 95);
+        
+        try {
+          const { sessionManager } = await import('../utils/session-manager-sqlite.js');
+          const { providerManager } = await import('../utils/provider-manager.js');
+          
+          // Determine model/provider from reconstructed state
+          const model = currentState.model || 'grok-beta';
+          const provider = currentState.provider || providerManager.detectProvider(model) || 'grok';
+          
+          // Get API key (from current environment)
+          const providerConfig = providerManager.getProviderForModel(model);
+          const apiKey = providerConfig?.apiKey;
+          
+          if (!apiKey) {
+            console.warn(`No API key found for ${provider}, session created without API key`);
+          }
+          
+          // Create new session in rewinded directory
+          const { session } = await sessionManager.createNewSession(
+            finalOutputDir,
+            provider,
+            model,
+            apiKey,
+            {
+              importHistory: includeConversations,
+              // If we have conversations, they're already in session_state.json
+            }
+          );
+          
+          sessionCreated = {
+            sessionId: session.id,
+            sessionName: session.session_name || `Rewind-${new Date(targetTimestamp).toISOString()}`,
+          };
+          
+          console.log(`✅ Created session #${session.id} in ${finalOutputDir}`);
+        } catch (error) {
+          console.error('Failed to create session:', error);
+          // Don't fail the whole rewind, just log the error
+        }
+      }
+
+      // Auto-checkout to rewinded directory if requested
+      let autoCheckedOut = false;
+      let previousWorkingDir: string | undefined;
+      
+      if (autoCheckout) {
+        reportProgress('Checking out to rewinded directory', 98);
+        
+        try {
+          previousWorkingDir = process.cwd();
+          process.chdir(finalOutputDir);
+          autoCheckedOut = true;
+          
+          console.log(`📂 Changed working directory from ${previousWorkingDir} to ${finalOutputDir}`);
+        } catch (error) {
+          console.error('Failed to change directory:', error);
+          // Don't fail the whole rewind
+        }
+      }
 
       await this.bus.emit({
         event_type: EventType.REWIND_COMPLETED,
@@ -335,8 +503,13 @@ export class RewindEngine {
         payload: {
           duration_ms: Date.now() - startTime,
           success: true,
+          session_created: sessionCreated !== undefined,
+          auto_checked_out: autoCheckedOut,
+          comparison_performed: comparisonReport !== undefined,
         },
       });
+
+      reportProgress('All operations completed', 100);
 
       return {
         success: true,
@@ -346,6 +519,10 @@ export class RewindEngine {
         filesRestored,
         outputDirectory: finalOutputDir,
         duration: Date.now() - startTime,
+        sessionCreated,
+        comparisonReport,
+        autoCheckedOut,
+        previousWorkingDir,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -551,6 +728,234 @@ export class RewindEngine {
   private generateOutputDir(timestamp: number): string {
     const dateStr = new Date(timestamp).toISOString().replace(/[:.]/g, '-');
     return path.join(process.cwd(), `.rewind_${dateStr}`);
+  }
+
+  /**
+   * Compare rewinded directory with another directory
+   */
+  private async compareDirectories(
+    rewindDir: string,
+    compareDir: string,
+    rewindFiles: Map<string, FileState>
+  ): Promise<ComparisonReport> {
+    const crypto = await import('crypto');
+    const fsModule = await import('fs');
+    const { readdir, readFile, stat } = await import('fs/promises');
+
+    // Helper to calculate file hash
+    const calculateHash = async (filePath: string): Promise<string> => {
+      try {
+        const content = await readFile(filePath);
+        return crypto.createHash('sha256').update(content).digest('hex');
+      } catch {
+        return '';
+      }
+    };
+
+    // Helper to recursively get all files in a directory
+    const getAllFiles = async (dir: string, baseDir: string = dir): Promise<Set<string>> => {
+      const files = new Set<string>();
+      
+      try {
+        const entries = await readdir(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          const relativePath = path.relative(baseDir, fullPath);
+          
+          // Skip .git and other hidden directories
+          if (entry.name.startsWith('.')) {
+            continue;
+          }
+          
+          if (entry.isDirectory()) {
+            const subFiles = await getAllFiles(fullPath, baseDir);
+            subFiles.forEach(f => files.add(f));
+          } else if (entry.isFile()) {
+            files.add(relativePath);
+          }
+        }
+      } catch (error) {
+        console.error(`Error reading directory ${dir}:`, error);
+      }
+      
+      return files;
+    };
+
+    const report: ComparisonReport = {
+      compareDirectory: compareDir,
+      totalFiles: 0,
+      added: 0,
+      deleted: 0,
+      modified: 0,
+      unchanged: 0,
+      files: [],
+    };
+
+    try {
+      // Get all files from both directories
+      const rewindFilesDir = path.join(rewindDir, 'files');
+      const rewindFilePaths = await getAllFiles(rewindFilesDir);
+      const compareFilePaths = fsModule.existsSync(compareDir) 
+        ? await getAllFiles(compareDir)
+        : new Set<string>();
+
+      // Combine all file paths
+      const allPaths = new Set([...rewindFilePaths, ...compareFilePaths]);
+      report.totalFiles = allPaths.size;
+
+      // Compare each file
+      for (const relativePath of allPaths) {
+        const rewindPath = path.join(rewindFilesDir, relativePath);
+        const comparePath = path.join(compareDir, relativePath);
+        
+        const rewindExists = fsModule.existsSync(rewindPath);
+        const compareExists = fsModule.existsSync(comparePath);
+
+        let comparison: FileComparison;
+
+        if (rewindExists && !compareExists) {
+          // File added in rewind (was deleted in compare)
+          comparison = {
+            path: relativePath,
+            status: 'deleted',
+            rewindHash: await calculateHash(rewindPath),
+          };
+          report.deleted++;
+        } else if (!rewindExists && compareExists) {
+          // File deleted in rewind (was added in compare)
+          comparison = {
+            path: relativePath,
+            status: 'added',
+            compareHash: await calculateHash(comparePath),
+          };
+          report.added++;
+        } else if (rewindExists && compareExists) {
+          // File exists in both, check if modified
+          const rewindHash = await calculateHash(rewindPath);
+          const compareHash = await calculateHash(comparePath);
+          
+          if (rewindHash === compareHash) {
+            comparison = {
+              path: relativePath,
+              status: 'unchanged',
+              rewindHash,
+              compareHash,
+            };
+            report.unchanged++;
+          } else {
+            const rewindStat = await stat(rewindPath);
+            const compareStat = await stat(comparePath);
+            
+            comparison = {
+              path: relativePath,
+              status: 'modified',
+              rewindHash,
+              compareHash,
+              sizeDiff: rewindStat.size - compareStat.size,
+            };
+            report.modified++;
+          }
+        } else {
+          // Should not happen
+          continue;
+        }
+
+        report.files.push(comparison);
+      }
+
+      // Sort files by status for better readability
+      report.files.sort((a, b) => {
+        const statusOrder = { added: 1, deleted: 2, modified: 3, unchanged: 4 };
+        return statusOrder[a.status] - statusOrder[b.status];
+      });
+
+    } catch (error) {
+      console.error('Error during directory comparison:', error);
+      throw error;
+    }
+
+    return report;
+  }
+
+  /**
+   * Materialize full Git repository at target commit
+   */
+  private async materializeGitRepository(
+    outputDir: string,
+    gitState: GitState,
+    onProgress?: (message: string, progress: number) => void
+  ): Promise<void> {
+    try {
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+
+      const reportProgress = (msg: string) => {
+        if (onProgress) onProgress(msg, 85);
+      };
+
+      // Find the source git repository
+      const currentDir = process.cwd();
+      const gitDir = path.join(currentDir, '.git');
+
+      // Check if we're in a git repository
+      const fsModule = await import('fs');
+      if (!fsModule.existsSync(gitDir)) {
+        console.warn('Not in a git repository, skipping git materialization');
+        return;
+      }
+
+      reportProgress('Copying .git directory');
+
+      // Method 1: Clone the current repo to the output directory
+      // This is safer and cleaner than copying .git manually
+      try {
+        // Clone current repo to output dir
+        await execAsync(`git clone "${currentDir}" "${outputDir}_temp"`);
+        
+        // Move the cloned content to the actual output dir
+        const tempGitDir = path.join(`${outputDir}_temp`, '.git');
+        const targetGitDir = path.join(outputDir, '.git');
+        
+        // Copy .git directory
+        await execAsync(`cp -r "${tempGitDir}" "${targetGitDir}"`);
+        
+        // Remove temp directory
+        await execAsync(`rm -rf "${outputDir}_temp"`);
+
+        reportProgress('Checking out target commit');
+
+        // Checkout the specific commit
+        if (gitState.commitHash) {
+          await execAsync(`git -C "${outputDir}" checkout ${gitState.commitHash}`, {
+            cwd: outputDir
+          });
+        }
+
+        // If branch is specified and different from current, try to checkout branch
+        if (gitState.branch) {
+          try {
+            await execAsync(`git -C "${outputDir}" checkout ${gitState.branch}`, {
+              cwd: outputDir
+            });
+          } catch (error) {
+            // Branch might not exist or commit might be detached, that's ok
+            console.warn(`Could not checkout branch ${gitState.branch}, staying on commit ${gitState.commitHash}`);
+          }
+        }
+
+        reportProgress('Git repository materialized successfully');
+
+      } catch (error) {
+        console.error('Failed to materialize git repository:', error);
+        throw new Error(`Git materialization failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
+    } catch (error) {
+      console.error('Error in materializeGitRepository:', error);
+      throw error;
+    }
   }
 }
 

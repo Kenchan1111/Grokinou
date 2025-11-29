@@ -10,7 +10,7 @@
  * @version 1.0.0
  */
 
-import { getRewindEngine, type RewindOptions } from '../timeline/index.js';
+import { getRewindEngine, type RewindOptions, type ComparisonReport } from '../timeline/index.js';
 
 /**
  * Rewind tool parameters
@@ -38,8 +38,32 @@ export interface RewindToParams {
 
   /**
    * Include git state (default: true)
+   * @deprecated Use gitMode instead
    */
   includeGit?: boolean;
+
+  /**
+   * Git materialization mode (default: 'metadata')
+   * - 'none': No git information
+   * - 'metadata': Just git_state.json with commit/branch info
+   * - 'full': Full .git repository with checkout at target commit
+   */
+  gitMode?: 'none' | 'metadata' | 'full';
+
+  /**
+   * Create a new session in the rewinded directory (default: false)
+   */
+  createSession?: boolean;
+
+  /**
+   * Automatically change working directory to rewinded directory (default: false)
+   */
+  autoCheckout?: boolean;
+
+  /**
+   * Compare rewinded state with another directory (optional)
+   */
+  compareWith?: string;
 
   /**
    * Human-readable reason for rewind (for logging)
@@ -60,6 +84,13 @@ export interface RewindToResult {
   filesRestored: number;
   durationMs: number;
   error?: string;
+  sessionCreated?: {
+    sessionId: number;
+    sessionName: string;
+  };
+  comparisonReport?: ComparisonReport;
+  autoCheckedOut?: boolean;
+  previousWorkingDir?: string;
   
   // Additional info for LLM
   summary?: string;
@@ -105,7 +136,10 @@ export async function executeRewindTo(params: RewindToParams): Promise<RewindToR
       outputDir: params.outputDir,
       includeFiles: params.includeFiles ?? true,
       includeConversations: params.includeConversations ?? true,
-      includeGit: params.includeGit ?? true,
+      gitMode: params.gitMode ?? (params.includeGit === false ? 'none' : 'metadata'),
+      createSession: params.createSession ?? false,
+      autoCheckout: params.autoCheckout ?? false,
+      compareWith: params.compareWith,
       onProgress: (message, progress) => {
         // Could emit progress events here
         console.log(`[Rewind ${progress}%] ${message}`);
@@ -130,13 +164,19 @@ export async function executeRewindTo(params: RewindToParams): Promise<RewindToR
     }
 
     // Build success summary
-    const summary = [
+    const summaryLines = [
       `Successfully rewound system to ${targetTimestamp}`,
       `Restored ${result.filesRestored} files`,
       `Replayed ${result.eventsReplayed} events`,
       result.snapshotUsed ? `Used snapshot: ${result.snapshotUsed}` : 'No snapshot used (replayed from beginning)',
       `Output directory: ${result.outputDirectory}`,
-    ].join('\n');
+    ];
+    
+    if (result.sessionCreated) {
+      summaryLines.push(`Created session #${result.sessionCreated.sessionId} in rewinded directory`);
+    }
+    
+    const summary = summaryLines.join('\n');
 
     const nextSteps = [
       `Explore the reconstructed state in: ${result.outputDirectory}`,
@@ -145,6 +185,10 @@ export async function executeRewindTo(params: RewindToParams): Promise<RewindToR
       `Git state: ${result.outputDirectory}/git_state.json`,
       `File manifest: ${result.outputDirectory}/file_manifest.json`,
     ];
+    
+    if (result.sessionCreated) {
+      nextSteps.unshift(`Switch to rewinded session: use session_switch tool with ID ${result.sessionCreated.sessionId}`);
+    }
 
     return {
       success: true,
@@ -155,6 +199,10 @@ export async function executeRewindTo(params: RewindToParams): Promise<RewindToR
       eventsReplayed: result.eventsReplayed,
       filesRestored: result.filesRestored,
       durationMs: result.duration,
+      sessionCreated: result.sessionCreated,
+      comparisonReport: result.comparisonReport,
+      autoCheckedOut: result.autoCheckedOut,
+      previousWorkingDir: result.previousWorkingDir,
       summary,
       nextSteps,
     };

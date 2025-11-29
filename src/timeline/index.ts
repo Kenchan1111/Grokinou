@@ -58,7 +58,15 @@ export { MerkleDAG, getMerkleDAG, type BlobStoreResult, type BlobRetrieveResult 
 // Query & Rewind
 export { QueryEngine, getQueryEngine, type QueryFilter, type QueryResult, type EventStats } from './query-engine.js';
 export { SnapshotManager, getSnapshotManager, type SnapshotConfig, type SnapshotMetadata, type SnapshotData } from './snapshot-manager.js';
-export { RewindEngine, getRewindEngine, type RewindOptions, type RewindResult } from './rewind-engine.js';
+export { 
+  RewindEngine, 
+  getRewindEngine, 
+  type RewindOptions, 
+  type RewindResult, 
+  type GitMode,
+  type FileComparison,
+  type ComparisonReport 
+} from './rewind-engine.js';
 
 // Internal imports for functions
 import { getLLMHook as _getLLMHook } from './hooks/llm-hook.js';

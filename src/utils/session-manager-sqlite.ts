@@ -174,7 +174,7 @@ export class SessionManagerSQLite {
       fromSessionId?: number;
       dateRange?: { start: Date; end: Date };
     }
-  ): Promise<{ session: Session; history: ChatEntry[] }> {
+  ): Promise<{ session: Session; history: ChatEntry[]; importWarning?: string }> {
     const apiKeyHash = apiKey ? this.hashApiKey(apiKey) : undefined;
     const importHistory = options?.importHistory || false;
     const fromSessionId = options?.fromSessionId;
@@ -226,17 +226,29 @@ export class SessionManagerSQLite {
     let history: ChatEntry[] = [];
     
     // Import history from source session if requested
+    let importWarning: string | undefined;
+    
     if (importHistory && sourceSession) {
       sessionDebugLog.log(`📋 [createNewSession] Importing history from session ${sourceSession.id}`);
       
       let messages = this.messageRepo.getBySession(sourceSession.id);
+      const originalCount = messages.length;
+      
+      // Calculate actual date range of messages (for warning)
+      let actualMinDate: Date | null = null;
+      let actualMaxDate: Date | null = null;
+      
+      if (messages.length > 0) {
+        const timestamps = messages.map(m => new Date(m.timestamp).getTime());
+        actualMinDate = new Date(Math.min(...timestamps));
+        actualMaxDate = new Date(Math.max(...timestamps));
+      }
       
       // Filter by date range if specified
       if (dateRange) {
         const startTime = dateRange.start.getTime();
         const endTime = dateRange.end.getTime();
         
-        const originalCount = messages.length;
         messages = messages.filter(msg => {
           const msgTime = new Date(msg.timestamp).getTime();
           return msgTime >= startTime && msgTime <= endTime;
@@ -244,6 +256,28 @@ export class SessionManagerSQLite {
         
         sessionDebugLog.log(`📅 [createNewSession] Date filter: ${originalCount} → ${messages.length} messages`);
         sessionDebugLog.log(`   Range: ${dateRange.start.toISOString()} → ${dateRange.end.toISOString()}`);
+        
+        // Warning if date range excluded all messages
+        if (messages.length === 0 && originalCount > 0 && actualMinDate && actualMaxDate) {
+          const formatDate = (date: Date) => {
+            return date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit'
+            });
+          };
+          
+          importWarning = 
+            `⚠️  Date range excluded all ${originalCount} messages!\n\n` +
+            `   Requested range:\n` +
+            `      ${formatDate(dateRange.start)} → ${formatDate(dateRange.end)}\n\n` +
+            `   Actual message range:\n` +
+            `      ${formatDate(actualMinDate)} → ${formatDate(actualMaxDate)}\n\n` +
+            `   💡 To import all messages, use:\n` +
+            `      /new-session --from-session ${sourceSession.id} --date-range ${formatDate(actualMinDate)} ${formatDate(actualMaxDate)}`;
+          
+          sessionDebugLog.log(`⚠️  [createNewSession] ${importWarning}`);
+        }
       }
       
       // Copy filtered messages to new session
@@ -276,7 +310,7 @@ export class SessionManagerSQLite {
     
     sessionDebugLog.log(`✅ [createNewSession] COMPLETE: session=${newSession.id}, history=${history.length} messages\n`);
     
-    return { session: newSession, history };
+    return { session: newSession, history, importWarning };
   }
 
   /**

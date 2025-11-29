@@ -453,10 +453,19 @@ function buildGrokTools(): GrokTool[] {
         parameters: {
           type: "object",
           properties: {
-            targetTimestamp: { type: "string", description: "Target timestamp (ISO)" },
-            outputDir: { type: "string", description: "Output directory" },
-            includeFiles: { type: "boolean", description: "Include files" },
-            reason: { type: "string", description: "Reason" },
+            targetTimestamp: { type: "string", description: "Target timestamp (ISO format: 2025-11-28T12:00:00Z)" },
+            outputDir: { type: "string", description: "Output directory (default: auto-generated)" },
+            includeFiles: { type: "boolean", description: "Include file contents (default: true)" },
+            includeConversations: { type: "boolean", description: "Include conversations (default: true)" },
+            gitMode: { 
+              type: "string", 
+              enum: ["none", "metadata", "full"],
+              description: "Git mode: 'none'=no git, 'metadata'=git_state.json only, 'full'=complete .git repo (default: metadata)" 
+            },
+            createSession: { type: "boolean", description: "Create a new grokinou session in rewinded directory (default: false)" },
+            autoCheckout: { type: "boolean", description: "Automatically change working directory to rewinded directory (default: false)" },
+            compareWith: { type: "string", description: "Compare rewinded state with another directory (path)" },
+            reason: { type: "string", description: "Human-readable reason for rewind" },
           },
           required: ["targetTimestamp"],
         },

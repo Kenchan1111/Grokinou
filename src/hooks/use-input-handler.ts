@@ -360,6 +360,7 @@ export function useInputHandler({
     { command: "/timeline", description: "Query timeline events (files, git, conversations)" },
     { command: "/rewind", description: "Time machine: rewind to specific timestamp" },
     { command: "/snapshots", description: "List available snapshots for rewinding" },
+    { command: "/rewind-history", description: "Show history of all rewind operations" },
     { command: "/list_tools", description: "List all tools available to LLMs" },
     { command: "/models", description: "Switch model (interactive)" },
     { command: "/model-default", description: "Set global default model" },
@@ -450,6 +451,32 @@ Built-in Commands:
   /search <query> - Search in conversation history
   /exit       - Exit application
   exit, quit  - Exit application
+
+Time Machine Commands (Event Sourcing):
+  /timeline [options] - Query timeline events (files, git, conversations, tools)
+      --start <time>      Start time (ISO or relative: "2 hours ago")
+      --end <time>        End time
+      --category <cat>    Filter: SESSION, LLM, TOOL, FILE, GIT, REWIND
+      --session <id>      Filter by session ID
+      --limit <n>         Max results (default: 100)
+      --search <text>     Search in event payloads
+      --stats             Show statistics only
+      Example: /timeline --category FILE --limit 20
+  /rewind <timestamp> [options] - Time-travel to exact moment (non-destructive)
+      <timestamp>         Target time (ISO: "2025-11-28T12:00:00Z")
+      --output <dir>      Custom output directory (default: .rewind_*)
+      --git-mode <mode>   Git materialization:
+          none            No git (just files + conversations)
+          metadata        git_state.json only (fast, default)
+          full            Complete .git repo you can work with (slow)
+      --no-files          Don't restore file contents
+      --no-conversations  Don't restore chat history
+      --no-git            Alias for --git-mode none
+      Examples:
+        /rewind "2025-11-28T10:00:00Z" --output ~/recovered
+        /rewind "2025-11-28T10:00:00Z" --git-mode full
+  /snapshots - List all available rewind points (snapshots + recent events)
+  /rewind-history - Show history of all rewind operations performed
 
 Git Commands:
   /commit-and-push - AI-generated commit + push to remote
@@ -621,8 +648,38 @@ Examples:
               content += ` - ${session.session_name}`;
             }
             
-            content += ` (${session.default_model}, ${session.message_count} msgs)`;
-            content += ` - ${session.last_activity_relative}\n`;
+            content += `\n`;
+            content += `      📱 Model: ${session.default_model} | 💬 ${session.message_count} msgs`;
+            
+            // Add creation date
+            if (session.created_at) {
+              const createdDate = new Date(session.created_at);
+              const createdFormatted = createdDate.toLocaleString('fr-FR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              content += `\n      🕐 Created: ${createdFormatted}`;
+              
+              // Add age if available
+              if (session.age_days !== undefined) {
+                const ageStr = session.age_days === 0 
+                  ? 'today' 
+                  : session.age_days === 1 
+                    ? '1 day ago' 
+                    : `${session.age_days} days ago`;
+                content += ` (${ageStr})`;
+              }
+            }
+            
+            // Add last activity
+            if (session.last_activity_relative) {
+              content += `\n      ⏰ Last active: ${session.last_activity_relative}`;
+            }
+            
+            content += `\n`;
           });
 
           // Add spacing between directories
@@ -986,14 +1043,31 @@ Examples:
                      `Options:\n` +
                      `  <timestamp>         Target time (ISO format: "2025-11-28T12:00:00Z")\n` +
                      `  --output <dir>      Custom output directory\n` +
+                     `  --git-mode <mode>   Git materialization mode:\n` +
+                     `      none            No git information at all\n` +
+                     `      metadata        Just git_state.json (default)\n` +
+                     `      full            Full .git repository + checkout\n` +
+                     `  --create-session    Create a new grokinou session in rewinded directory\n` +
+                     `  --auto-checkout     Automatically cd to rewinded directory after rewind\n` +
+                     `  --compare-with <dir> Compare rewinded state with another directory\n` +
                      `  --no-files          Don't include file contents\n` +
                      `  --no-conversations  Don't include conversation history\n` +
-                     `  --no-git            Don't include git state\n\n` +
+                     `  --no-git            Alias for --git-mode none\n\n` +
                      `Examples:\n` +
                      `  /rewind "2025-11-28T10:00:00Z"\n` +
                      `  /rewind "2025-11-27T18:00:00Z" --output ~/recovered\n` +
-                     `  /rewind "2025-11-28T12:00:00Z" --no-files\n\n` +
-                     `⚠️ This creates a NEW directory with reconstructed state (non-destructive)`,
+                     `  /rewind "2025-11-28T12:00:00Z" --git-mode full --create-session --auto-checkout\n` +
+                     `  /rewind "2025-11-28T12:00:00Z" --compare-with ~/current-project\n` +
+                     `  /rewind "2025-11-28T12:00:00Z" --no-files --git-mode none\n\n` +
+                     `⚠️ This creates a NEW directory with reconstructed state (non-destructive)\n\n` +
+                     `Git Modes Explained:\n` +
+                     `  • none     : No git data (just files + conversations)\n` +
+                     `  • metadata : git_state.json with commit hash/branch (fast)\n` +
+                     `  • full     : Complete .git repo you can work with (slow)\n\n` +
+                     `Advanced Features:\n` +
+                     `  --auto-checkout: Changes your working directory to the rewinded state\n` +
+                     `  --compare-with: Shows detailed diff between rewinded and target directory\n` +
+                     `  --create-session: Bridges /rewind and /new-session functionality`,
             timestamp: new Date(),
           };
           setChatHistory((prev) => [...prev, helpEntry]);
@@ -1013,11 +1087,29 @@ Examples:
         // Parse options
         if (args.includes('--no-files')) params.includeFiles = false;
         if (args.includes('--no-conversations')) params.includeConversations = false;
-        if (args.includes('--no-git')) params.includeGit = false;
+        if (args.includes('--no-git')) params.gitMode = 'none';
+        if (args.includes('--create-session')) params.createSession = true;
+        if (args.includes('--auto-checkout')) params.autoCheckout = true;
+        
+        // Parse --git-mode
+        const gitModeMatch = args.match(/--git-mode\s+(?:"([^"]+)"|(\S+))/);
+        if (gitModeMatch) {
+          const mode = gitModeMatch[1] || gitModeMatch[2];
+          if (['none', 'metadata', 'full'].includes(mode)) {
+            params.gitMode = mode;
+          } else {
+            throw new Error(`Invalid git-mode: ${mode}. Must be: none, metadata, or full`);
+          }
+        }
         
         const outputMatch = args.match(/--output\s+(?:"([^"]+)"|(\S+))/);
         if (outputMatch) {
           params.outputDir = outputMatch[1] || outputMatch[2];
+        }
+        
+        const compareMatch = args.match(/--compare-with\s+(?:"([^"]+)"|(\S+))/);
+        if (compareMatch) {
+          params.compareWith = compareMatch[1] || compareMatch[2];
         }
         
         // Execute rewind
@@ -1039,8 +1131,51 @@ Examples:
                    `  Events Replayed: ${result.eventsReplayed}\n` +
                    `  Files Restored: ${result.filesRestored}\n` +
                    `  Duration: ${result.durationMs}ms\n` +
-                   `  Snapshot Used: ${result.snapshotUsed || 'None (full replay)'}\n\n` +
-                   `Next Steps:\n${result.nextSteps?.join('\n')}`;
+                   `  Snapshot Used: ${result.snapshotUsed || 'None (full replay)'}\n`;
+          
+          if (result.sessionCreated) {
+            content += `  Session Created: #${result.sessionCreated.sessionId} (${result.sessionCreated.sessionName})\n`;
+          }
+          
+          if (result.autoCheckedOut) {
+            content += `  📂 Working Directory Changed:\n`;
+            content += `     From: ${result.previousWorkingDir}\n`;
+            content += `     To:   ${result.outputDirectory}\n`;
+          }
+          
+          if (result.comparisonReport) {
+            const report = result.comparisonReport;
+            content += `\n📊 Comparison with ${report.compareDirectory}:\n`;
+            content += `  Total Files: ${report.totalFiles}\n`;
+            content += `  🆕 Added: ${report.added}\n`;
+            content += `  ❌ Deleted: ${report.deleted}\n`;
+            content += `  ✏️  Modified: ${report.modified}\n`;
+            content += `  ✅ Unchanged: ${report.unchanged}\n`;
+            
+            if (report.modified > 0 || report.added > 0 || report.deleted > 0) {
+              content += `\n  Key Changes:\n`;
+              const changes = report.files.filter(f => f.status !== 'unchanged').slice(0, 5);
+              changes.forEach(f => {
+                const icon = f.status === 'added' ? '🆕' : f.status === 'deleted' ? '❌' : '✏️';
+                content += `    ${icon} ${f.path}\n`;
+              });
+              if (report.files.filter(f => f.status !== 'unchanged').length > 5) {
+                content += `    ... and ${report.files.filter(f => f.status !== 'unchanged').length - 5} more\n`;
+              }
+            }
+          }
+          
+          content += `\n`;
+          
+          if (result.sessionCreated) {
+            content += `💡 Use /switch-session ${result.sessionCreated.sessionId} to activate the rewinded session\n`;
+          }
+          
+          if (result.autoCheckedOut) {
+            content += `💡 You are now in the rewinded directory!\n`;
+          }
+          
+          content += `\nNext Steps:\n${result.nextSteps?.join('\n')}`;
         } else {
           content = `❌ Rewind failed: ${result.error}`;
         }
@@ -1115,6 +1250,114 @@ Examples:
         const errorEntry: ChatEntry = {
           type: "assistant",
           content: `❌ Failed to list snapshots: ${error?.message || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+      
+      clearInput();
+      return true;
+    }
+    
+    // ============================================
+    // /rewind-history - Show history of all rewind operations
+    // ============================================
+    if (trimmedInput === "/rewind-history" || trimmedInput.startsWith("/rewind-history")) {
+      try {
+        const { executeTimelineQuery } = await import("../tools/timeline-query-tool.js");
+        
+        // Query all REWIND events from timeline
+        const result = await executeTimelineQuery({
+          categories: ['REWIND'],
+          limit: 50,
+          order: 'desc',
+        });
+        
+        if (!result.success || !result.events || result.events.length === 0) {
+          const noRewindsEntry: ChatEntry = {
+            type: "assistant",
+            content: `🕰️  Rewind History\n\n` +
+                     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                     `No rewind operations found.\n\n` +
+                     `💡 Use /rewind "<timestamp>" to perform your first time-travel!`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, noRewindsEntry]);
+          clearInput();
+          return true;
+        }
+        
+        // Group rewinds by completed operations
+        const rewindOps: Map<string, any[]> = new Map();
+        
+        result.events.forEach((event: any) => {
+          const aggregateId = event.aggregate;
+          if (!rewindOps.has(aggregateId)) {
+            rewindOps.set(aggregateId, []);
+          }
+          rewindOps.get(aggregateId)!.push(event);
+        });
+        
+        let content = `🕰️  Rewind History (${rewindOps.size} operations)\n\n`;
+        content += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        
+        let opIndex = 1;
+        for (const [targetTimestamp, events] of rewindOps) {
+          // Find REWIND_COMPLETED or REWIND_FAILED event
+          const completedEvent = events.find(e => e.description.includes('REWIND_COMPLETED'));
+          const failedEvent = events.find(e => e.description.includes('REWIND_FAILED'));
+          const startedEvent = events.find(e => e.description.includes('REWIND_STARTED'));
+          
+          const status = completedEvent ? '✅' : failedEvent ? '❌' : '⏳';
+          const statusText = completedEvent ? 'Completed' : failedEvent ? 'Failed' : 'In Progress';
+          
+          const targetDate = new Date(parseInt(targetTimestamp));
+          const rewindDate = startedEvent ? new Date(startedEvent.timestamp) : new Date();
+          
+          content += `${opIndex}. ${status} ${statusText}\n`;
+          content += `   Target Time: ${targetDate.toLocaleString()}\n`;
+          content += `   Performed: ${rewindDate.toLocaleString()}\n`;
+          
+          if (completedEvent && completedEvent.payload) {
+            const payload = completedEvent.payload;
+            if (payload.duration_ms) {
+              content += `   Duration: ${payload.duration_ms}ms\n`;
+            }
+            if (payload.session_created) {
+              content += `   Session Created: Yes\n`;
+            }
+            if (payload.auto_checked_out) {
+              content += `   Auto Checkout: Yes\n`;
+            }
+          }
+          
+          if (failedEvent && failedEvent.payload?.error) {
+            content += `   Error: ${failedEvent.payload.error}\n`;
+          }
+          
+          content += `\n`;
+          opIndex++;
+          
+          if (opIndex > 20) {
+            content += `... and ${rewindOps.size - 20} more operations\n`;
+            break;
+          }
+        }
+        
+        content += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        content += `💡 Use /rewind "<timestamp>" to perform a new time-travel\n`;
+        content += `💡 Use /timeline --category REWIND for detailed event log`;
+        
+        const resultEntry: ChatEntry = {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, resultEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to load rewind history: ${error?.message || 'Unknown error'}`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);
@@ -1384,7 +1627,7 @@ Examples:
           fromSessionId
         });
         
-        const { session, history } = await sessionManager.createNewSession(
+        const { session, history, importWarning } = await sessionManager.createNewSession(
           targetWorkdir,
           targetProvider,
           targetModel,
@@ -1398,6 +1641,7 @@ Examples:
         
         console.log('🐛 [DEBUG] Session created:', session.id);
         console.log('🐛 [DEBUG] History length:', history.length);
+        console.log('🐛 [DEBUG] Import warning:', importWarning || 'none');
         
         // Update agent with new session's model/provider
         const providerConfig = providerManager.getProviderForModel(targetModel);
@@ -1407,8 +1651,13 @@ Examples:
         
         await agent.switchToModel(targetModel, apiKey, providerConfig.baseURL);
         
-        // CRITICAL: Change working directory if creating session in different directory
+        // CRITICAL: Set switching flag to prevent auto-commit during state updates
         // Same behavior as /switch-session for consistency
+        if (isSwitchingRef) {
+          isSwitchingRef.current = true;
+        }
+        
+        // CRITICAL: Change working directory if creating session in different directory
         const currentWorkdir = process.cwd();
         const dirChanged = targetWorkdir !== currentWorkdir;
         
@@ -1426,11 +1675,19 @@ Examples:
           }
         }
         
-        // Replace chat history
+        // CRITICAL: Replace chat history with the new session's history
+        // We update chatHistory first with just the loaded history (no confirmation yet)
+        // This ensures committedHistory and chatHistory are in sync momentarily
         console.log('🐛 [DEBUG] Replacing chat history with', history.length, 'messages');
         setChatHistory(history);
         
-        // Add confirmation message
+        // Then update committedHistory to match (all loaded messages are "committed")
+        if (setCommittedHistory) {
+          setCommittedHistory(history);
+        }
+        
+        // Finally add the confirmation message
+        // This makes activeMessages = [confirmEntry] via the automatic useEffect calculation
         console.log('🐛 [DEBUG] Creating confirmation message');
         const confirmEntry: ChatEntry = {
           type: "assistant",
@@ -1452,7 +1709,8 @@ Examples:
                      ? `📋 **History Imported**\n` +
                        (fromSessionId ? `   Source: Session #${fromSessionId}\n` : `   Source: Current session\n`) +
                        (dateRange ? `   Date Range: ${dateRange.start.toLocaleDateString()} → ${dateRange.end.toLocaleDateString()}\n` : '') +
-                       `   Messages: ${history.length} imported\n\n`
+                       `   Messages: ${history.length} imported\n\n` +
+                       (importWarning ? `${importWarning}\n\n` : '')
                      : `📄 **Fresh Start**\n` +
                        `   This is a brand new conversation.\n\n`
                    ) +
@@ -1466,9 +1724,21 @@ Examples:
         console.log('🐛 [DEBUG] Adding confirmation message');
         setChatHistory((prev) => [...prev, confirmEntry]);
         
+        // Allow auto-commit to resume after a small delay (let React finish batching)
+        setTimeout(() => {
+          if (isSwitchingRef) {
+            isSwitchingRef.current = false;
+          }
+        }, 100);
+        
         console.log('🐛 [DEBUG] /new-session COMPLETE');
         
       } catch (error: any) {
+        // Reset switching flag on error
+        if (isSwitchingRef) {
+          isSwitchingRef.current = false;
+        }
+        
         console.error('🔴 [ERROR] /new-session failed:', error);
         console.error('🔴 [ERROR] Stack:', error.stack);
         

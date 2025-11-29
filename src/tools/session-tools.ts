@@ -77,8 +77,38 @@ export async function executeSessionList(): Promise<ToolResult> {
           output += ` - ${session.session_name}`;
         }
         
-        output += ` (${session.default_model}, ${session.message_count} msgs)`;
-        output += ` - ${session.last_activity_relative}\n`;
+        output += `\n`;
+        output += `      📱 Model: ${session.default_model} | 💬 ${session.message_count} msgs`;
+        
+        // Add creation date
+        if (session.created_at) {
+          const createdDate = new Date(session.created_at);
+          const createdFormatted = createdDate.toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          output += `\n      🕐 Created: ${createdFormatted}`;
+          
+          // Add age if available
+          if (session.age_days !== undefined) {
+            const ageStr = session.age_days === 0 
+              ? 'today' 
+              : session.age_days === 1 
+                ? '1 day ago' 
+                : `${session.age_days} days ago`;
+            output += ` (${ageStr})`;
+          }
+        }
+        
+        // Add last activity
+        if (session.last_activity_relative) {
+          output += `\n      ⏰ Last active: ${session.last_activity_relative}`;
+        }
+        
+        output += `\n`;
       });
 
       // Add spacing between directories
@@ -309,7 +339,7 @@ export async function executeSessionNew(args: {
     }
     
     // Create the new session (core logic from user command)
-    const { session, history } = await sessionManager.createNewSession(
+    const { session, history, importWarning } = await sessionManager.createNewSession(
       targetWorkdir,
       targetProvider,
       targetModel,
@@ -366,6 +396,11 @@ export async function executeSessionNew(args: {
         output += `   Date Range: ${dateRange.start.toLocaleDateString()} → ${dateRange.end.toLocaleDateString()}\n`;
       }
       output += `   Messages: ${history.length} imported\n\n`;
+      
+      // Add warning if date range excluded all messages
+      if (importWarning) {
+        output += `${importWarning}\n\n`;
+      }
     } else {
       output += `📄 **Fresh Start**\n`;
       output += `   This is a brand new conversation.\n\n`;
