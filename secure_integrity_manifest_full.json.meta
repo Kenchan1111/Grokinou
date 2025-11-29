@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "201f924b30fdf0f4664d29c05451cd19d9ee828d560ed42b66884dd0410d76c4",
-  "timestamp": "2025-11-29T08:04:41.549872+00:00",
-  "merkle_root": "8fd59191e8cd7a552b688f7f66729ffca6aa1634c282565437478e0956e87003",
-  "total_files": 198,
+  "committed_baseline_hash": "86f8d427dfcfb388263b00630cb4f971804149ce1c7a1baff1c444e58b80616b",
+  "timestamp": "2025-11-29T08:13:54.952460+00:00",
+  "merkle_root": "a29f6805dbae98f589471d3e153353714b7467751df28280e688a9d268702fdf",
+  "total_files": 202,
   "last_commit": {
-    "hash": "637e570d0743e1286733cf956bdb8082b9550b45",
-    "time": "2025-11-29T09:04:41+01:00",
+    "hash": "dd7aca4182fe4cca967e89ef9c8b3effedfb0a03",
+    "time": "2025-11-29T09:13:54+01:00",
     "author": "zack",
-    "subject": "chore(integrity): add Sigstore+TSA+OTS anchors for rewind features"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251129_080445.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251129T080446Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251129T080446Z.committed",
-  "sigstore_rekor_index": 731405381,
-  "sigstore_chain_entry": 6
+    "subject": "chore(integrity): anchor new-session features (350066b) - TSA+Sigstore+OTS"
+  }
 }
