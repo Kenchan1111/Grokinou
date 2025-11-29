@@ -8,5 +8,10 @@
     "time": "2025-11-29T09:04:41+01:00",
     "author": "zack",
     "subject": "chore(integrity): add Sigstore+TSA+OTS anchors for rewind features"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251129_080445.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251129T080446Z.committed.sigstore.bundle.json",
+  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251129T080446Z.committed",
+  "sigstore_rekor_index": 731405381,
+  "sigstore_chain_entry": 6
 }
