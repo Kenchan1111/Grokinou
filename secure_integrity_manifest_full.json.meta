@@ -1,13 +1,12 @@
 {
-  "committed_baseline_hash": "06da87bee05e478de231755c6025971c421e39b8703070247a58034bf2137d2e",
-  "timestamp": "2025-11-29T07:59:26.115150+00:00",
-  "merkle_root": "8649fbe6cbf26b6c3dcf0ddfc332500bd7463fecfde25b23cb182a9e69eabc00",
-  "total_files": 193,
+  "committed_baseline_hash": "201f924b30fdf0f4664d29c05451cd19d9ee828d560ed42b66884dd0410d76c4",
+  "timestamp": "2025-11-29T08:04:41.549872+00:00",
+  "merkle_root": "8fd59191e8cd7a552b688f7f66729ffca6aa1634c282565437478e0956e87003",
+  "total_files": 198,
   "last_commit": {
-    "hash": "2c973923f2fe3de883a8a421882b30a2abd4edb5",
-    "time": "2025-11-29T08:59:26+01:00",
+    "hash": "637e570d0743e1286733cf956bdb8082b9550b45",
+    "time": "2025-11-29T09:04:41+01:00",
     "author": "zack",
-    "subject": "chore(integrity): anchor rewind bonus features (9e9467f) - TSA+Sigstore"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251129_075930.tsr"
+    "subject": "chore(integrity): add Sigstore+TSA+OTS anchors for rewind features"
+  }
 }
