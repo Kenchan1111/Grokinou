@@ -248,6 +248,9 @@ export async function executeSessionSwitch(args: { session_id: number }): Promis
  */
 export async function executeSessionNew(args: {
   directory: string;
+  init_mode?: 'empty' | 'clone-git' | 'copy-files' | 'from-rewind';
+  rewind_timestamp?: string;
+  rewind_git_mode?: 'none' | 'metadata' | 'full';
   import_history?: boolean;
   from_session_id?: number;
   date_range_start?: string;
@@ -258,6 +261,9 @@ export async function executeSessionNew(args: {
   try {
     const {
       directory,
+      init_mode = 'empty',
+      rewind_timestamp,
+      rewind_git_mode = 'full',
       import_history = false,
       from_session_id,
       date_range_start,
@@ -304,6 +310,123 @@ export async function executeSessionNew(args: {
     if (!fs.existsSync(targetWorkdir)) {
       // Create directory recursively
       fs.mkdirSync(targetWorkdir, { recursive: true });
+    }
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // DIRECTORY INITIALIZATION (init_mode)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let initModeDescription = 'Empty directory';
+    
+    switch (init_mode) {
+      case 'clone-git': {
+        // Validate we're in a Git repository
+        const { execAsync } = await import('../utils/exec-async.js');
+        try {
+          await execAsync('git rev-parse --is-inside-work-tree', { cwd: process.cwd() });
+        } catch {
+          return {
+            success: false,
+            output: `❌ Cannot clone Git repository: Current directory is not a Git repository\n\n` +
+                    `To use init_mode='clone-git', you must be inside a Git repository.`
+          };
+        }
+        
+        // Clone the current Git repository to target directory
+        const currentDir = process.cwd();
+        
+        // Use git clone to copy the repository
+        const { exec } = await import('child_process');
+        const { promisify } = await import('util');
+        const execPromise = promisify(exec);
+        
+        try {
+          // Clone to temp directory first
+          const tempDir = `${targetWorkdir}_temp_clone`;
+          await execPromise(`git clone "${currentDir}" "${tempDir}"`);
+          
+          // Move contents from temp to target
+          await execPromise(`mv "${tempDir}"/.git "${targetWorkdir}/" && mv "${tempDir}"/* "${targetWorkdir}/" 2>/dev/null || true && rm -rf "${tempDir}"`);
+          
+          initModeDescription = 'Git repository cloned from current directory';
+        } catch (error: any) {
+          return {
+            success: false,
+            output: `❌ Failed to clone Git repository: ${error.message}\n\n` +
+                    `Make sure you have Git installed and the current directory is a valid Git repository.`
+          };
+        }
+        break;
+      }
+      
+      case 'copy-files': {
+        // Copy files from current directory (excluding .git, node_modules, hidden files)
+        const currentDir = process.cwd();
+        const { exec } = await import('child_process');
+        const { promisify } = await import('util');
+        const execPromise = promisify(exec);
+        
+        try {
+          // Use rsync if available, otherwise use cp
+          try {
+            await execPromise(`rsync -av --exclude='.git' --exclude='node_modules' --exclude='.*' "${currentDir}/" "${targetWorkdir}/"`);
+            initModeDescription = 'Files copied from current directory (via rsync)';
+          } catch {
+            // Fallback to cp
+            await execPromise(`cp -r "${currentDir}"/* "${targetWorkdir}/" 2>/dev/null || true`);
+            initModeDescription = 'Files copied from current directory (via cp)';
+          }
+        } catch (error: any) {
+          return {
+            success: false,
+            output: `❌ Failed to copy files: ${error.message}\n\n` +
+                    `Make sure you have the necessary permissions.`
+          };
+        }
+        break;
+      }
+      
+      case 'from-rewind': {
+        // Validate rewind_timestamp is provided
+        if (!rewind_timestamp) {
+          return {
+            success: false,
+            output: `❌ init_mode='from-rewind' requires rewind_timestamp parameter\n\n` +
+                    `Please provide a timestamp (ISO 8601: 2025-11-28T15:00:00Z)\n\n` +
+                    `💡 Use timeline_query to find available timestamps`
+          };
+        }
+        
+        // Import rewind tool
+        const { executeRewindTo } = await import('./rewind-to-tool.js');
+        
+        // Perform rewind to reconstruct directory
+        const rewindResult = await executeRewindTo({
+          targetTimestamp: rewind_timestamp,
+          outputDir: targetWorkdir,
+          includeFiles: true,
+          includeConversations: import_history, // Link to import_history option
+          gitMode: rewind_git_mode,
+          createSession: false, // We'll create session ourselves
+        });
+        
+        if (!rewindResult.success) {
+          return {
+            success: false,
+            output: `❌ Failed to initialize from rewind: ${rewindResult.error}\n\n` +
+                    `Rewind timestamp: ${rewind_timestamp}\n` +
+                    `Git mode: ${rewind_git_mode}`
+          };
+        }
+        
+        initModeDescription = `Initialized from rewind at ${rewind_timestamp} (gitMode=${rewind_git_mode})`;
+        break;
+      }
+      
+      case 'empty':
+      default:
+        // Directory already created above, nothing more to do
+        initModeDescription = 'Empty directory';
+        break;
     }
     
     // Determine model and provider (same logic as user command)
@@ -375,6 +498,7 @@ export async function executeSessionNew(args: {
     let output = `✅ **New Session Created** #${session.id}\n\n`;
     output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     output += `📂 Working Directory: ${session.working_dir}\n`;
+    output += `🎯 Initialization: ${initModeDescription}\n`;
     output += `🤖 Provider: ${session.default_provider}\n`;
     output += `📱 Model: ${session.default_model}\n`;
     output += `💬 Messages: ${history.length}${import_history ? ' (imported)' : ''}\n`;

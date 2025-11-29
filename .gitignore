@@ -42,11 +42,13 @@ Thumbs.db
 logs/
 *.log
 
-# Documentation (sauf README.md, REWIND_FEATURES.md, NEW_SESSION_FEATURES.md)
+# Documentation (sauf README.md, REWIND_FEATURES.md, NEW_SESSION_FEATURES.md, LLM guides)
 *.md
 !README.md
 !REWIND_FEATURES.md
 !NEW_SESSION_FEATURES.md
+!LLM_TOOL_CLARIFICATION_GUIDE.md
+!LLM_TOOLS_OPTIONS_REFERENCE.md
 
 # Analysis and audit reports (local only)
 SECURITY_AUDIT_*.md

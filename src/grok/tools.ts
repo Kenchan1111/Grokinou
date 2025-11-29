@@ -315,7 +315,110 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     type: "function",
     function: {
       name: "session_new",
-      description: "Create a new conversation session (Git-like branching). Can create in different directory, import history from another session, filter by date range. Use for branching conversations or starting fresh contexts.",
+      description: `⚠️ CRITICAL: Before using this tool, ASK USER to clarify their intent!
+
+═══════════════════════════════════════════════════════════════════
+TWO TOOLS AVAILABLE FOR SESSION/STATE CREATION - Ask user to choose:
+═══════════════════════════════════════════════════════════════════
+
+┌───────────────────────────────────────────────────────────────────┐
+│ 📁 session_new (THIS TOOL) - Simple Session Creation             │
+│                                                                   │
+│ BEST FOR:                                                         │
+│ • Starting fresh conversation in new directory                   │
+│ • Git repository cloning (CURRENT HEAD state)                    │
+│ • File copying (CURRENT files, excluding .git/node_modules)      │
+│ • Importing conversation history by date range                   │
+│ • Simple event sourcing initialization (via from-rewind mode)    │
+│                                                                   │
+│ INITIALIZATION MODES (init_mode parameter):                      │
+│ • 'empty': Empty directory (default)                             │
+│ • 'clone-git': Clone current Git repo at HEAD                    │
+│ • 'copy-files': Copy current files (excludes .git, node_modules) │
+│ • 'from-rewind': Initialize from event sourcing timestamp        │
+│   └─> Requires: rewind_timestamp (ISO 8601)                      │
+│   └─> Optional: rewind_git_mode ('none'/'metadata'/'full')      │
+│                                                                   │
+│ CONVERSATION IMPORT OPTIONS:                                     │
+│ • import_history: Import conversation history (boolean)          │
+│ • from_session_id: Source session ID (default: current)          │
+│ • date_range_start: Filter start date (ISO 8601 / YYYY-MM-DD)   │
+│ • date_range_end: Filter end date (ISO 8601 / YYYY-MM-DD)       │
+│                                                                   │
+│ MODEL/PROVIDER OPTIONS:                                          │
+│ • model: Model to use (e.g., 'grok-2-1212', 'claude-sonnet-4')  │
+│ • provider: Provider (e.g., 'xai', 'anthropic')                  │
+│                                                                   │
+│ LIMITATIONS:                                                      │
+│ • 'from-rewind' has limited options vs rewind_to tool            │
+│ • No autoCheckout, compareWith options                           │
+│ • For advanced rewind: use rewind_to tool instead                │
+└───────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────┐
+│ ⏰ rewind_to - TIME MACHINE (Event Sourcing Alternative)          │
+│                                                                   │
+│ BEST FOR:                                                         │
+│ • Recovering EXACT state at specific past timestamp              │
+│ • Event sourcing replay from timeline.db                         │
+│ • Full Git repository reconstruction (ANY commit, not just HEAD) │
+│ • Advanced options: compare dirs, auto-checkout, git modes       │
+│ • Automatically create session in rewinded state                 │
+│                                                                   │
+│ POWERFUL FEATURES:                                                │
+│ • gitMode: 'none', 'metadata', or 'full' Git reconstruction      │
+│ • autoCheckout: Automatically cd to rewinded directory           │
+│ • compareWith: Generate diff report with another directory       │
+│ • createSession: Auto-create session in past state               │
+│ • Merkle DAG: Reconstruct exact file contents from blobs         │
+│                                                                   │
+│ REQUIREMENTS:                                                     │
+│ • Exact timestamp (use timeline_query to find available times)   │
+│ • Timeline.db with event history                                 │
+└───────────────────────────────────────────────────────────────────┘
+
+🔴 MANDATORY: ASK USER BEFORE PROCEEDING:
+
+"I can help you create a new session. There are TWO approaches available:
+
+1️⃣ **Simple Session Creation** (session_new - CURRENT state):
+   ✓ Clone current Git repository (HEAD) - init_mode='clone-git'
+   ✓ Copy current files to new directory - init_mode='copy-files'
+   ✓ Start with empty directory - init_mode='empty' (default)
+   ✓ Import conversation history by date range
+   ✓ Basic event sourcing init - init_mode='from-rewind'
+   
+   Available Options:
+   • init_mode: 'empty', 'clone-git', 'copy-files', 'from-rewind'
+   • rewind_timestamp: For 'from-rewind' mode (ISO 8601)
+   • rewind_git_mode: Git mode for rewind ('none'/'metadata'/'full')
+   • import_history, from_session_id, date_range_start/end
+   • model, provider
+   
+   Limitations:
+   ✗ from-rewind has fewer options than rewind_to
+   ✗ No autoCheckout, compareWith features
+
+2️⃣ **Time Machine Recovery** (rewind_to - PAST state):
+   ✓ Recover EXACT state from any past timestamp
+   ✓ Event sourcing replay from timeline.db
+   ✓ Full Git reconstruction at specific commit
+   ✓ Advanced options (compare, auto-checkout, git modes)
+   ✓ Can create session automatically in past state
+   ✗ Requires exact timestamp
+   ✗ More complex operation
+
+Your request: [describe what you understood]
+
+Which approach do you need?
+• Work with CURRENT state → I'll use session_new
+• Recover a PAST state at specific time → I'll use rewind_to
+
+Please confirm your choice so I can proceed correctly."
+
+═══════════════════════════════════════════════════════════════════
+
+PROCEED WITH session_new ONLY AFTER USER CONFIRMS "current state" approach.`,
       parameters: {
         type: "object",
         properties: {
@@ -323,29 +426,49 @@ const BASE_GROK_TOOLS: GrokTool[] = [
             type: "string",
             description: "Target directory for new session (absolute or relative path). Will be created if doesn't exist.",
           },
+          init_mode: {
+            type: "string",
+            enum: ["empty", "clone-git", "copy-files", "from-rewind"],
+            description: `Directory initialization mode (default: 'empty'):
+• 'empty': Create empty directory
+• 'clone-git': Clone current Git repository (HEAD state) to target directory
+• 'copy-files': Copy current files (excluding .git, node_modules, hidden files) to target directory
+• 'from-rewind': Initialize from event sourcing rewind at specific timestamp (requires rewind_timestamp)
+
+⚠️ For 'from-rewind': Consider using rewind_to tool instead for full control over gitMode, autoCheckout, compareWith options.`,
+          },
+          rewind_timestamp: {
+            type: "string",
+            description: "Timestamp for 'from-rewind' init mode (ISO 8601: 2025-11-28T15:00:00Z). Only used when init_mode='from-rewind'. Reconstructs directory state via event sourcing.",
+          },
+          rewind_git_mode: {
+            type: "string",
+            enum: ["none", "metadata", "full"],
+            description: "Git mode for 'from-rewind' (default: 'full'). Only used when init_mode='from-rewind'. See rewind_to tool for detailed gitMode documentation.",
+          },
           import_history: {
             type: "boolean",
-            description: "Whether to import conversation history from source session",
+            description: "Whether to import conversation history from source session (default: false)",
           },
           from_session_id: {
             type: "number",
-            description: "Session ID to import from (default: current session)",
+            description: "Session ID to import conversation history from (default: current session). Used when import_history=true.",
           },
           date_range_start: {
             type: "string",
-            description: "Start date for history filtering (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY)",
+            description: "Start date for conversation history filtering (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY). Used when import_history=true.",
           },
           date_range_end: {
             type: "string",
-            description: "End date for history filtering (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY)",
+            description: "End date for conversation history filtering (ISO 8601, YYYY-MM-DD, or DD/MM/YYYY). Used when import_history=true.",
           },
           model: {
             type: "string",
-            description: "Model to use in new session (optional)",
+            description: "Model to use in new session (optional, e.g., 'grok-2-1212', 'claude-sonnet-4')",
           },
           provider: {
             type: "string",
-            description: "Provider to use in new session (optional)",
+            description: "Provider to use in new session (optional, e.g., 'xai', 'anthropic')",
           },
         },
         required: ["directory"],
@@ -449,23 +572,133 @@ function buildGrokTools(): GrokTool[] {
       type: "function",
       function: {
         name: "rewind_to",
-        description: "TIME MACHINE: Rewind to timestamp. **ALWAYS get user permission first.**",
+        description: `⚠️ CRITICAL: Before using this tool, ASK USER to clarify their intent AND get explicit permission!
+
+═══════════════════════════════════════════════════════════════════
+TWO TOOLS AVAILABLE FOR SESSION/STATE CREATION - Ask user to choose:
+═══════════════════════════════════════════════════════════════════
+
+┌───────────────────────────────────────────────────────────────────┐
+│ ⏰ rewind_to (THIS TOOL) - TIME MACHINE via Event Sourcing        │
+│                                                                   │
+│ BEST FOR:                                                         │
+│ • Recovering EXACT state at specific past timestamp              │
+│ • Event sourcing replay from timeline.db Merkle DAG              │
+│ • Full Git repository reconstruction at ANY commit               │
+│ • Advanced operations with multiple options                      │
+│ • Creating session automatically in rewinded past state          │
+│                                                                   │
+│ POWERFUL FEATURES:                                                │
+│ • gitMode: 'none' | 'metadata' | 'full'                          │
+│   - none: No Git information                                     │
+│   - metadata: git_state.json with commit/branch info             │
+│   - full: Complete .git repository at target commit              │
+│ • autoCheckout: Auto cd to rewinded directory after rewind       │
+│ • compareWith: Generate detailed diff report vs another dir      │
+│ • createSession: Auto-create grokinou session in rewinded state  │
+│ • includeFiles: Reconstruct file contents from Merkle DAG blobs  │
+│ • includeConversations: Import conversation history              │
+│                                                                   │
+│ HOW IT WORKS (Event Sourcing):                                    │
+│ 1. Query timeline.db for all events before targetTimestamp       │
+│ 2. Find nearest snapshot (if exists) for optimization            │
+│ 3. Replay events from snapshot → target time                     │
+│ 4. Reconstruct files from Merkle DAG blob storage                │
+│ 5. Materialize Git repository at exact commit (if gitMode≠none)  │
+│ 6. Create session in rewinded directory (if createSession=true)  │
+│                                                                   │
+│ REQUIREMENTS:                                                     │
+│ • Exact timestamp (ISO 8601: 2025-11-28T14:30:00Z)               │
+│ • Use timeline_query first to find available timestamps          │
+│ • Timeline.db must have event history for target period          │
+└───────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────┐
+│ 📁 session_new - Simple Session Creation (Alternative)           │
+│                                                                   │
+│ BEST FOR:                                                         │
+│ • Working with CURRENT state (not past)                          │
+│ • Simple Git clone (HEAD state only)                             │
+│ • File copying (current files)                                   │
+│ • Basic session creation                                         │
+│                                                                   │
+│ LIMITATIONS:                                                      │
+│ • No event sourcing / time travel                                │
+│ • Works only with current state                                  │
+│ • No advanced rewind options                                     │
+│ • Cannot recover past timestamps                                 │
+└───────────────────────────────────────────────────────────────────┘
+
+🔴 MANDATORY: ASK USER BEFORE PROCEEDING:
+
+"I can help you with time-based operations. There are TWO approaches:
+
+1️⃣ **Time Machine** (rewind_to - PAST state):
+   ✓ Recover EXACT state from specific timestamp
+   ✓ Event sourcing replay from timeline.db
+   ✓ Full Git reconstruction at any commit
+   ✓ Advanced options:
+     - gitMode: none/metadata/full
+     - autoCheckout: Auto cd after rewind
+     - compareWith: Diff with another directory
+     - createSession: Auto-create session
+   ✓ Merkle DAG for file reconstruction
+   ✗ Requires exact timestamp
+   ✗ More complex operation
+
+2️⃣ **Simple Session** (session_new - CURRENT state):
+   ✓ Clone current Git repository (HEAD)
+   ✓ Copy current files
+   ✓ Simpler operation
+   ✗ No time travel / event sourcing
+   ✗ Current state only
+
+Your request: [describe what you understood]
+
+Questions to clarify:
+• Do you need a PAST state at specific timestamp? → rewind_to
+• Do you need CURRENT state in new directory? → session_new
+
+If using rewind_to, you MUST provide:
+1. Exact timestamp (use timeline_query to find available times)
+   Example: timeline_query with startTime/endTime to see events
+2. Confirmation of options:
+   - gitMode? (none/metadata/full)
+   - autoCheckout? (true/false)
+   - createSession? (true/false)
+   - compareWith? (optional directory path)
+
+**This is a powerful operation that reconstructs exact past state.**
+**I need your explicit permission to proceed.**
+
+Please confirm:
+• Exact timestamp you want to rewind to
+• Which options you want (gitMode, autoCheckout, etc.)
+• Permission to execute the rewind"
+
+═══════════════════════════════════════════════════════════════════
+
+PROCEED WITH rewind_to ONLY AFTER:
+1. User confirms they need PAST state (not current)
+2. User provides exact timestamp
+3. User gives explicit permission
+4. User confirms desired options (gitMode, autoCheckout, compareWith, createSession)`,
         parameters: {
           type: "object",
           properties: {
             targetTimestamp: { type: "string", description: "Target timestamp (ISO format: 2025-11-28T12:00:00Z)" },
-            outputDir: { type: "string", description: "Output directory (default: auto-generated)" },
-            includeFiles: { type: "boolean", description: "Include file contents (default: true)" },
-            includeConversations: { type: "boolean", description: "Include conversations (default: true)" },
+            outputDir: { type: "string", description: "Output directory (default: auto-generated ~/grokinou_rewind_TIMESTAMP)" },
+            includeFiles: { type: "boolean", description: "Include file contents reconstruction from Merkle DAG (default: true)" },
+            includeConversations: { type: "boolean", description: "Include conversation history import (default: true)" },
             gitMode: { 
               type: "string", 
               enum: ["none", "metadata", "full"],
               description: "Git mode: 'none'=no git, 'metadata'=git_state.json only, 'full'=complete .git repo (default: metadata)" 
             },
             createSession: { type: "boolean", description: "Create a new grokinou session in rewinded directory (default: false)" },
-            autoCheckout: { type: "boolean", description: "Automatically change working directory to rewinded directory (default: false)" },
-            compareWith: { type: "string", description: "Compare rewinded state with another directory (path)" },
-            reason: { type: "string", description: "Human-readable reason for rewind" },
+            autoCheckout: { type: "boolean", description: "Automatically change working directory (process.cwd) to rewinded directory (default: false)" },
+            compareWith: { type: "string", description: "Compare rewinded state with another directory - generates detailed diff report (optional)" },
+            reason: { type: "string", description: "Human-readable reason for rewind (for logging and audit trail)" },
           },
           required: ["targetTimestamp"],
         },
