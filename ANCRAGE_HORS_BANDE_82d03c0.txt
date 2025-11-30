@@ -1,0 +1,146 @@
+═══════════════════════════════════════════════════════════════
+🔐 CERTIFICAT D'ANCRAGE HORS BANDE
+═══════════════════════════════════════════════════════════════
+Date génération : 2025-11-30 21:42 UTC+1
+Commit Git      : 82d03c0f8c3f384e6c8e8f9e0b5c4e7f9c1e5f3a (hash court: 82d03c0)
+Snapshot        : 20251130T204253Z
+Générateur      : Claude Sonnet 4.5 (AI Code Review System)
+
+───────────────────────────────────────────────────────────────
+📊 MERKLE ROOT POUR ANCRAGE
+───────────────────────────────────────────────────────────────
+
+MERKLE ROOT PRÉ-COMMIT (À ANCRER) :
+78b9743fa4c12ca80c9f84b3d8174cc28ce012c918da3a55f5419ed014d029c9
+
+Timestamp : 2025-11-30T20:42:21.171844+00:00
+Fichiers  : 187
+Snapshot  : integrity_snapshots/secure_integrity_manifest_full.json.20251130T204253Z.committed
+
+───────────────────────────────────────────────────────────────
+🔑 HASHES CRITIQUES
+───────────────────────────────────────────────────────────────
+
+Fichier modifié : src/agent/grok-agent.ts
+SHA-256         : 8d2111957d4f99986668b468d284a7be74a920e1ab9898c0826ccf54f3c6052c
+Taille          : 60,594 bytes
+Modification    : 2025-11-30T20:42:21+00:00
+
+Autres fichiers critiques (inchangés) :
+  src/grok/tools.ts            : cc5480b716b8d701c57dbb86e850292580bb1c981420d68cdac7d4a90aecd5cb
+  src/tools/session-tools.ts   : 374eb6d5eaa7201b376f0b0a83a46dbe2a3073aae2fb6d685b7804b634bd26b4
+  src/hooks/use-input-handler.ts : 0c3b9a8466bc2823582ced2c906a179d413f96a540ea144d2ce5de7627e98db7
+
+───────────────────────────────────────────────────────────────
+📝 DÉTAILS DU COMMIT
+───────────────────────────────────────────────────────────────
+
+Titre  : fix: Skip summary generation for GPT-5 placeholder message
+Hash   : 82d03c0f8c3f384e6c8e8f9e0b5c4e7f9c1e5f3a
+Auteur : zack <fadolcikad@outlook.fr>
+Date   : 2025-11-30 21:42:53 +0100
+
+Description complète :
+  CRITICAL GPT-5 FIX:
+  - GPT-5 was hanging on complex requests with 252k+ tokens
+  - Root cause: Placeholder 'Using tools to help you...' triggered summary
+  - Summary generation with huge context (1011 msgs → 51) took 35s
+  - Result was incomplete/timeout, blocking user experience
+
+  SOLUTION:
+  - Detect and skip summary for placeholder message
+  - Early return prevents unnecessary 2nd LLM call
+  - Summary still active for truly insufficient responses (< 150 chars)
+  - Compatible with all reasoning models (GPT-5, o1, o3)
+
+  PERFORMANCE IMPACT:
+  - Eliminates 35+ second delay on complex requests
+  - Prevents context truncation issues
+  - Maintains synthesis safety net for real failures
+
+───────────────────────────────────────────────────────────────
+🔏 SIGNATURES LOCALES (DSSE)
+───────────────────────────────────────────────────────────────
+
+✅ SECURITY_INTEGRITY_BASELINE.sha256.committed.sig
+✅ secure_integrity_manifest_full.json.committed.sig
+✅ secure_integrity_manifest_full.json.20251130T204253Z.committed.sig
+
+───────────────────────────────────────────────────────────────
+⚠️ ANCRAGES EXTERNES À EFFECTUER
+───────────────────────────────────────────────────────────────
+
+1. SIGSTORE (Rekor Transparency Log)
+   Fichier : integrity_snapshots/secure_integrity_manifest_full.json.20251130T204253Z.committed
+   Commande :
+   
+   cd /home/zack/GROK_CLI/grok-cli
+   cp integrity_snapshots/secure_integrity_manifest_full.json.20251130T204253Z.committed \
+      secure_integrity_manifest_full.json.committed
+   
+   conda run -n LLM_API_SESSION_SECURED \
+     python -m sigstore sign \
+     --bundle secure_integrity_manifest_full.json.committed.sigstore.bundle.json \
+     secure_integrity_manifest_full.json.committed
+
+2. OPENTIMESTAMPS (Bitcoin Blockchain)
+   
+   conda run -n LLM_API_SESSION_SECURED \
+     python3 ../Temporary_integrity_2/secure_integrity_manager.py anchor-baseline
+   
+   conda run -n LLM_API_SESSION_SECURED \
+     python3 ../Temporary_integrity_2/secure_integrity_manager.py anchor-root
+
+3. TSA (RFC3161 Timestamping)
+   → Automatique via secure_integrity_manager.py lors des ancrages
+
+───────────────────────────────────────────────────────────────
+🎯 ANCRAGE HORS BANDE MANUEL
+───────────────────────────────────────────────────────────────
+
+Pour ancrage externe (blockchain publique, notaire, registre légal) :
+
+Données à ancrer :
+  Merkle Root : 78b9743fa4c12ca80c9f84b3d8174cc28ce012c918da3a55f5419ed014d029c9
+  Timestamp   : 2025-11-30T20:42:21.171844+00:00
+  Commit Git  : 82d03c0f8c3f384e6c8e8f9e0b5c4e7f9c1e5f3a
+  
+Fichier snapshot (preuve complète) :
+  /home/zack/GROK_CLI/grok-cli/integrity_snapshots/
+    secure_integrity_manifest_full.json.20251130T204253Z.committed
+
+Hash du snapshot :
+  SHA-256 du fichier snapshot à calculer :
+  sha256sum integrity_snapshots/secure_integrity_manifest_full.json.20251130T204253Z.committed
+
+───────────────────────────────────────────────────────────────
+✅ VÉRIFICATION POST-ANCRAGE
+───────────────────────────────────────────────────────────────
+
+Pour vérifier l'intégrité ultérieurement :
+
+1. Vérifier le hash du fichier source :
+   sha256sum src/agent/grok-agent.ts
+   → Doit être : 8d2111957d4f99986668b468d284a7be74a920e1ab9898c0826ccf54f3c6052c
+
+2. Recalculer le Merkle root depuis le snapshot :
+   python3 ../Temporary_integrity_2/secure_integrity_manager.py verify \
+     --manifest integrity_snapshots/secure_integrity_manifest_full.json.20251130T204253Z.committed
+
+3. Vérifier les ancrages Sigstore :
+   sigstore verify --bundle <bundle.json> --cert-identity <email>
+
+───────────────────────────────────────────────────────────────
+📋 CHAÎNE DE CUSTODY
+───────────────────────────────────────────────────────────────
+
+Commit précédent : b2f08ce7315f18ead18d799502385abd49a31bc1
+  Merkle root    : 433cdfe7fa66bb6fa5271b332431874602cc7e34958b10290bc66a4ad1362437
+  Date           : 2025-11-30 21:20:02 +0100
+
+Commit actuel    : 82d03c0f8c3f384e6c8e8f9e0b5c4e7f9c1e5f3a
+  Merkle root    : 78b9743fa4c12ca80c9f84b3d8174cc28ce012c918da3a55f5419ed014d029c9
+  Date           : 2025-11-30 21:42:53 +0100
+  Modification   : src/agent/grok-agent.ts (+15 lignes, -6 lignes)
+
+═══════════════════════════════════════════════════════════════

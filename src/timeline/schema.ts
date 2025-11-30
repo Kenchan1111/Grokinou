@@ -35,20 +35,49 @@ CREATE INDEX IF NOT EXISTS idx_events_aggregate ON events (aggregate_id, aggrega
 CREATE INDEX IF NOT EXISTS idx_events_correlation ON events (correlation_id);
 CREATE INDEX IF NOT EXISTS idx_events_actor ON events (actor);
 
+-- Convenience view for querying events (used by QueryEngine)
+CREATE VIEW IF NOT EXISTS timeline_events AS
+SELECT
+    id,
+    timestamp,
+    sequence_number,
+    actor,
+    event_type,
+    aggregate_id,
+    aggregate_type,
+    payload,
+    correlation_id,
+    causation_id,
+    metadata,
+    checksum
+FROM events;
+
 CREATE TABLE IF NOT EXISTS snapshots (
-    aggregate_id TEXT PRIMARY KEY,
-    aggregate_type TEXT NOT NULL,
-    sequence_number INTEGER NOT NULL,
+    id TEXT PRIMARY KEY,
     timestamp INTEGER NOT NULL,
-    state_compressed BLOB NOT NULL,
-    checksum TEXT NOT NULL,
-    CHECK (length(checksum) = 64),
+    sequence_number INTEGER NOT NULL,
+    event_count INTEGER NOT NULL,
+    session_id INTEGER,
+    session_name TEXT,
+    working_dir TEXT NOT NULL,
+    git_commit_hash TEXT,
+    git_branch TEXT,
+    file_count INTEGER NOT NULL,
+    compressed_size_bytes INTEGER NOT NULL,
+    uncompressed_size_bytes INTEGER NOT NULL,
+    snapshot_data BLOB NOT NULL,
+    created_at INTEGER NOT NULL,
     CHECK (timestamp > 0),
-    CHECK (sequence_number > 0)
+    CHECK (sequence_number > 0),
+    CHECK (event_count >= 0),
+    CHECK (file_count >= 0),
+    CHECK (compressed_size_bytes >= 0),
+    CHECK (uncompressed_size_bytes >= 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_snapshots_sequence ON snapshots (sequence_number DESC);
 CREATE INDEX IF NOT EXISTS idx_snapshots_timestamp ON snapshots (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_snapshots_created ON snapshots (created_at DESC);
 
 CREATE TABLE IF NOT EXISTS file_blobs (
     hash TEXT PRIMARY KEY,

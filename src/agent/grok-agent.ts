@@ -244,8 +244,10 @@ When a user asks you to create a new file that doesn't exist:
 1. Use create_file with the full content
 
 TASK PLANNING WITH TODO LISTS:
-- For complex requests with multiple steps, ALWAYS write an implementation plan in markdown and ALWAYS create a todo list first to plan your approach
-- Use create_todo_list to break down tasks into manageable items with priorities
+- For complex requests with multiple steps (multi-file edits, multi-command workflows, time machine operations, etc.), ALWAYS write an implementation plan in markdown as a concise TODO LIST (checkboxes) instead of long "Plan / Exécution / Résultat" sections
+- For simple, single-step questions (like short clarifications, greetings, or identity questions such as \"à qui ai-je l'honneur ?\"), you MUST answer directly and naturally, WITHOUT showing a formal plan or todo list
+- Prefer a single todo checklist that you keep up to date (this checklist tient lieu de plan ET de suivi d'exécution). Do NOT repeat the same plan in multiple forms (no \"Plan:\" section + duplicate bullets).
+- Use create_todo_list to break down tasks into manageable items with priorities, rendered as checkboxes
 - Mark tasks as 'in_progress' when you start working on them (only one at a time)
 - Mark tasks as 'completed' immediately when finished
 - Use update_todo_list to track your progress throughout the task
@@ -258,6 +260,16 @@ File operations (create_file, str_replace_editor) and bash commands will automat
 If a user rejects an operation, the tool will return an error and you should not proceed with that specific operation.
 
 Be helpful, direct, smart, intelligent and efficient. Always look at the WHOLE CONTEXT before providing solutions or making edits and act THOROUGHLY, DEEP DIVE in order to understand the subtleties. EXPLAIN what you're doing WITHOUT HIDING ANYTHING, TELL the CHALLENGES you faced, the ERRORS you met and the SOLUTIONS YOU FOUND, and SHOW THE RESULTS.
+
+RESPONSE GUIDELINES (MANDATORY):
+- After using tools (view_file, bash, search, timeline, etc.), you MUST provide a comprehensive response that includes:
+  * What you did and which tools you used
+  * Your findings, analysis, and results
+  * Clear conclusions, recommendations, or next steps
+- For complex multi-step tasks, you MAY use create_todo_list to track progress
+- For simple questions (greetings, clarifications, identity), answer directly and naturally
+- IMPORTANT: Always conclude your response with actionable insights and complete explanations
+- CRITICAL: Never end with just "Using tools to help you..." without providing your analysis - always follow up with your findings and conclusions
 
 IMPORTANT RESPONSE GUIDELINES:
 - After using tools, do NOT respond with pleasantries like "Thanks for..." or "Great!"
@@ -374,6 +386,63 @@ Current working directory: ${process.cwd()}`,
     return false;
   }
 
+  private buildSummaryPrompt(lastUserMessage: string): string {
+    return [
+      "Tu as peut-être utilisé des outils (lecture de fichiers, commandes bash, timeline, etc.)",
+      "pour répondre à la DERNIÈRE question de l’utilisateur.",
+      "",
+      `Dernière question de l’utilisateur : "${lastUserMessage}"`,
+      "",
+      "Maintenant, rédige une réponse NATURELLE en français qui :",
+      "- Explique ce que tu as fait (y compris les outils utilisés le cas échéant).",
+      "- Présente les principaux résultats et conclusions.",
+      "- Mentionne les difficultés éventuelles et comment tu les as résolues.",
+      "- Termine par un résumé qui met clairement en évidence tous les points importants de ce que tu as fait et trouvé (longueur libre mais suffisamment exhaustive pour que l’utilisateur comprenne bien l’ensemble).",
+      "",
+      "CONTRAINTES IMPORTANTES :",
+      "- Ne propose PAS de nouveaux tools dans cette réponse.",
+      "- Ne repose PAS la question à l’utilisateur.",
+      "- Ne commence PAS par \"Plan:\" ou par une section de plan; ne répète PAS ton plan dans plusieurs blocs.",
+      "- Contente-toi d’expliquer ce que tu as fait et ce que tu as appris."
+    ].join("\n");
+  }
+
+  private async generateAndAppendSummary(lastUserMessage: string): Promise<ChatEntry | null> {
+    try {
+      const prompt = this.buildSummaryPrompt(lastUserMessage);
+      const summaryMessages: GrokMessage[] = [
+        ...this.messages,
+        { role: "user", content: prompt }
+      ];
+
+      const response = await this.grokClient.chat(
+        summaryMessages,
+        [],
+        undefined,
+        { search_parameters: { mode: "off" } }
+      );
+
+      const content = response.choices?.[0]?.message?.content?.trim();
+      if (!content) {
+        return null;
+      }
+
+      const entry: ChatEntry = {
+        type: "assistant",
+        content,
+        timestamp: new Date(),
+      };
+
+      this.chatHistory.push(entry);
+      await this.persist(entry);
+
+      return entry;
+    } catch (error: any) {
+      debugLog.log("⚠️  Summary phase failed:", error?.message || String(error));
+      return null;
+    }
+  }
+
   async processUserMessage(message: string): Promise<ChatEntry[]> {
     // Add user message to conversation
     const userEntry: ChatEntry = {
@@ -404,6 +473,8 @@ Current working directory: ${process.cwd()}`,
     const newEntries: ChatEntry[] = [userEntry];
     const maxToolRounds = this.maxToolRounds; // Prevent infinite loops
     let toolRounds = 0;
+    let hadToolCalls = false;
+    let finalAssistantContent = "";
 
     try {
       const tools = await getAllGrokTools();
@@ -430,6 +501,7 @@ Current working directory: ${process.cwd()}`,
           assistantMessage.tool_calls.length > 0
         ) {
           toolRounds++;
+          hadToolCalls = true;
 
           // Add assistant message with tool calls
           const assistantEntry: ChatEntry = {
@@ -531,6 +603,7 @@ Current working directory: ${process.cwd()}`,
               "I understand, but I don't have a specific response.",
             timestamp: new Date(),
           };
+          finalAssistantContent = assistantMessage.content || "";
           this.chatHistory.push(finalEntry);
           await this.persist(finalEntry);
           this.messages.push({
@@ -570,6 +643,33 @@ Current working directory: ${process.cwd()}`,
         newEntries.push(warningEntry);
       }
 
+      if (hadToolCalls) {
+        const contentTrimmed = finalAssistantContent.trim();
+        
+        // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
+        if (contentTrimmed === "Using tools to help you...") {
+          debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
+          return newEntries;
+        }
+        
+        // Générer synthèse si :
+        // - Réponse vide
+        // - Réponse trop courte (< 150 caractères)
+        const needsSummary =
+          !contentTrimmed ||
+          contentTrimmed.length < 150;
+        
+        if (needsSummary) {
+          debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
+          const summaryEntry = await this.generateAndAppendSummary(message);
+          if (summaryEntry) {
+            newEntries.push(summaryEntry);
+          }
+        } else {
+          debugLog.log("✅ LLM provided sufficient response, skipping summary");
+        }
+      }
+
       return newEntries;
     } catch (error: any) {
       const errorEntry: ChatEntry = {
@@ -579,6 +679,7 @@ Current working directory: ${process.cwd()}`,
       };
       this.chatHistory.push(errorEntry);
       await this.persist(errorEntry);
+      newEntries.push(errorEntry);
       
       // 🕐 Timeline: Capture LLM error
       try {
@@ -590,12 +691,12 @@ Current working directory: ${process.cwd()}`,
             this.grokClient.getCurrentModel(),
             providerManager.detectProvider(this.grokClient.getCurrentModel())
           );
-        }
+          }
       } catch (timelineError) {
         debugLog.log('⚠️  Timeline logging failed for LLM error:', timelineError);
       }
-      
-      return [userEntry, errorEntry];
+
+      return newEntries;
     }
   }
 
@@ -658,6 +759,8 @@ Current working directory: ${process.cwd()}`,
     let toolRounds = 0;
     let totalOutputTokens = 0;
     let lastTokenUpdate = 0;
+    let hadToolCalls = false;
+    let finalAssistantContent = "";
 
     try {
       // Agent loop - continue until no more tool calls or max rounds reached
@@ -706,6 +809,7 @@ Current working directory: ${process.cwd()}`,
 
           // Check for tool calls - yield when we have complete tool calls with function names
           if (!toolCallsYielded && accumulatedMessage.tool_calls?.length > 0) {
+            hadToolCalls = true;
             // Check if we have at least one complete tool call with a function name
             const hasCompleteTool = accumulatedMessage.tool_calls.some(
               (tc: any) => tc.function?.name
@@ -768,6 +872,7 @@ Current working directory: ${process.cwd()}`,
           timestamp: new Date(),
           toolCalls: accumulatedMessage.tool_calls || undefined,
         };
+        finalAssistantContent = accumulatedMessage.content || "";
         this.chatHistory.push(assistantEntry);
         await this.persist(assistantEntry);
 
@@ -866,6 +971,37 @@ Current working directory: ${process.cwd()}`,
         };
       }
 
+      if (hadToolCalls) {
+        const contentTrimmed = finalAssistantContent.trim();
+        
+        // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
+        if (contentTrimmed === "Using tools to help you...") {
+          debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
+          yield { type: "done" };
+          return;
+        }
+        
+        // Générer synthèse si :
+        // - Réponse vide
+        // - Réponse trop courte (< 150 caractères)
+        const needsSummary =
+          !contentTrimmed ||
+          contentTrimmed.length < 150;
+        
+        if (needsSummary) {
+          debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
+          const summaryEntry = await this.generateAndAppendSummary(message);
+          if (summaryEntry) {
+            yield {
+              type: "content",
+              content: "\n\n" + summaryEntry.content,
+            };
+          }
+        } else {
+          debugLog.log("✅ LLM provided sufficient response, skipping summary");
+        }
+      }
+
       yield { type: "done" };
     } catch (error: any) {
       // Check if this was a cancellation
@@ -933,11 +1069,31 @@ Current working directory: ${process.cwd()}`,
       
       switch (toolCall.function.name) {
         case "view_file":
+          // 📺 COT: Reading file
+          executionStream.emitCOT('thinking', `Reading file: ${args.path}`);
+          executionStream.emitCOT('action', `Opening file for reading`);
+          
           const range: [number, number] | undefined =
             args.start_line && args.end_line
               ? [args.start_line, args.end_line]
               : undefined;
+          
+          if (range) {
+            executionStream.emitCOT('action', `Reading lines ${range[0]}-${range[1]}`);
+          }
+          
           result = await this.textEditor.view(args.path, range);
+          
+          // 📺 COT: Observation with file stats
+          if (result.success) {
+            const lineCount = result.output?.split('\n').length || 0;
+            const charCount = result.output?.length || 0;
+            executionStream.emitCOT('observation', `Read ${lineCount} lines, ${charCount} characters`);
+            executionStream.emitCOT('decision', `File content retrieved successfully`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to read file: ${result.error}`);
+            executionStream.emitCOT('decision', `File reading failed`);
+          }
           break;
 
         case "create_file":

@@ -53,6 +53,23 @@ CREATE INDEX IF NOT EXISTS idx_events_aggregate ON events (aggregate_id, aggrega
 CREATE INDEX IF NOT EXISTS idx_events_correlation ON events (correlation_id);
 CREATE INDEX IF NOT EXISTS idx_events_actor ON events (actor);
 
+-- View: timeline_events (for QueryEngine)
+CREATE VIEW IF NOT EXISTS timeline_events AS
+SELECT
+    id,
+    timestamp,
+    sequence_number,
+    actor,
+    event_type,
+    aggregate_id,
+    aggregate_type,
+    payload,
+    correlation_id,
+    causation_id,
+    metadata,
+    checksum
+FROM events;
+
 -- ============================================================================
 -- TABLE: snapshots (State Snapshots for Performance)
 -- ============================================================================
@@ -62,27 +79,45 @@ CREATE INDEX IF NOT EXISTS idx_events_actor ON events (actor);
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS snapshots (
     -- Snapshot identity
-    aggregate_id TEXT PRIMARY KEY,          -- Typically "global" or specific entity
-    aggregate_type TEXT NOT NULL,           -- 'global' | 'session' | 'file'
+    id TEXT PRIMARY KEY,                    -- Snapshot ID (e.g., snapshot_<timestamp>_<rand>)
     
     -- Snapshot position in event stream
+    timestamp INTEGER NOT NULL,             -- When snapshot was created (ms)
     sequence_number INTEGER NOT NULL,       -- Last event included in this snapshot
-    timestamp INTEGER NOT NULL,             -- When snapshot was created
+    event_count INTEGER NOT NULL,           -- Total events included
     
-    -- Snapshot data (compressed for storage efficiency)
-    state_compressed BLOB NOT NULL,         -- zlib-compressed JSON state
+    -- Session / working context
+    session_id INTEGER,                     -- Active session ID (if any)
+    session_name TEXT,                      -- Optional human-readable name
+    working_dir TEXT NOT NULL,             -- Working directory at snapshot time
     
-    -- Integrity
-    checksum TEXT NOT NULL,                 -- SHA256 of uncompressed state
+    -- Git state
+    git_commit_hash TEXT,                   -- Current commit hash
+    git_branch TEXT,                        -- Current branch
     
-    -- Performance hints
-    CHECK (length(checksum) = 64),
+    -- File / storage statistics
+    file_count INTEGER NOT NULL,            -- Number of files tracked
+    compressed_size_bytes INTEGER NOT NULL, -- Compressed snapshot size
+    uncompressed_size_bytes INTEGER NOT NULL, -- Raw JSON size
+    
+    -- Snapshot payload
+    snapshot_data BLOB NOT NULL,            -- zlib-compressed JSON SnapshotData
+    
+    -- Metadata
+    created_at INTEGER NOT NULL,            -- Creation timestamp (ms)
+    
+    -- Constraints
     CHECK (timestamp > 0),
-    CHECK (sequence_number > 0)
+    CHECK (sequence_number > 0),
+    CHECK (event_count >= 0),
+    CHECK (file_count >= 0),
+    CHECK (compressed_size_bytes >= 0),
+    CHECK (uncompressed_size_bytes >= 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_snapshots_sequence ON snapshots (sequence_number DESC);
 CREATE INDEX IF NOT EXISTS idx_snapshots_timestamp ON snapshots (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_snapshots_created ON snapshots (created_at DESC);
 
 -- ============================================================================
 -- TABLE: file_blobs (Merkle DAG - File Content Storage)
