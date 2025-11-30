@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════
+🔐 MERKLE ROOT POUR ANCRAGE HORS BANDE
+═══════════════════════════════════════════════════════════════
+
+📊 MERKLE ROOT (À ANCRER) :
+78b9743fa4c12ca80c9f84b3d8174cc28ce012c918da3a55f5419ed014d029c9
+
+📅 Timestamp :
+2025-11-30T20:42:21.171844+00:00
+
+📦 Commit Git :
+82d03c09084e1f0870bed8a1ea902b11ec2e1c40
+
+📁 Fichiers inclus :
+187 fichiers git-tracked
+
+🔑 Hash du snapshot (pour vérification) :
+e3752ef3ca9e71cd79a61f8394d92d2a726a6ce24c8f71b827726094b82dc56d
+
+📄 Fichier snapshot complet :
+/home/zack/GROK_CLI/grok-cli/integrity_snapshots/secure_integrity_manifest_full.json.20251130T204253Z.committed
+
+🔧 Modification principale :
+src/agent/grok-agent.ts
+  SHA-256: 8d2111957d4f99986668b468d284a7be74a920e1ab9898c0826ccf54f3c6052c
+  Taille : 60,594 bytes
+
+───────────────────────────────────────────────────────────────
+🎯 POUR ANCRAGE BLOCKCHAIN / NOTAIRE / REGISTRE LÉGAL
+───────────────────────────────────────────────────────────────
+
+Enregistrer ces 3 valeurs ensemble :
+
+1. Merkle Root:
+   78b9743fa4c12ca80c9f84b3d8174cc28ce012c918da3a55f5419ed014d029c9
+
+2. Timestamp:
+   2025-11-30T20:42:21.171844+00:00
+
+3. Commit Git:
+   82d03c09084e1f0870bed8a1ea902b11ec2e1c40
+
+───────────────────────────────────────────────────────────────
+✅ PREUVE D'INTÉGRITÉ
+───────────────────────────────────────────────────────────────
+
+Le Merkle root ci-dessus représente l'arborescence cryptographique
+complète de 187 fichiers du projet grok-cli au moment du commit
+82d03c09084e1f0870bed8a1ea902b11ec2e1c40.
+
+Toute modification d'un seul octet dans n'importe quel fichier
+produirait un Merkle root complètement différent.
+
+Ce root peut être ancré dans :
+- Une blockchain publique (Bitcoin, Ethereum)
+- Un registre légal horodaté
+- Un système notarial
+- Un service d'horodatage tiers de confiance
+
+═══════════════════════════════════════════════════════════════
