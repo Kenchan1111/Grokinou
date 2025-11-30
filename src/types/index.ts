@@ -2,6 +2,8 @@ export interface ToolResult {
   success: boolean;
   output?: string;
   error?: string;
+  stderr?: string;  // Separate stderr capture for better debugging
+  exitCode?: number;  // Exit code for bash commands
   data?: any;
 }
 

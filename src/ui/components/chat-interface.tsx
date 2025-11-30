@@ -21,6 +21,8 @@ import { SearchResult } from "../../utils/search-manager.js";
 import { sessionManager } from "../../utils/session-manager-sqlite.js";
 import { generateStatusMessage } from "../../utils/status-message.js";
 import type { StartupConfig } from "../../index.js";
+import { LayoutManager } from "./layout-manager.js";
+import { ExecutionViewer } from "./execution-viewer.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
@@ -667,39 +669,88 @@ function ChatInterfaceWithAgent({
   const { stdout: mainStdout } = useStdout();
   const terminalHeight = mainStdout?.rows || 24;
   
+  // Get execution viewer settings
+  const executionViewerSettings = useMemo(() => {
+    try {
+      const manager = getSettingsManager();
+      return manager.getExecutionViewerSettings();
+    } catch {
+      return {
+        enabled: true,
+        defaultMode: 'hidden' as const,
+        autoShow: true,
+        splitRatio: 0.6,
+        layout: 'horizontal' as const,
+      };
+    }
+  }, []);
+  
+  // Determine final content based on search mode and execution viewer
+  const finalContent = useMemo(() => {
+    if (searchMode) {
+      // Search mode takes precedence - use existing search split layout
+      return searchFullscreen ? (
+        <SearchResults
+          query={searchQuery}
+          results={searchResults}
+          onClose={handleCloseSearch}
+          onPasteToInput={handlePasteToInput}
+          onToggleFullscreen={handleToggleFullscreen}
+          fullscreen={true}
+        />
+      ) : (
+        <SplitLayout
+          left={chatViewContent}
+          right={
+            <SearchResults
+              query={searchQuery}
+              results={searchResults}
+              onClose={handleCloseSearch}
+              onPasteToInput={handlePasteToInput}
+              onToggleFullscreen={handleToggleFullscreen}
+              fullscreen={false}
+            />
+          }
+          splitRatio={0.5}
+        />
+      );
+    }
+    
+    // Normal mode - wrap with LayoutManager if execution viewer is enabled
+    if (executionViewerSettings.enabled) {
+      return (
+        <LayoutManager
+          conversation={chatViewContent}
+          executionViewer={<ExecutionViewer mode="split" />}
+          config={{
+            defaultMode: executionViewerSettings.defaultMode,
+            autoShow: executionViewerSettings.autoShow,
+            autoHide: executionViewerSettings.autoHide,
+            autoHideDelay: executionViewerSettings.autoHideDelay,
+            splitRatio: executionViewerSettings.splitRatio,
+            layout: executionViewerSettings.layout,
+          }}
+        />
+      );
+    }
+    
+    // Execution viewer disabled - show conversation only
+    return chatViewContent;
+  }, [
+    searchMode,
+    searchFullscreen,
+    searchQuery,
+    searchResults,
+    handleCloseSearch,
+    handlePasteToInput,
+    handleToggleFullscreen,
+    chatViewContent,
+    executionViewerSettings,
+  ]);
+  
   return (
     <Box flexDirection="column" paddingX={2} height={searchMode ? terminalHeight : undefined} overflow={searchMode ? "hidden" : undefined}>
-      {searchMode ? (
-        searchFullscreen ? (
-          // Fullscreen search results (no conversation)
-          <SearchResults
-            query={searchQuery}
-            results={searchResults}
-            onClose={handleCloseSearch}
-            onPasteToInput={handlePasteToInput}
-            onToggleFullscreen={handleToggleFullscreen}
-            fullscreen={true}
-          />
-        ) : (
-          // Split view (conversation + search results)
-          <SplitLayout
-            left={chatViewContent}
-            right={
-              <SearchResults
-                query={searchQuery}
-                results={searchResults}
-                onClose={handleCloseSearch}
-                onPasteToInput={handlePasteToInput}
-                onToggleFullscreen={handleToggleFullscreen}
-                fullscreen={false}
-              />
-            }
-            splitRatio={0.5}
-          />
-        )
-      ) : (
-        chatViewContent
-      )}
+      {finalContent}
     </Box>
   );
 }

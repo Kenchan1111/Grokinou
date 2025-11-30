@@ -54,16 +54,25 @@ export class BashTool {
         maxBuffer: 1024 * 1024
       });
 
-      const output = stdout + (stderr ? `\nSTDERR: ${stderr}` : '');
-      
+      // Return stdout and stderr separately for better debugging
       return {
         success: true,
-        output: output.trim() || 'Command executed successfully (no output)'
+        output: stdout.trim() || 'Command executed successfully (no output)',
+        stderr: stderr ? stderr.trim() : undefined,
+        exitCode: 0
       };
     } catch (error: any) {
+      // Extract exit code if available
+      const exitCode = error.code || 1;
+      const stderr = error.stderr || '';
+      const stdout = error.stdout || '';
+      
       return {
         success: false,
-        error: `Command failed: ${error.message}`
+        output: stdout ? stdout.trim() : undefined,
+        error: `Command failed (exit ${exitCode}): ${error.message}`,
+        stderr: stderr ? stderr.trim() : undefined,
+        exitCode
       };
     }
   }

@@ -29,6 +29,7 @@ import { providerManager } from "../utils/provider-manager.js";
 import { debugLog } from "../utils/debug-logger.js";
 import { getLLMHook } from "../timeline/hooks/llm-hook.js";
 import { getToolHook } from "../timeline/hooks/tool-hook.js";
+import { executionManager, ExecutionStream } from "../execution/index.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -68,6 +69,7 @@ export class GrokAgent extends EventEmitter {
   private autoRestoreSession: boolean = true;
   private llmHook = getLLMHook();
   private toolHook = getToolHook();
+  private currentExecutionStream: ExecutionStream | null = null;
 
   constructor(
     apiKey: string,
@@ -198,6 +200,17 @@ You have powerful tools for managing conversation sessions like Git branches:
 - NO special Git tools needed - use bash directly as you normally would
 - Commit after file changes: git commit -m "feat: description"
 - Push regularly: git push origin <branch>
+
+**BASH COMMAND BEST PRACTICES:**
+- NEVER use stderr redirection (2>&1) in bash commands
+- Stdout and stderr are captured separately for better debugging
+- Stderr is displayed in red in the Execution Viewer
+- Exit codes are tracked automatically
+- Examples:
+  ✅ GOOD: git status
+  ✅ GOOD: npm test
+  ❌ BAD: git status 2>&1
+  ❌ BAD: npm test 2>&1
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -887,6 +900,13 @@ Current working directory: ${process.cwd()}`,
     const startTime = Date.now();
     let startEventId: string = '';
     
+    // 📺 ExecutionViewer: Create execution stream
+    const executionStream = executionManager.createExecution(toolCall.function.name);
+    this.currentExecutionStream = executionStream;
+    
+    // 📺 COT: Initial thinking
+    executionStream.emitCOT('thinking', `Executing tool: ${toolCall.function.name}`);
+    
     // 🕐 Timeline: Capture tool call started
     try {
       const session = sessionManager.getCurrentSession();
@@ -904,6 +924,10 @@ Current working directory: ${process.cwd()}`,
     
     try {
       const args = JSON.parse(toolCall.function.arguments);
+      
+      // 📺 COT: Action with arguments
+      const argsPreview = JSON.stringify(args, null, 2).substring(0, 200);
+      executionStream.emitCOT('action', `Arguments: ${argsPreview}${argsPreview.length >= 200 ? '...' : ''}`);
 
       let result: ToolResult;
       
@@ -946,7 +970,45 @@ Current working directory: ${process.cwd()}`,
           break;
 
         case "bash":
+          // 📺 ExecutionViewer: Special handling for bash to capture output streaming
+          executionStream.emitCOT('action', `Running command: ${args.command}`);
+          executionStream.startCommand(args.command);
+          
           result = await this.bash.execute(args.command);
+          
+          // 📺 Capture stdout lines
+          if (result.output) {
+            const lines = result.output.split('\n');
+            lines.forEach(line => {
+              if (line.trim()) {
+                executionStream.commandOutput(line);
+              }
+            });
+          }
+          
+          // 📺 Capture stderr lines separately (if any)
+          if (result.stderr) {
+            const stderrLines = result.stderr.split('\n');
+            stderrLines.forEach(line => {
+              if (line.trim()) {
+                executionStream.commandOutput(`[STDERR] ${line}`);
+              }
+            });
+          }
+          
+          // 📺 End command with actual exit code
+          executionStream.endCommand(
+            result.exitCode || (result.success ? 0 : 1),
+            result.error
+          );
+          
+          // 📺 COT with detailed observation
+          const hasStderr = result.stderr && result.stderr.length > 0;
+          const observation = result.success 
+            ? `Command succeeded (${result.output?.split('\n').length || 0} stdout lines${hasStderr ? `, ${result.stderr.split('\n').length} stderr lines` : ''})`
+            : `Command failed (exit ${result.exitCode || 1}): ${result.error}`;
+          
+          executionStream.emitCOT('observation', observation);
           break;
 
         case "create_todo_list":
@@ -1108,6 +1170,21 @@ Current working directory: ${process.cwd()}`,
           }
       }
       
+      // 📺 ExecutionViewer: Final decision COT
+      executionStream.emitCOT(
+        'decision',
+        result.success 
+          ? `✅ Tool execution succeeded` 
+          : `❌ Tool execution failed: ${result.error}`
+      );
+      
+      // 📺 Complete the execution
+      executionStream.complete({
+        success: result.success,
+        output: result.output,
+        error: result.error,
+      });
+      
       // 🕐 Timeline: Capture tool call success
       try {
         const session = sessionManager.getCurrentSession();
@@ -1137,6 +1214,7 @@ Current working directory: ${process.cwd()}`,
         debugLog.log('⚠️  Timeline logging failed for tool result:', error);
       }
       
+      this.currentExecutionStream = null;
       return result;
     } catch (error: any) {
       const duration = Date.now() - startTime;
@@ -1144,6 +1222,12 @@ Current working directory: ${process.cwd()}`,
         success: false,
         error: `Tool execution error: ${error.message}`,
       };
+      
+      // 📺 ExecutionViewer: Fail the execution
+      if (executionStream) {
+        executionStream.emitCOT('decision', `❌ Exception: ${error.message}`);
+        executionStream.fail(error.message);
+      }
       
       // 🕐 Timeline: Capture tool call failed
       try {
@@ -1163,6 +1247,7 @@ Current working directory: ${process.cwd()}`,
         debugLog.log('⚠️  Timeline logging failed for tool error:', timelineError);
       }
       
+      this.currentExecutionStream = null;
       return errorResult;
     }
   }

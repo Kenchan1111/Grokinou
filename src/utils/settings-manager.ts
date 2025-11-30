@@ -22,6 +22,24 @@ export interface UserSettings {
 }
 
 /**
+ * Execution Viewer settings
+ */
+export interface ExecutionViewerSettings {
+  enabled?: boolean; // Enable/disable execution viewer
+  defaultMode?: 'hidden' | 'split' | 'fullscreen'; // Default mode
+  autoShow?: boolean; // Auto-show when execution starts
+  autoHide?: boolean; // Auto-hide when execution ends
+  autoHideDelay?: number; // Delay before auto-hide (ms)
+  splitRatio?: number; // Split ratio (0-1, default 0.6)
+  layout?: 'horizontal' | 'vertical'; // Split layout orientation
+  showCOT?: boolean; // Show Chain of Thought
+  showCommands?: boolean; // Show command executions
+  detailsMode?: boolean; // Show details by default
+  maxExecutionsShown?: number; // Max executions in history
+  colorScheme?: 'default' | 'minimal' | 'verbose'; // Color scheme
+}
+
+/**
  * Project-level settings stored in .grok/settings.json
  * These are project-specific settings
  */
@@ -30,6 +48,7 @@ export interface ProjectSettings {
   mcpServers?: Record<string, any>; // MCP server configurations
   persistSession?: boolean; // Persist chat session to .grok/session.jsonl
   autoRestoreSession?: boolean; // Auto-restore session on launch
+  executionViewer?: ExecutionViewerSettings; // Execution viewer configuration
 }
 
 /**
@@ -88,12 +107,31 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
 };
 
 /**
+ * Default values for execution viewer
+ */
+const DEFAULT_EXECUTION_VIEWER_SETTINGS: ExecutionViewerSettings = {
+  enabled: true,
+  defaultMode: 'hidden',
+  autoShow: true,
+  autoHide: false,
+  autoHideDelay: 5000,
+  splitRatio: 0.6,
+  layout: 'horizontal',
+  showCOT: true,
+  showCommands: true,
+  detailsMode: false,
+  maxExecutionsShown: 10,
+  colorScheme: 'default',
+};
+
+/**
  * Default values for project settings
  */
 const DEFAULT_PROJECT_SETTINGS: Partial<ProjectSettings> = {
   model: "grok-code-fast-1",
   persistSession: true,
   autoRestoreSession: true,
+  executionViewer: DEFAULT_EXECUTION_VIEWER_SETTINGS,
 };
 
 /**
@@ -439,6 +477,31 @@ export class SettingsManager {
     return (
       userBaseURL || DEFAULT_USER_SETTINGS.baseURL || "https://api.x.ai/v1"
     );
+  }
+
+  /**
+   * Get execution viewer settings (merged with defaults)
+   */
+  public getExecutionViewerSettings(): ExecutionViewerSettings {
+    const projectSettings = this.getProjectSetting("executionViewer") || {};
+    return {
+      ...DEFAULT_EXECUTION_VIEWER_SETTINGS,
+      ...projectSettings,
+    };
+  }
+
+  /**
+   * Update execution viewer setting
+   */
+  public updateExecutionViewerSetting<K extends keyof ExecutionViewerSettings>(
+    key: K,
+    value: ExecutionViewerSettings[K]
+  ): void {
+    const current = this.getProjectSetting("executionViewer") || {};
+    this.updateProjectSetting("executionViewer", {
+      ...current,
+      [key]: value,
+    });
   }
 }
 

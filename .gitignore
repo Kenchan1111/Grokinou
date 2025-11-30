@@ -42,13 +42,15 @@ Thumbs.db
 logs/
 *.log
 
-# Documentation (sauf README.md, REWIND_FEATURES.md, NEW_SESSION_FEATURES.md, LLM guides)
+# Documentation (sauf README.md et guides essentiels)
 *.md
 !README.md
 !REWIND_FEATURES.md
 !NEW_SESSION_FEATURES.md
 !LLM_TOOL_CLARIFICATION_GUIDE.md
 !LLM_TOOLS_OPTIONS_REFERENCE.md
+!test/README_COMPREHENSIVE_TESTS.md
+!MANUAL_TESTING_GUIDE.md
 
 # Analysis and audit reports (local only)
 SECURITY_AUDIT_*.md
@@ -56,6 +58,14 @@ ARCHITECTURE_TIME_MACHINE_ANALYSIS.md
 IMPLEMENTATION_TIMELINE_*.md
 TIMELINE_BLOCKCHAIN_ANALYSIS.md
 BRUTAL_HONEST_REVIEW_*.md
+CONCEPTS_*.md
+EXECUTION_VIEWER_*.md
+STDERR_*.md
+LAYOUT_*.md
+FINAL_*.md
+INTEGRITY_*.md
+SYNC_*.md
+MODULE_*.md
 
 # Runtime data
 pids/
