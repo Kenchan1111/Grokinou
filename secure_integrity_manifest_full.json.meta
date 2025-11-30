@@ -1,17 +1,12 @@
 {
-  "committed_baseline_hash": "86f8d427dfcfb388263b00630cb4f971804149ce1c7a1baff1c444e58b80616b",
-  "timestamp": "2025-11-29T08:13:54.952460+00:00",
-  "merkle_root": "a29f6805dbae98f589471d3e153353714b7467751df28280e688a9d268702fdf",
-  "total_files": 202,
+  "committed_baseline_hash": "4f59216ca5ecfcca7a50f31826a705971f8a50e06027db2e168fc6a6414a2811",
+  "timestamp": "2025-11-30T20:56:48.524461+00:00",
+  "merkle_root": "e448607ee370ad89fb12282f4a1b8c6efa343c8e60641e0b26c11637d04d75c4",
+  "total_files": 193,
   "last_commit": {
-    "hash": "dd7aca4182fe4cca967e89ef9c8b3effedfb0a03",
-    "time": "2025-11-29T09:13:54+01:00",
+    "hash": "276cd9cff2f9d4cb1a92e7741f95fb8489e3a7bd",
+    "time": "2025-11-30T21:56:48+01:00",
     "author": "zack",
-    "subject": "chore(integrity): anchor new-session features (350066b) - TSA+Sigstore+OTS"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251129_081358.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.20251129T081359Z.committed.sigstore.bundle.json",
-  "sigstore_snapshot": "integrity_snapshots/secure_integrity_manifest_full.json.20251129T081359Z.committed",
-  "sigstore_rekor_index": 731408740,
-  "sigstore_chain_entry": 7
+    "subject": "test: Final verification of .committed deletion bug fix"
+  }
 }
