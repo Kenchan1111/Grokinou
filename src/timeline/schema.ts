@@ -105,11 +105,18 @@ CREATE TABLE IF NOT EXISTS metadata (
     updated_at INTEGER NOT NULL
 );
 
-INSERT OR REPLACE INTO metadata (key, value, updated_at) VALUES
+-- Insert metadata only if keys don't exist (idempotent)
+-- Using INSERT OR IGNORE to preserve existing values (e.g., last_sequence)
+INSERT OR IGNORE INTO metadata (key, value, updated_at) VALUES
     ('schema_version', '1.0.0', strftime('%s', 'now') * 1000000),
     ('created_at', strftime('%s', 'now') * 1000000, strftime('%s', 'now') * 1000000),
     ('last_sequence', '0', strftime('%s', 'now') * 1000000),
     ('last_snapshot_sequence', '0', strftime('%s', 'now') * 1000000);
+
+-- Update schema_version separately (can be updated on schema changes)
+UPDATE metadata 
+SET value = '1.0.0', updated_at = strftime('%s', 'now') * 1000000
+WHERE key = 'schema_version';
 
 CREATE VIEW IF NOT EXISTS v_recent_events AS
 SELECT 
