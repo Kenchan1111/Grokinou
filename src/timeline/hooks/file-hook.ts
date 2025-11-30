@@ -21,6 +21,7 @@ import path from 'path';
 import { EventBus } from '../event-bus.js';
 import { EventType } from '../event-types.js';
 import type { FileModifiedPayload } from '../event-types.js';
+import { getMerkleDAG } from '../storage/merkle-dag.js';
 
 /**
  * File Hook Configuration
@@ -213,7 +214,7 @@ export class FileHook {
           const stats = fs.statSync(absolutePath);
           size = stats.size;
 
-          // Hash content only for files within size limit
+          // Hash + store content in Merkle DAG only for files within size limit
           if (size <= this.config.maxFileSizeForHash) {
             contentHash = await this.hashFileContent(absolutePath);
           }
@@ -255,14 +256,15 @@ export class FileHook {
    * Calculate SHA256 hash of file content
    */
   private async hashFileContent(filePath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const hash = crypto.createHash('sha256');
-      const stream = fs.createReadStream(filePath);
+    // Read full content (bounded by maxFileSizeForHash via caller)
+    const content = await fs.promises.readFile(filePath);
 
-      stream.on('data', (chunk) => hash.update(chunk));
-      stream.on('end', () => resolve(hash.digest('hex')));
-      stream.on('error', reject);
-    });
+    // Store blob in Merkle DAG (content-addressable storage)
+    const merkle = getMerkleDAG();
+    const result = await merkle.storeBlob(content);
+
+    // Return the content hash used as key in Merkle DAG
+    return result.hash;
   }
 
   /**

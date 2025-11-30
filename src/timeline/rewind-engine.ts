@@ -168,7 +168,7 @@ interface SessionState {
  */
 interface FileState {
   path: string;
-  contentHash: string;
+  contentHash: string | null;
   exists: boolean;
   lastModified: number;
 }
@@ -354,6 +354,11 @@ export class RewindEngine {
         for (const [filePath, fileState] of currentFiles.entries()) {
           if (fileState.exists) {
             try {
+              // Only attempt restore if we have a content hash
+              if (!fileState.contentHash) {
+                continue;
+              }
+
               // Try to restore from Merkle DAG
               const blob = await this.merkleDAG.retrieveBlob(fileState.contentHash);
               if (blob) {
@@ -670,7 +675,7 @@ export class RewindEngine {
       case EventType.FILE_MODIFIED:
         newFiles.set(payload.path, {
           path: payload.path,
-          contentHash: payload.new_hash || payload.content_hash,
+          contentHash: payload.new_hash || payload.content_hash || null,
           exists: true,
           lastModified: event.timestamp,
         });
