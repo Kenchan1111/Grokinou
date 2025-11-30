@@ -11,6 +11,7 @@ import { pasteManager } from "../utils/paste-manager.js";
 import { providerManager } from "../utils/provider-manager.js";
 import { sessionManager } from "../utils/session-manager-sqlite.js";
 import { generateStatusMessage } from "../utils/status-message.js";
+import { HelpFormatter } from "../utils/help-formatter.js";
 
 /**
  * Parse date from various formats:
@@ -420,108 +421,17 @@ export function useInputHandler({
       return true;
     }
 
-    if (trimmedInput === "/help") {
+    if (trimmedInput === "/help" || trimmedInput.startsWith("/help ")) {
+      const parts = trimmedInput.split(/\s+/);
+      const subCommand = parts.length > 1 ? parts[1] : undefined;
+      
+      const helpContent = subCommand
+        ? HelpFormatter.generateCommandHelp(subCommand)
+        : HelpFormatter.generateHelp(agent);
+      
       const helpEntry: ChatEntry = {
         type: "assistant",
-        content: `Grok CLI Help:
-
-Built-in Commands:
-  /clear      - Clear chat history
-  /clear-session - Clear in-memory chat session only
-  /clear-disk-session - Delete persisted session files and clear memory
-  /help       - Show this help
-  /status     - Show current model and provider info
-  /models     - Switch between available models
-  /list_sessions - List all sessions in current directory
-  /switch-session <id> - Switch to a different session by ID
-  /rename_session <name> - Rename the current session
-  /new-session [options] - Create a new session (Git-like branching)
-      Directory Options:
-      --directory <path>     Create session in different directory
-      
-      Initialization Options (choose one):
-      --clone-git            Clone current Git repository to target directory
-      --copy-files           Copy files from current directory (excluding .git)
-      --from-rewind <time>   Initialize from a rewind state (uses event sourcing)
-      
-      History Import Options:
-      --import-history       Import messages from source session
-      --from-session <id>    Import from specific session (default: current)
-      --from-date <date>     Import messages from this date onwards
-      --to-date <date>       Import messages up to this date
-      --date-range <start> <end>  Import messages between dates
-      
-      Model Options:
-      --model <name>         Start with specific model
-      --provider <name>      Start with specific provider
-      
-      Date formats: DD/MM/YYYY, YYYY-MM-DD, "today", "yesterday"
-      
-      Examples:
-        /new-session --directory ~/project --clone-git
-        /new-session --copy-files --import-history
-        /new-session --from-rewind "2025-11-28T10:00:00Z" --directory ~/recovered
-        /new-session --from-session 5 --date-range 01/11/2025 03/11/2025
-  /list_tools - List all tools available to LLMs (with descriptions)
-  /search <query> - Search in conversation history
-  /exit       - Exit application
-  exit, quit  - Exit application
-
-Time Machine Commands (Event Sourcing):
-  /timeline [options] - Query timeline events (files, git, conversations, tools)
-      --start <time>      Start time (ISO or relative: "2 hours ago")
-      --end <time>        End time
-      --category <cat>    Filter: SESSION, LLM, TOOL, FILE, GIT, REWIND
-      --session <id>      Filter by session ID
-      --limit <n>         Max results (default: 100)
-      --search <text>     Search in event payloads
-      --stats             Show statistics only
-      Example: /timeline --category FILE --limit 20
-  /rewind <timestamp> [options] - Time-travel to exact moment (non-destructive)
-      <timestamp>         Target time (ISO: "2025-11-28T12:00:00Z")
-      --output <dir>      Custom output directory (default: .rewind_*)
-      --git-mode <mode>   Git materialization:
-          none            No git (just files + conversations)
-          metadata        git_state.json only (fast, default)
-          full            Complete .git repo you can work with (slow)
-      --no-files          Don't restore file contents
-      --no-conversations  Don't restore chat history
-      --no-git            Alias for --git-mode none
-      Examples:
-        /rewind "2025-11-28T10:00:00Z" --output ~/recovered
-        /rewind "2025-11-28T10:00:00Z" --git-mode full
-  /snapshots - List all available rewind points (snapshots + recent events)
-  /rewind-history - Show history of all rewind operations performed
-
-Git Commands:
-  /commit-and-push - AI-generated commit + push to remote
-
-Enhanced Input Features:
-  ↑/↓ Arrow   - Navigate command history
-  Ctrl+C      - Clear input (press twice to exit)
-  Ctrl+←/→    - Move by word
-  Ctrl+A/E    - Move to line start/end
-  Ctrl+W      - Delete word before cursor
-  Ctrl+K      - Delete to end of line
-  Ctrl+U      - Delete to start of line
-  Shift+Tab   - Toggle auto-edit mode (bypass confirmations)
-
-Direct Commands (executed immediately):
-  ls [path]   - List directory contents
-  pwd         - Show current directory
-  cd <path>   - Change directory
-  cat <file>  - View file contents
-  mkdir <dir> - Create directory
-  touch <file>- Create empty file
-
-Model Configuration:
-  Edit ~/.grok/models.json to add custom models (Claude, GPT, Gemini, etc.)
-
-For complex operations, just describe what you want in natural language.
-Examples:
-  "edit package.json and add a new script"
-  "create a new React component called Header"
-  "show me all TypeScript files in this project"`,
+        content: helpContent,
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, helpEntry]);
