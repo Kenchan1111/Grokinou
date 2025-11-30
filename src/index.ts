@@ -12,6 +12,7 @@ import { createMCPCommand } from "./commands/mcp.js";
 import type { ChatCompletionMessageParam } from "openai/resources/chat";
 import { loadTomlConfig, applyKeyValue, resolveEffectiveConfig } from "./utils/config.js";
 import { initTimeline } from "./timeline/index.js";
+import { autoStartWatcher } from "./security/watcher-daemon.js";
 
 // Load environment variables
 dotenv.config();
@@ -750,5 +751,10 @@ const execCommand = program
     }
   });
 
+// 🛡️ AUTO-START WATCHER DAEMON (if enabled)
+// Détection "à rebours" : fichiers altérés AVANT lancement seront détectés
+autoStartWatcher(process.cwd()).catch(error => {
+  console.warn('⚠️  Failed to auto-start watcher daemon:', error.message);
+});
+
 program.parse();
-// MALICIOUS CODE INJECTION!
