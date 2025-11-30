@@ -143,19 +143,39 @@ export class TimelineDatabase {
   /**
    * Increment and return next sequence number
    * 
-   * Thread-safe via SQLite's BEGIN IMMEDIATE transaction.
+   * Thread-safe via SQLite's transaction.
+   * Auto-repairs if last_sequence is out of sync with actual events.
    */
   public getNextSequence(): number {
-    const stmt = this.db.prepare(`
-      UPDATE metadata 
-      SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT),
-          updated_at = ?
-      WHERE key = 'last_sequence'
-      RETURNING CAST(value AS INTEGER) as seq
-    `);
+    // Use transaction for thread-safety
+    const getNext = this.db.transaction(() => {
+      // Get current last_sequence from metadata
+      const currentSeq = parseInt(this.getMetadata('last_sequence') || '0', 10);
+      
+      // Safety check: verify against actual max sequence in events table
+      const maxSeqRow = this.db.prepare('SELECT COALESCE(MAX(sequence_number), 0) as max_seq FROM events').get() as { max_seq: number };
+      const maxSeq = maxSeqRow.max_seq;
+      
+      // If metadata is out of sync, repair it
+      let nextSeq = currentSeq + 1;
+      if (currentSeq < maxSeq) {
+        console.warn(`⚠️  Timeline sequence counter out of sync (metadata: ${currentSeq}, actual: ${maxSeq}). Auto-repairing...`);
+        nextSeq = maxSeq + 1;
+      }
+      
+      // Update metadata with new sequence
+      const updateStmt = this.db.prepare(`
+        UPDATE metadata 
+        SET value = ?,
+            updated_at = ?
+        WHERE key = 'last_sequence'
+      `);
+      updateStmt.run(nextSeq.toString(), Date.now() * 1000);
+      
+      return nextSeq;
+    });
     
-    const result = stmt.get(Date.now() * 1000) as { seq: number } | undefined;
-    return result?.seq || 1;
+    return getNext();
   }
   
   /**
