@@ -646,13 +646,17 @@ Current working directory: ${process.cwd()}`,
       if (hadToolCalls) {
         const contentTrimmed = finalAssistantContent.trim();
         
+        // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
+        if (contentTrimmed === "Using tools to help you...") {
+          debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
+          return newEntries;
+        }
+        
         // Générer synthèse si :
-        // - Réponse vide/placeholder
+        // - Réponse vide
         // - Réponse trop courte (< 150 caractères)
-        // - Juste le message par défaut sans analyse
         const needsSummary =
           !contentTrimmed ||
-          contentTrimmed === "Using tools to help you..." ||
           contentTrimmed.length < 150;
         
         if (needsSummary) {
@@ -970,13 +974,18 @@ Current working directory: ${process.cwd()}`,
       if (hadToolCalls) {
         const contentTrimmed = finalAssistantContent.trim();
         
+        // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
+        if (contentTrimmed === "Using tools to help you...") {
+          debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
+          yield { type: "done" };
+          return;
+        }
+        
         // Générer synthèse si :
-        // - Réponse vide/placeholder
+        // - Réponse vide
         // - Réponse trop courte (< 150 caractères)
-        // - Juste le message par défaut sans analyse
         const needsSummary =
           !contentTrimmed ||
-          contentTrimmed === "Using tools to help you..." ||
           contentTrimmed.length < 150;
         
         if (needsSummary) {
