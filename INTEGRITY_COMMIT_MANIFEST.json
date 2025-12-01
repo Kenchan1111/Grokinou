@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-12-01T01:11:28.857333",
+  "repository": "/home/zack/GROK_CLI/grok-cli",
+  "commit_type": "dual_merkle_integrity",
+  "code_merkle": {
+    "root": "1c54e0d14a7a694c1d779ed0f8a09204893a070df84bd6067eb403b2091d9a59",
+    "file_count": 511,
+    "description": "Program code (all files except .md)"
+  },
+  "documentation_merkle": {
+    "root": "d21dc2ff5ff290c3a4838406ca2122fd49cc23e84c90871b2b53fe6f56324986",
+    "file_count": 112,
+    "description": "Documentation files (.md) - signed without git commit"
+  },
+  "git_info": {
+    "commit": "7a028bdc5eb4185f6ae937f0df94b04fae4bacdf",
+    "branch": "main"
+  }
+}

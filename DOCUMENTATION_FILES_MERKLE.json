@@ -1,0 +1,567 @@
+{
+  "merkle_root": "d21dc2ff5ff290c3a4838406ca2122fd49cc23e84c90871b2b53fe6f56324986",
+  "file_count": 112,
+  "files": [
+    {
+      "path": "ARCHITECTURE_ANALYSIS.md",
+      "hash": "8412855a82121d5bf2416251391d7b7af0cbe145f6c76169ab9ac9baaef5ef0b",
+      "size": 8700
+    },
+    {
+      "path": "BUGFIX_SUMMARY.md",
+      "hash": "02b9ceed8d5e1c71980ff741370f6891a37a2ae629de725be9ba45628075b629",
+      "size": 4250
+    },
+    {
+      "path": "BUGFIX_TIMELINE_SEQUENCE.md",
+      "hash": "ebbc0a81ecdcbae19af0c058be794870c9735f9c6fa3d594c60e74b89c816684",
+      "size": 6681
+    },
+    {
+      "path": "CHANGELOG_API_KEY_INPUT.md",
+      "hash": "98ff0d639bcab3c040930a7d91d275f6cfadd6393643c6f90a3958b8e78ba641",
+      "size": 11270
+    },
+    {
+      "path": "CHATGPT_FEEDBACK_FIXES.md",
+      "hash": "1ab69e1a898a67eb039c5c9301ee8b130d57581c865da17e3f6f7e565980ad21",
+      "size": 17040
+    },
+    {
+      "path": "CHATGPT_REGRESSION_FIXES.md",
+      "hash": "5f8e44197c5fd5633daa56ad55fc78300cdb932c59ffc43018dc058077680602",
+      "size": 17230
+    },
+    {
+      "path": "CODEX_VS_GROK_TOOL_LIMITS.md",
+      "hash": "348efab030567c3c1edab76ae7a03d85b6d86f1eea1dbea7140e14f389555c99",
+      "size": 7175
+    },
+    {
+      "path": "COMMIT_ARCHITECTURE.md",
+      "hash": "e9494b75dd9704c362777e713305af3434b48a30edd03e02d6b8093dc88ccb6d",
+      "size": 7388
+    },
+    {
+      "path": "COMMIT_STRATEGY.md",
+      "hash": "42f0e0ce05fb5a7057e6b3fc5f024f1f93a0d88965efa91d5ccc0140f47c4cf7",
+      "size": 9132
+    },
+    {
+      "path": "CONCEPTS_AMELIORATIONS.md",
+      "hash": "2086b1a75d6a15dce012782200ba1fe4e7a50574ce15f26bf63e6582958c0bdf",
+      "size": 34246
+    },
+    {
+      "path": "CORRECTIONS_IMPLEMENTED.md",
+      "hash": "6e5fc45b066dbe35d55a6f54ce6bf39713798d6801a70c1aaa176be731319053",
+      "size": 15114
+    },
+    {
+      "path": "CRYPTOGRAPHIC_INTEGRITY_REPORT.md",
+      "hash": "c27133c24d8ac9f43fac3fcf84adce1d57481f33990c27d78b4acdbc17bb5d23",
+      "size": 11576
+    },
+    {
+      "path": "DANGLING_COMMITS_ANALYSIS.md",
+      "hash": "f9c7828f47d8565984344c9a67e5db02f48bbe435a6dd4f4c681db488102abc4",
+      "size": 6785
+    },
+    {
+      "path": "DOCS_CREATION_SUCCESS.md",
+      "hash": "e12fc7ca627be60f4fd27b5fed0564a7afa0ae1cec240e370cf426010822b40a",
+      "size": 11008
+    },
+    {
+      "path": "DOCUMENTATION_SUMMARY.md",
+      "hash": "87ef258e63da50685529d4b1d92ac5a910ea9190f79bc5ff3cf34a556b6f2085",
+      "size": 9556
+    },
+    {
+      "path": "EXECUTION_VIEWER_COMPLETE.md",
+      "hash": "3f0eb11de23bed4d589ec4392c36f55eac97c27d062c611c6ca24067bdfce4d9",
+      "size": 14621
+    },
+    {
+      "path": "EXECUTION_VIEWER_DESIGN.md",
+      "hash": "5c66d9da891e07210cb87f1c73a08c582e90ecc6748ce6d18b37478e0c6e46d8",
+      "size": 24682
+    },
+    {
+      "path": "EXECUTION_VIEWER_STATUS.md",
+      "hash": "8090b7e38b418add54de2ec721e7f055b8f328302c5f4e8a65f53e1d6dce2aa1",
+      "size": 11217
+    },
+    {
+      "path": "FINAL_ARCHITECTURE.md",
+      "hash": "0a319cd72446c9950f1d0eb01f06e3120cd19713db0391bd6b90df181b0764d4",
+      "size": 6958
+    },
+    {
+      "path": "FINAL_IMPLEMENTATION_SUMMARY.md",
+      "hash": "002ce827ef401a1b945a81c820061e717116d35fbc3cf2d1e62c2532ce467612",
+      "size": 11391
+    },
+    {
+      "path": "FINAL_ROOT_CAUSE_REPORT.md",
+      "hash": "f1e32995398f481549614a13fbf1cdf09597504e05b9b1f99569c35a4c7bd150",
+      "size": 9659
+    },
+    {
+      "path": "FULLSCREEN_MODE_GUIDE.md",
+      "hash": "0799d486bb5340690edcb7c68ea4f2d699ff0af01cf51364985e9fd016851cd6",
+      "size": 5809
+    },
+    {
+      "path": "GPT5_BUGFIX_TOOL_LOOP.md",
+      "hash": "b14fff761083ca00b69fcc8f50a2a1796a80775b10333b83aa72306d7033cfe8",
+      "size": 4867
+    },
+    {
+      "path": "GPT5_STREAMING_ANALYSIS.md",
+      "hash": "6fff18712b642913c138d35360db28b90af2747c4c5283d7590641b6b059f9a0",
+      "size": 6390
+    },
+    {
+      "path": "GROKINOU_README.md",
+      "hash": "ba673ea272ff37df8f5240c7d8fe49c8b89431562f8d2127ea6f83263ecb91e1",
+      "size": 8074
+    },
+    {
+      "path": "HELP.md",
+      "hash": "2c084b34dbab4ddb5f6a068b917685b0e0e15dfa570150a56941bdcda7f87508",
+      "size": 18982
+    },
+    {
+      "path": "IDENTITY_FIX.md",
+      "hash": "c5a0a3a77625df5594ac9b44932e680df2ab9b9154538ba9abcd6eb17b6549f2",
+      "size": 8116
+    },
+    {
+      "path": "IMAGE_PATH_DETECTION.md",
+      "hash": "fbf1580e3f34ee78d3a64891267cc0121769f9b46a7af5c3b4e804b924d0e141",
+      "size": 7567
+    },
+    {
+      "path": "IMPLEMENTATION_STATUS.md",
+      "hash": "6ec14ae6258adc29fc846db08c1585124804a1e5efe1538a9de185b51e75310d",
+      "size": 14253
+    },
+    {
+      "path": "INTEGRITY_COMMIT_SUCCESS.md",
+      "hash": "3d8de53d513c5bea829d35a6a66a01aab765e40e35e5c5ef672208b64f85b801",
+      "size": 7898
+    },
+    {
+      "path": "INTEGRITY_REPORT_FINAL.md",
+      "hash": "52b71b3f0a2abdc1c540797f628e56c544fa9c84406c70a731df02bb8d3415e4",
+      "size": 8174
+    },
+    {
+      "path": "INTEGRITY_VERIFICATION_REPORT.md",
+      "hash": "7e7010f826c71a0ce1763ce1d14ae49c8bdafa9f9f9ce3f12aa451f0f1009353",
+      "size": 6377
+    },
+    {
+      "path": "INTEGRITY_VERIFICATION_REPORT_20251130.md",
+      "hash": "6d084d2ee900215474e1e26bf73324e378233ccf6c0d1f471200dcf50e35a5ae",
+      "size": 5380
+    },
+    {
+      "path": "INTEGRITY_WATCHER_README.md",
+      "hash": "ce207d5109a010c7172f83e864a3266fd1c23beacedab57e4213abd732f7b2c0",
+      "size": 12586
+    },
+    {
+      "path": "LAYOUT_CLARIFICATION.md",
+      "hash": "b49b7d4e4cd8f80ed9c53b5f53a650d244f8688e386d2f8b0a5552d638de1722",
+      "size": 5357
+    },
+    {
+      "path": "LLM_GUARD_QUICKSTART.md",
+      "hash": "44a920bdca2df1542cf3472e59cf52bcdf9c2d0367ee5fb1874ef7699cb7203f",
+      "size": 5425
+    },
+    {
+      "path": "LLM_GUARD_README.md",
+      "hash": "c6098261840b86440a7050cee075970c6aa2d82e9e7f7e04bc104072f763cd3e",
+      "size": 17903
+    },
+    {
+      "path": "LLM_TOOLS_OPTIONS_REFERENCE.md",
+      "hash": "505c379a4c0c48ec273165dc625ac4a9f411b02c9e5cb003d43f04970147a69c",
+      "size": 12971
+    },
+    {
+      "path": "LLM_TOOL_CLARIFICATION_GUIDE.md",
+      "hash": "14e2c2659c2e87d5f43215b856dcdf6d5bc376be00f81f7e37dad949794bbd3e",
+      "size": 8538
+    },
+    {
+      "path": "MANUAL_TESTING_GUIDE.md",
+      "hash": "d07383f5386b19ebc226cdd7fdaedcfdb90484b5a6b7043f53643fb8b22a0e92",
+      "size": 11163
+    },
+    {
+      "path": "MIGRATION_GUIDE.md",
+      "hash": "f62b5744158d755263d3e145eb4734c6473747bf35f45967b8996c74f82b1aa2",
+      "size": 6016
+    },
+    {
+      "path": "MISTRAL_COMPLIANCE_CHECK.md",
+      "hash": "0710bee4bfec44c29815b0134839597041c21d4edee3e7148ed0f43252d84ae3",
+      "size": 7215
+    },
+    {
+      "path": "MISTRAL_FIX_HISTORY.md",
+      "hash": "bd5ee6524dc18666c5e10b5136f63f680f738b9ed858004840614e94c8b1c53a",
+      "size": 8476
+    },
+    {
+      "path": "MODERN_HELP_PREVIEW.md",
+      "hash": "e36557562e5e07e7ade1caf32672e1120e42f03ae8bbb740e4bc37c92972b4f8",
+      "size": 12779
+    },
+    {
+      "path": "MODULE_ANALYSIS_REPORT.md",
+      "hash": "e9ac8eab9fa9e55cafb80f842ccb008fd296632e1913e496be082e2543c47153",
+      "size": 7137
+    },
+    {
+      "path": "MODULE_REMOVAL_REPORT.md",
+      "hash": "fb13ecb26c07eebc59318bc1b23b6df5676c781d5e64387d69d7b31bf135a443",
+      "size": 2073
+    },
+    {
+      "path": "NEW_SESSION_FEATURES.md",
+      "hash": "c4f74bff15fa2925f43dfddd1efb32e841302ef654a124d7b9b2814e152c56b2",
+      "size": 14212
+    },
+    {
+      "path": "NEXT_STEPS.md",
+      "hash": "3d0572fd586feb482742da9f8162baee3080b897f7e21c6e1e398032f7999156",
+      "size": 6544
+    },
+    {
+      "path": "PASTE_LINK_FEATURE.md",
+      "hash": "d42ea17191753c02b09101fe928f4222fa96a182137d152b083b012eca34030c",
+      "size": 6734
+    },
+    {
+      "path": "PATENT_ANALYSIS_2025.md",
+      "hash": "a3af5c288cd4bb4d336a2af4752f23b3dc15676d290cd83881b99580e87d66de",
+      "size": 23406
+    },
+    {
+      "path": "PATENT_DECISION_MATRIX.md",
+      "hash": "a23235d0f51b272c328db47afdade836ac9f7f0ad4ac1f8e98c9930511e0fef7",
+      "size": 8354
+    },
+    {
+      "path": "PHASES_QUICK_VIEW.md",
+      "hash": "79c134542ddab4beb5bb4421264c84cec99a727c6bf23753a27101e44bc6e4f1",
+      "size": 13368
+    },
+    {
+      "path": "PLAN_APIKEY_MANAGEMENT.md",
+      "hash": "9b6a7a7db99588b2ef2ba064263edfc744a9e95acdb4d5cc69c7052f451b4e36",
+      "size": 16808
+    },
+    {
+      "path": "PLAN_MODEL_MANAGEMENT.md",
+      "hash": "2d3d902d67512968f6972679209310223820aa5a9892ca5bac7095f6c0e17ad8",
+      "size": 20644
+    },
+    {
+      "path": "PLAN_MODEL_MANAGEMENT_V2.md",
+      "hash": "68694cce21fb260d0a096fffff6b7d29981318ffe955c8c41496291f051e9946",
+      "size": 13095
+    },
+    {
+      "path": "PLAN_SQLITE_MIGRATION.md",
+      "hash": "c49e74820ff2034db4f1dc864b1d18552b7c2a96ef465c26d9976b6c73c29e26",
+      "size": 18319
+    },
+    {
+      "path": "POST_MORTEM_MISTRAL_DEBUG.md",
+      "hash": "62eb4e301d93b6a0fdd50cb9d6ef8415fd3337bb648a0c35d41074c5abde5405",
+      "size": 9910
+    },
+    {
+      "path": "QUICK_START_GIT_LIKE.md",
+      "hash": "93cbd288089855b6c3221860325192f52979f7df71fbda17c76bd568548078c7",
+      "size": 4097
+    },
+    {
+      "path": "README.md",
+      "hash": "03233eccbc8ac4b237e39f468d2b34ececd393f7252dfa9685d117e83bba0690",
+      "size": 13459
+    },
+    {
+      "path": "REFACTORING_TEST.md",
+      "hash": "946c6c3cb527709988190d590a2faedd858be505fdf22e43df2ebcd47b56f9d6",
+      "size": 19
+    },
+    {
+      "path": "RESUME_OPTIMISATIONS.md",
+      "hash": "2f533f745fe3a24217721de7cbe87fb182ae88a7aeea9ea8376977337f4a3000",
+      "size": 4510
+    },
+    {
+      "path": "REWIND_FEATURES.md",
+      "hash": "0c057d646197d1c21e7f24034a8a5170fce44d03904dd9a486ae1419170dac06",
+      "size": 17578
+    },
+    {
+      "path": "ROADMAP.md",
+      "hash": "7fe335176c31090fc83d59f80699c0a267d1e4c4982e852b5d4b1978f8394f34",
+      "size": 13745
+    },
+    {
+      "path": "ROOT_CAUSE_ANALYSIS.md",
+      "hash": "2200a1c415bfbd54eaef2e0f7090c65f00d6cba80999d92a8b69f7eb735a4808",
+      "size": 8133
+    },
+    {
+      "path": "SEARCH_FEATURE_ENHANCED.md",
+      "hash": "a073f79188a2e822dda4be0a8724b20776aa508de90ddf0d6cca3186ab0f8a72",
+      "size": 28571
+    },
+    {
+      "path": "SEARCH_FEATURE_PLAN.md",
+      "hash": "7887416f18cbb29b4104e0d23d17c04f69a86584a29c6422fef7a2dd5a72dc31",
+      "size": 16180
+    },
+    {
+      "path": "SEARCH_FEATURE_READY.md",
+      "hash": "13d70ca191c724ce46be307d10ffb3a5ea12d7bf22ea44828dcf0120ad4bc6e2",
+      "size": 8876
+    },
+    {
+      "path": "SEARCH_FIXES.md",
+      "hash": "9bfc738dd055573326b1dbf3f60d7ed468053aea5822a6be9912c59729e655b9",
+      "size": 8058
+    },
+    {
+      "path": "SEARCH_SCROLL_FIX.md",
+      "hash": "82c951504cf4dd6c332c78854ed84d856a0d203e2d0e8ae46acc2127d7afb24b",
+      "size": 10263
+    },
+    {
+      "path": "SEARCH_VIEWPORT_FIX.md",
+      "hash": "79bff6b4d6e6383e23c217765a4a43c7b7deed62b6c70cfb70ccd6b279d07d5d",
+      "size": 10953
+    },
+    {
+      "path": "SECURITY_AUDIT_FOLLOW_UP.md",
+      "hash": "8c562ec8efcfcf70e92947d08e9755efe4126a7fe4232245b489e9b64e3cf299",
+      "size": 24969
+    },
+    {
+      "path": "SECURITY_AUDIT_INTEGRITY_SYSTEM.md",
+      "hash": "9b15c13a8ff59b48d0ac2ce4c424b537a3854541193426d273a2b2875484cbb9",
+      "size": 25957
+    },
+    {
+      "path": "SECURITY_QUICK_START.md",
+      "hash": "8622440c49bf7b4fba37a1bfb5100cf7a7355d8155a43ce9853fbc6c221ebafa",
+      "size": 10089
+    },
+    {
+      "path": "SECURITY_SYSTEM_AUDIT_TRACKLIST.md",
+      "hash": "f70097895b5f5c1c3cdbec7f5191d7604360a45f283d9270c81e31dea938944f",
+      "size": 25968
+    },
+    {
+      "path": "SECURITY_SYSTEM_COMPLETE.md",
+      "hash": "21f43eff9b14efb3564ebbab5fb212eace4bee2a83cf2fcfff7a26798c2af70b",
+      "size": 21389
+    },
+    {
+      "path": "SECURITY_WATCHER_GUIDE.md",
+      "hash": "9d4a1ce46d3335b16aca8ca86a2f0386eb641f49e3c248232bb023fb35a94232",
+      "size": 18233
+    },
+    {
+      "path": "SECURITY_WATCHER_SUMMARY.md",
+      "hash": "68787f545b28b63638edb6730676aa583f250eb1530f405b63e871f5270812b8",
+      "size": 14831
+    },
+    {
+      "path": "SELF_INTEGRITY_PROTECTION.md",
+      "hash": "d6e8fc67ceed0910524667c647f8e3aa452d0354774313edf6966a1210b0005a",
+      "size": 14563
+    },
+    {
+      "path": "SESSION_AUDIT.md",
+      "hash": "402769025814c933ba8d8b1ad474c7895d91513a078145b72b1af7de75d04a17",
+      "size": 9416
+    },
+    {
+      "path": "SIGNATURE_INTEGRITY_STATUS_20251130.md",
+      "hash": "e0e0a238ebcd385b4a0d4c54ef9fcc9e13ccc3ccff41eb22ae7fe0c9e89a6fee",
+      "size": 7674
+    },
+    {
+      "path": "SQLITE_IMPLEMENTATION_COMPLETE.md",
+      "hash": "570a22dadd61a931b4a170a20e2c4e5f67850308122a68af6e18c336a301ee74",
+      "size": 6306
+    },
+    {
+      "path": "STATIC_RENDERING_FIX.md",
+      "hash": "64c779cde873c72e7daeebe2e1ce10fe16fec01f34e02028a62d26e0504434ed",
+      "size": 4690
+    },
+    {
+      "path": "STDERR_DEBUGGING_ENHANCEMENT.md",
+      "hash": "59fd26843baf2cd4467c03567aab1743551b6b1b01bbb2988983cd34a13f588e",
+      "size": 9386
+    },
+    {
+      "path": "SYNC_STATUS.md",
+      "hash": "1f33dc0cf766916cccd7e23eae341e0f1e5a50209c922a5b070e1c02d96a1384",
+      "size": 7077
+    },
+    {
+      "path": "SYSTEM_MESSAGE_FIX.md",
+      "hash": "802d9d984c954d0e3f60a087d84d433b5ebab41bbdcfdeb3b1d94374d5bbeeac",
+      "size": 6726
+    },
+    {
+      "path": "SYSTEM_MESSAGE_PURGE_FIX.md",
+      "hash": "0b0b1244c8a27a94b4b85a623f2692fe1d6a31a5c2aea8e69dba2ee473cf8af2",
+      "size": 9639
+    },
+    {
+      "path": "SYSTEM_MESSAGE_PURGE_VERIFICATION.md",
+      "hash": "15329f6c64802dfb521c2ca386b4e754581a18ef2bb0803aa113b393f0f81044",
+      "size": 5941
+    },
+    {
+      "path": "TESTING.md",
+      "hash": "336521604b9f0c15776993b0059173b7cca5cafc079e2b40392a83d5c7ae3248",
+      "size": 19163
+    },
+    {
+      "path": "TESTING_CHECKLIST.md",
+      "hash": "3cbb755175d320dea25c74c5110e5045b814ede10e8dfea3171644e6e052e17e",
+      "size": 15460
+    },
+    {
+      "path": "TESTING_COMMANDS_GUIDE.md",
+      "hash": "13a091d4c6e943999119ca64e3c9adb0090a17f28a415e7549520353d904e8cd",
+      "size": 22667
+    },
+    {
+      "path": "TESTING_QUICK.md",
+      "hash": "3fe9b021ce48e088223494c1ab5815e111c515db5c51754c2486ac626865eca0",
+      "size": 4644
+    },
+    {
+      "path": "TESTS_SUMMARY.md",
+      "hash": "7aa9541ce1287722bbcc77b32300410e2e107561f24d760b2c7207c3b5f740e5",
+      "size": 6592
+    },
+    {
+      "path": "TEST_API_KEY_INPUT.md",
+      "hash": "4505e29455288b7f988b57d8290941b8ea8f22f0c0ad60b32cba892b9fd9e02a",
+      "size": 6751
+    },
+    {
+      "path": "TEST_FINAL.md",
+      "hash": "0f2e5b2edb81cd8a84a1740ecfc237f362aefc9b6d6388ed29c1ae04a4bbb55e",
+      "size": 2229
+    },
+    {
+      "path": "TEST_RESULTS.md",
+      "hash": "a14786a4b3ad7eb7daa898fcff7188372f2730d12438f468767a27b242570a00",
+      "size": 4086
+    },
+    {
+      "path": "TEST_STATIC.md",
+      "hash": "ed5270bf854fbffa5629467e6687f9ab3dd58b8592df7d808304d82816b6fdc8",
+      "size": 1003
+    },
+    {
+      "path": "TOOLS_ANALYSIS.md",
+      "hash": "13d864dfd2687caa18a6ae97d25fda78f13f2ed0e23951c916c8f191ad059377",
+      "size": 11713
+    },
+    {
+      "path": "TOOL_MESSAGES_HANDLING.md",
+      "hash": "1852b7c54b0f378f2a09d650600f5d4d372cbc9b5a5a4c4b92689e41fa8ce492",
+      "size": 5895
+    },
+    {
+      "path": "WATCHER_DAEMON_GUIDE.md",
+      "hash": "14762336dd995e1c66aaabc8f0e950cb5bd14801859677b67da5b4afb8be399f",
+      "size": 10938
+    },
+    {
+      "path": "WATCHER_DEBUGGING_GUIDE.md",
+      "hash": "4367fb63f7add584e453d63b37f8f3b334cac94eb49b2f5f85adb2e29468a381",
+      "size": 14876
+    },
+    {
+      "path": "WATCHER_IMPROVEMENTS_SUMMARY.md",
+      "hash": "aa10f3309f2eeff5bbbe6ecccb47099faf221317e14dbd88424d11a808df63dc",
+      "size": 11004
+    },
+    {
+      "path": "diagnose_viewer_issues.md",
+      "hash": "d0ae9df2570121656d5ac1a0154a432bc2587c8d131b17dd4a70cf357b83eeeb",
+      "size": 3201
+    },
+    {
+      "path": "docs/GIT_LIKE_CONVERSATIONS.md",
+      "hash": "cd155f9a385d0ab8a6003af92126010de1cbaa67bed10e2eb239aee13673641f",
+      "size": 18217
+    },
+    {
+      "path": "docs/LLM_SESSION_TOOLS.md",
+      "hash": "7196d6808d7c1915737265616ad6f0a80ea86a979f15e73c14be51aa14a1c7cd",
+      "size": 16695
+    },
+    {
+      "path": "docs/NEW_SESSION_GUIDE.md",
+      "hash": "d376764b7ac0b8022e9745474dc6fd64234b2d2767d100d2d74402a7347f8422",
+      "size": 11734
+    },
+    {
+      "path": "docs/PHASES_RECAPITULATIF.md",
+      "hash": "1ca20de9c0c62da7bd3d491e8d5f1a1168fdaa53586e3a38a002d15dc66409b0",
+      "size": 24417
+    },
+    {
+      "path": "docs/SWITCH_SESSION_USE_CASES.md",
+      "hash": "65bace31d2ed5852c2f4f18b20be6121da95117ae11c17614641bae2d4b884f6",
+      "size": 13293
+    },
+    {
+      "path": "docs/WDIMQ_CASE_STUDY.md",
+      "hash": "fbdc5a5168bea5f8fa679209fc7f3f93025469970177811cb366c29ea0108f51",
+      "size": 15160
+    },
+    {
+      "path": "src/timeline/README.md",
+      "hash": "33668820942891b57f18b51d10eba5c76878d9cb8efd6635d04ca0a00e2d19ab",
+      "size": 10526
+    },
+    {
+      "path": "src/timeline/TEST_PLAN.md",
+      "hash": "f17b48cc63ef9bdc5d649fb25a7dcea35d2f2e6c9708a9e86b265463081f71f3",
+      "size": 6764
+    },
+    {
+      "path": "test/README.md",
+      "hash": "55a0a5534fc537c5c203b307ebd1c967da4d5c2d7394251b2f492d24be4f651a",
+      "size": 4681
+    },
+    {
+      "path": "test/README_COMPREHENSIVE_TESTS.md",
+      "hash": "a359ab80f29b03836b0f064b87aae63129acc73da6dcffbc42e9cfcc673945c5",
+      "size": 10823
+    }
+  ],
+  "timestamp": "2025-12-01T01:11:28.857319"
+}
