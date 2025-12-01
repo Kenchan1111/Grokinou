@@ -1,13 +1,12 @@
 {
-  "committed_baseline_hash": "775dd89baa36022cbf543077b81228796a114c9e17ab71f0a2bc1cac33a06a50",
-  "timestamp": "2025-12-01T20:46:10.136573+00:00",
-  "merkle_root": "b96636cec418069b12b1da516e11d75cbbea2da881d285e5250c608d22d9de0d",
-  "total_files": 225,
+  "committed_baseline_hash": "b683c4881c58d864e89998fb9db681ccf25048b9ab76efdb0afa208a262a5021",
+  "timestamp": "2025-12-01T21:12:56.806067+00:00",
+  "merkle_root": "a2749bd81f149b986d6189c54490f52e540ab2bed2e41cb22002851e3ce9e505",
+  "total_files": 226,
   "last_commit": {
-    "hash": "b4627d6dc1bae324c7c3ff895f8d3637bbf58a82",
-    "time": "2025-12-01T21:46:10+01:00",
+    "hash": "ab4442a5c5becb1993a44d1a67e125937401f1db",
+    "time": "2025-12-01T22:12:56+01:00",
     "author": "zack",
     "subject": "chore(integrity): autonomous full integrity commit with triple anchoring (OTS+TSA+Sigstore)"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251201_204612.tsr"
+  }
 }
