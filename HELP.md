@@ -586,6 +586,26 @@ Event sourcing system for complete project history.
 4. **Rebuild** Git history (if enabled)
 5. **Create** new directory with exact state
 
+### Timeline Self-Tests (Merkle DAG & Rewind)
+
+Ces commandes vérifient que l’event sourcing et le Merkle DAG fonctionnent réellement (pas seulement en théorie) :
+
+```bash
+# Vérifie que les événements FILE_* ont bien leurs blobs dans file_blobs
+# et compare quelques fichiers sur disque avec leur hash Merkle
+npm run timeline:check
+# → logs/timeline-merkle-check.log
+
+# Rewind minimal sur le dernier événement FILE_*
+# et vérifie que les fichiers reconstruits correspondent à leurs hashes
+npm run timeline:rewind-test
+# → logs/timeline-rewind-test.log
+```
+
+À utiliser après une session de travail pour valider que :
+- les hooks fichier alimentent bien le Merkle DAG ;
+- le moteur de rewind reconstruit les fichiers à partir des blobs stockés.
+
 ---
 
 ## 🗂️ Session Management

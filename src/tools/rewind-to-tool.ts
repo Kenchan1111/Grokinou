@@ -296,30 +296,47 @@ Examples:
     properties: {
       targetTimestamp: {
         type: 'string',
-        description: 'Target timestamp in ISO format (e.g., "2025-11-28T12:00:00Z") or milliseconds',
+        description: 'Target timestamp in ISO format (e.g., "2025-11-28T12:00:00Z") or milliseconds.',
       },
       outputDir: {
         type: 'string',
-        description: 'Custom output directory path (optional, auto-generated if not provided)',
+        description: 'Custom output directory path (optional, auto-generated if not provided).',
       },
       includeFiles: {
         type: 'boolean',
-        description: 'Include file contents in reconstruction (default: true)',
+        description: 'Include file contents in reconstruction (default: true).',
         default: true,
       },
       includeConversations: {
         type: 'boolean',
-        description: 'Include conversation history (default: true)',
+        description: 'Include conversation history (default: true).',
         default: true,
       },
       includeGit: {
         type: 'boolean',
-        description: 'Include git state (default: true)',
+        description: 'Include git state (default: true). Deprecated: prefer gitMode instead.',
         default: true,
+      },
+      gitMode: {
+        type: 'string',
+        enum: ['none', 'metadata', 'full'],
+        description: "Git materialization mode: 'none'=no git, 'metadata'=git_state.json only, 'full'=complete .git repo (default: metadata).",
+      },
+      createSession: {
+        type: 'boolean',
+        description: 'Create a new grokinou session in the rewinded directory (default: false).',
+      },
+      autoCheckout: {
+        type: 'boolean',
+        description: 'Automatically change working directory (process.cwd) to the rewinded directory (default: false).',
+      },
+      compareWith: {
+        type: 'string',
+        description: 'Compare rewinded state with another directory - generates a detailed diff report (optional).',
       },
       reason: {
         type: 'string',
-        description: 'Human-readable reason for rewind (for logging)',
+        description: 'Human-readable reason for rewind (for logging).',
       },
     },
     required: ['targetTimestamp'],

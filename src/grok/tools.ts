@@ -553,16 +553,54 @@ function buildGrokTools(): GrokTool[] {
       type: "function",
       function: {
         name: "timeline_query",
-        description: "Query timeline event log to understand what happened (file modifications, git operations, conversations)",
+        description: "Query timeline event log to understand what happened (file modifications, git operations, conversations, tool calls, rewinds).",
         parameters: {
           type: "object",
           properties: {
-            startTime: { type: "string", description: "Start timestamp (ISO)" },
-            endTime: { type: "string", description: "End timestamp (ISO)" },
-            categories: { type: "array", items: { type: "string" }, description: "Event categories" },
-            sessionId: { type: "number", description: "Filter by session ID" },
-            limit: { type: "number", description: "Max results (default: 100)" },
-            statsOnly: { type: "boolean", description: "Return only statistics" },
+            startTime: { type: "string", description: "Start timestamp (ISO string or relative, e.g. '2025-11-28T00:00:00Z' or '2 hours ago')" },
+            endTime: { type: "string", description: "End timestamp (ISO string)" },
+            categories: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: ["SESSION", "LLM", "TOOL", "FILE", "GIT", "REWIND"],
+              },
+              description: "High-level event categories to filter.",
+            },
+            eventTypes: {
+              type: "array",
+              items: { type: "string" },
+              description: "Specific event types (e.g. FILE_MODIFIED, GIT_COMMIT, REWIND_COMPLETED).",
+            },
+            actor: {
+              type: "string",
+              description: "Filter by actor (e.g. 'user', 'system', 'git:username').",
+            },
+            sessionId: {
+              type: "number",
+              description: "Filter by session ID.",
+            },
+            aggregateId: {
+              type: "string",
+              description: "Filter by aggregate ID (e.g. file path).",
+            },
+            limit: {
+              type: "number",
+              description: "Max results (default: 100, max: 1000).",
+            },
+            searchText: {
+              type: "string",
+              description: "Search text in event payloads (useful to find specific errors or operations).",
+            },
+            order: {
+              type: "string",
+              enum: ["asc", "desc"],
+              description: "Sort order: 'asc' (oldest first) or 'desc' (newest first, default).",
+            },
+            statsOnly: {
+              type: "boolean",
+              description: "Return only aggregated statistics instead of full event list.",
+            },
           },
           required: [],
         },

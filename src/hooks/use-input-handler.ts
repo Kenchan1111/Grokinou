@@ -840,42 +840,166 @@ export function useInputHandler({
     }
 
     // ============================================
+    // /timeline-check - Run Merkle DAG consistency check
+    // ============================================
+    if (trimmedInput === "/timeline-check") {
+      try {
+        const infoEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `🔍 Timeline / Merkle DAG Check\n\n` +
+            `⏳ Running: npm run timeline:check\n` +
+            `Logs will be written to: logs/timeline-merkle-check.log`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, infoEntry]);
+
+        const { exec } = await import("child_process");
+        const { promisify } = await import("util");
+        const execAsync = promisify(exec);
+
+        await execAsync("npm run timeline:check", { cwd: process.cwd() });
+
+        const doneEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `✅ timeline:check completed\n\n` +
+            `📄 Detailed report:\n` +
+            `   logs/timeline-merkle-check.log`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, doneEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `❌ timeline:check failed: ${error?.message || "Unknown error"}\n\n` +
+            `📄 Check logs/timeline-merkle-check.log for details (if created).`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /timeline-rewind-test - Run rewind self-test
+    // ============================================
+    if (trimmedInput === "/timeline-rewind-test") {
+      try {
+        const infoEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `🧪 Timeline Rewind Self-Test\n\n` +
+            `⏳ Running: npm run timeline:rewind-test\n` +
+            `Logs will be written to: logs/timeline-rewind-test.log`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, infoEntry]);
+
+        const { exec } = await import("child_process");
+        const { promisify } = await import("util");
+        const execAsync = promisify(exec);
+
+        await execAsync("npm run timeline:rewind-test", { cwd: process.cwd() });
+
+        const doneEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `✅ timeline:rewind-test completed\n\n` +
+            `📄 Detailed report:\n` +
+            `   logs/timeline-rewind-test.log`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, doneEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `❌ timeline:rewind-test failed: ${error?.message || "Unknown error"}\n\n` +
+            `📄 Check logs/timeline-rewind-test.log for details (if created).`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
+      clearInput();
+      return true;
+    }
+
+    // ============================================
     // /timeline - Query timeline events
     // ============================================
     if (trimmedInput.startsWith("/timeline")) {
       try {
         const { executeTimelineQuery } = await import("../tools/timeline-query-tool.js");
-        
+
         // Parse command arguments
         const args = trimmedInput.slice(9).trim(); // Remove "/timeline"
         const params: any = {};
-        
+
         // Parse args: /timeline --start "2 hours ago" --category FILE --limit 50 --stats
-        const matches = args.matchAll(/--(\w+)\s+(?:"([^"]+)"|(\S+))/g);
+        const matches = args.matchAll(/--([\w-]+)\s+(?:"([^"]+)"|(\S+))/g);
         for (const match of matches) {
           const key = match[1];
           const value = match[2] || match[3];
-          
-          if (key === 'start' || key === 'startTime') {
+
+          // Time range aliases
+          if (key === 'start' || key === 'startTime' || key === 'since') {
             params.startTime = value;
-          } else if (key === 'end' || key === 'endTime') {
+          } else if (key === 'end' || key === 'endTime' || key === 'before') {
             params.endTime = value;
+
+          // Category (high-level type)
           } else if (key === 'category' || key === 'categories') {
-            params.categories = [value];
+            if (!params.categories) {
+              params.categories = [];
+            }
+            params.categories.push(value);
+
+          // Specific event types
+          } else if (key === 'type' || key === 'eventType' || key === 'eventTypes') {
+            if (!params.eventTypes) {
+              params.eventTypes = [];
+            }
+            params.eventTypes.push(value);
+
+          // Session filter
           } else if (key === 'session' || key === 'sessionId') {
             params.sessionId = parseInt(value);
+
+          // Aggregate (e.g. file path)
+          } else if (key === 'path' || key === 'aggregateId') {
+            params.aggregateId = value;
+
+          // Actor filter
+          } else if (key === 'actor') {
+            params.actor = value;
+
+          // Limit
           } else if (key === 'limit') {
             params.limit = parseInt(value);
+
+          // Text search in payloads
           } else if (key === 'search') {
             params.searchText = value;
+
+          // Sort order
+          } else if (key === 'order') {
+            const lower = value.toLowerCase();
+            if (lower === 'asc' || lower === 'desc') {
+              params.order = lower;
+            }
           }
         }
-        
+
         // Check for --stats flag
         if (args.includes('--stats')) {
           params.statsOnly = true;
         }
-        
+
         // If no args, show help
         if (!args || args === '--help') {
           const helpEntry: ChatEntry = {
@@ -883,16 +1007,21 @@ export function useInputHandler({
             content: `📅 Timeline Query Command\n\n` +
                      `Usage: /timeline [options]\n\n` +
                      `Options:\n` +
-                     `  --start <time>      Start time (ISO format or relative)\n` +
-                     `  --end <time>        End time (ISO format)\n` +
-                     `  --category <cat>    Category: SESSION, LLM, TOOL, FILE, GIT, REWIND\n` +
-                     `  --session <id>      Filter by session ID\n` +
-                     `  --limit <n>         Max results (default: 100)\n` +
-                     `  --search <text>     Search text in event payloads\n` +
-                     `  --stats             Show statistics only\n\n` +
+                     `  --start|--since <time>   Start time (ISO or relative)\n` +
+                     `  --end|--before <time>    End time (ISO)\n` +
+                     `  --category <cat>         Category: SESSION, LLM, TOOL, FILE, GIT, REWIND\n` +
+                     `  --type <event>           Specific event type: FILE_MODIFIED, GIT_COMMIT, etc. (repeatable)\n` +
+                     `  --path <path>            Filter by aggregate ID (e.g. file path)\n` +
+                     `  --actor <actor>          Filter by actor (e.g. user, system, git:username)\n` +
+                     `  --session <id>           Filter by session ID\n` +
+                     `  --limit <n>              Max results (default: 100)\n` +
+                     `  --search <text>          Search text in event payloads\n` +
+                     `  --order <asc|desc>       Sort order (default: desc)\n` +
+                     `  --stats                  Show statistics only\n\n` +
                      `Examples:\n` +
                      `  /timeline --category FILE --limit 20\n` +
-                     `  /timeline --start "2025-11-28T10:00:00Z" --category GIT\n` +
+                     `  /timeline --since "2025-11-28T10:00:00Z" --category GIT\n` +
+                     `  /timeline --type FILE_MODIFIED --path src/ --since "2025-11-28" --limit 50\n` +
                      `  /timeline --session 5 --stats\n` +
                      `  /timeline --search "error" --limit 10`,
             timestamp: new Date(),
