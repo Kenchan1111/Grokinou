@@ -8,5 +8,6 @@
     "time": "2025-12-01T21:31:04+01:00",
     "author": "zack",
     "subject": "chore(integrity): full integrity commit with all anchors (Sigstore + TSA + OTS)"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251201_203112.tsr"
 }
