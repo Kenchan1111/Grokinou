@@ -8,5 +8,8 @@
     "time": "2025-12-01T22:12:56+01:00",
     "author": "zack",
     "subject": "chore(integrity): autonomous full integrity commit with triple anchoring (OTS+TSA+Sigstore)"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251201_211259.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "/home/zack/GROK_CLI/grok-cli/secure_integrity_manifest_full.json.committed"
 }
