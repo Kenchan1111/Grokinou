@@ -1,12 +1,12 @@
 {
-  "committed_baseline_hash": "4f59216ca5ecfcca7a50f31826a705971f8a50e06027db2e168fc6a6414a2811",
-  "timestamp": "2025-11-30T20:56:48.524461+00:00",
-  "merkle_root": "e448607ee370ad89fb12282f4a1b8c6efa343c8e60641e0b26c11637d04d75c4",
-  "total_files": 193,
+  "committed_baseline_hash": "f220b5995cc2584b9ec22ac4ead0caa81cc787c5b0ebb140f3bc47f61d039330",
+  "timestamp": "2025-12-01T20:31:04.313233+00:00",
+  "merkle_root": "c1f2253b64146361294587ef46b49a9a63077a54d6b61e978709021e9031255e",
+  "total_files": 223,
   "last_commit": {
-    "hash": "276cd9cff2f9d4cb1a92e7741f95fb8489e3a7bd",
-    "time": "2025-11-30T21:56:48+01:00",
+    "hash": "28123c16a5ee6e99040ecfc0019a12ccf3a64276",
+    "time": "2025-12-01T21:31:04+01:00",
     "author": "zack",
-    "subject": "test: Final verification of .committed deletion bug fix"
+    "subject": "chore(integrity): full integrity commit with all anchors (Sigstore + TSA + OTS)"
   }
 }
