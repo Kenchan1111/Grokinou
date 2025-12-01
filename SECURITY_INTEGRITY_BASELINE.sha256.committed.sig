@@ -7,13 +7,13 @@
   },
   "signatures": [
     {
-      "timestamp": "2025-12-01T20:46:10.054398+00:00",
+      "timestamp": "2025-12-01T21:12:56.734567+00:00",
       "algorithm": "SHA256"
     }
   ],
   "metadata": {
-    "git_commit": "cde5dcabc99b6df46d19a10298b8a7ed7a98c717",
+    "git_commit": "84ff10a35e78d446b051a46e3b2f05b0182d53bb",
     "git_author": "zack",
-    "git_time": "2025-12-01T21:43:16+01:00"
+    "git_time": "2025-12-01T21:46:14+01:00"
   }
 }
