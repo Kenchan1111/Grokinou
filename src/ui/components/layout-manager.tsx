@@ -124,9 +124,11 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
       const stillActive = executionManager.hasActiveExecutions();
       setHasActiveExecution(stillActive);
 
-      // Schedule auto-hide if configured
-      if (!stillActive) {
-        scheduleAutoHide();
+      // ✅ Auto-hide viewer immediately when execution completes
+      // This prevents the "frozen view" issue where the old execution
+      // remains visible in the viewer after completion
+      if (!stillActive && mode === 'split') {
+        changeMode('hidden');
       }
     });
 
