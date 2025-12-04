@@ -656,13 +656,21 @@ function ChatInterfaceWithAgent({
   return (
     <ChatProvider value={chatContextValue}>
       <Box
-        key={`chat-${isStreaming ? 'streaming' : 'idle'}-${committedHistory.length}`}
         flexDirection="column"
         paddingX={2}
         height={searchMode ? terminalHeight : undefined}
         overflow={searchMode ? "hidden" : undefined}
       >
-        {/* Confirmation dialog */}
+        {/* Layout switcher (always rendered to preserve viewer state) */}
+        {/* Internal components now have unique keys to prevent JSX reuse */}
+        <ChatLayoutSwitcher
+          scrollRef={scrollRef}
+          onCloseSearch={handleCloseSearch}
+          onPasteToInput={handlePasteToInput}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+
+        {/* Confirmation dialog (rendered over layout) */}
         {confirmationOptions && (
           <ConfirmationDialog
             operation={confirmationOptions.operation}
@@ -671,16 +679,6 @@ function ChatInterfaceWithAgent({
             content={confirmationOptions.content}
             onConfirm={handleConfirmation}
             onReject={handleRejection}
-          />
-        )}
-
-        {/* Layout switcher (replaces finalContent) */}
-        {!confirmationOptions && (
-          <ChatLayoutSwitcher
-            scrollRef={scrollRef}
-            onCloseSearch={handleCloseSearch}
-            onPasteToInput={handlePasteToInput}
-            onToggleFullscreen={handleToggleFullscreen}
           />
         )}
 

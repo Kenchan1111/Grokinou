@@ -36,7 +36,7 @@ interface ChatLayoutSwitcherProps {
   onToggleFullscreen?: () => void;
 }
 
-export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
+const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   scrollRef,
   onCloseSearch,
   onPasteToInput,
@@ -71,6 +71,7 @@ export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
       // Fullscreen search results
       return (
         <SearchResults
+          key="search-fullscreen"
           query={searchQuery}
           results={searchResults}
           onClose={onCloseSearch}
@@ -82,7 +83,8 @@ export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
       // Split layout: conversation left, search right
       return (
         <SplitLayout
-          left={<ConversationView scrollRef={scrollRef} searchMode={true} />}
+          key="search-split-layout"
+          left={<ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true} />}
           right={
             <SearchResults
               query={searchQuery}
@@ -102,14 +104,12 @@ export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
   // EXECUTION VIEWER MODE
   // ============================================
   if (executionViewerSettings.enabled) {
-    // Create stable components WITHOUT keys to prevent JSX reuse issues
-    const conversationComponent = <ConversationView scrollRef={scrollRef} />;
-    const viewerComponent = <ExecutionViewer mode="split" settings={executionViewerSettings} />;
-
+    // Add unique keys to prevent JSX reuse and duplication
     return (
       <LayoutManager
-        conversation={conversationComponent}
-        executionViewer={viewerComponent}
+        key="viewer-layout"
+        conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} />}
+        executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
         config={{
           defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
           autoShow: executionViewerSettings.autoShow,
@@ -124,5 +124,9 @@ export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
   // ============================================
   // NORMAL MODE (No viewer, no search)
   // ============================================
-  return <ConversationView scrollRef={scrollRef} />;
+  return <ConversationView key="normal-conversation" scrollRef={scrollRef} />;
 };
+
+// Memoize to prevent re-renders when ChatContext changes but props don't
+// Note: React.memo returns true to SKIP re-render (props are equal)
+export const ChatLayoutSwitcher = React.memo(ChatLayoutSwitcherComponent);
