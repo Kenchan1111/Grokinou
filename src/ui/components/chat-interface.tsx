@@ -353,8 +353,19 @@ function ChatInterfaceWithAgent({
   // Le logo est maintenant affiché AVANT le démarrage d'Ink dans index.ts
   // Plus besoin de le générer ici !
 
+  // ✅ Track if we're in the middle of a switch to prevent auto-commit
+  const isSwitchingRef = useRef(false);
+
+  // ✅ Track if we're currently committing to prevent race condition with activeMessages
+  const isCommittingRef = useRef(false);
+
   // Extraire les messages EN COURS (pas encore committés dans l'historique statique)
   useEffect(() => {
+    // ✅ Skip recalculation if we're in the middle of committing to prevent race condition
+    if (isCommittingRef.current) {
+      return;
+    }
+
     // Messages actifs = tous les messages qui ne sont PAS encore dans committedHistory
     const activeCount = chatHistory.length - committedHistory.length;
     if (activeCount > 0) {
@@ -369,18 +380,24 @@ function ChatInterfaceWithAgent({
   const commitMessage = useCallback((entry: ChatEntry) => {
     setCommittedHistory(prev => [...prev, entry]);
   }, []);
-  
-  // Track if we're in the middle of a switch to prevent auto-commit
-  const isSwitchingRef = useRef(false);
-  
+
   // Commit automatique quand un message est terminé
   useEffect(() => {
     // Si on n'est pas en train de streamer et qu'il y a des messages actifs
     // ET qu'on n'est PAS en train de switcher de session
-    if (!isStreaming && !isProcessing && activeMessages.length > 0 && !isSwitchingRef.current) {
+    // ET qu'on n'est PAS déjà en train de committer
+    if (!isStreaming && !isProcessing && activeMessages.length > 0 && !isSwitchingRef.current && !isCommittingRef.current) {
+      // Set flag to prevent re-entry
+      isCommittingRef.current = true;
+
       // Commit tous les messages actifs dans l'historique statique
       setCommittedHistory(prev => [...prev, ...activeMessages]);
       setActiveMessages([]);
+
+      // Reset flag after React finishes batching
+      setTimeout(() => {
+        isCommittingRef.current = false;
+      }, 0);
     }
   }, [isStreaming, isProcessing, activeMessages]);
 
@@ -721,7 +738,7 @@ function ChatInterfaceWithAgent({
       return (
         <LayoutManager
           conversation={chatViewContent}
-          executionViewer={<ExecutionViewer mode="split" />}
+          executionViewer={<ExecutionViewer mode="split" settings={executionViewerSettings} />}
           config={{
             defaultMode: executionViewerSettings.defaultMode,
             autoShow: executionViewerSettings.autoShow,

@@ -88,6 +88,9 @@ export class TimelineDatabase {
    */
   private initializeSchema(): void {
     try {
+      // Run lightweight migrations before applying full schema
+      this.migrateSchemaIfNeeded();
+
       // Execute embedded schema
       this.db.exec(TIMELINE_SCHEMA);
       
@@ -100,6 +103,45 @@ export class TimelineDatabase {
     } catch (error) {
       console.error('❌ Failed to initialize timeline schema:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Run backward-compatible migrations for older timeline.db versions.
+   *
+   * Important: this must NOT drop existing data. Only additive changes.
+   */
+  private migrateSchemaIfNeeded(): void {
+    try {
+      // 1) snapshots.created_at migration
+      // Older versions created "snapshots" without created_at column,
+      // but newer schema expects it and creates an index on it.
+      const hasSnapshotsTable = this.db
+        .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'snapshots'`)
+        .get() as { name: string } | undefined;
+
+      if (hasSnapshotsTable) {
+        const columns = this.db
+          .prepare(`PRAGMA table_info('snapshots')`)
+          .all() as Array<{ name: string }>;
+
+        const hasCreatedAt = columns.some((c) => c.name === 'created_at');
+
+        if (!hasCreatedAt) {
+          console.warn(
+            '⚠️  Timeline migration: adding missing snapshots.created_at column (backfilling from timestamp)'
+          );
+
+          // Add the column as nullable, then backfill from existing timestamp
+          this.db.exec(`
+            ALTER TABLE snapshots ADD COLUMN created_at INTEGER;
+            UPDATE snapshots SET created_at = timestamp WHERE created_at IS NULL;
+          `);
+        }
+      }
+    } catch (migrationError) {
+      // Migrations should never block startup; log and continue.
+      console.error('⚠️  Timeline schema migration failed (non-fatal):', migrationError);
     }
   }
   

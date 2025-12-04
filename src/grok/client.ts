@@ -65,11 +65,25 @@ export class GrokClient {
       baseURL: this.baseURL,
       timeout: 360000,
     });
-    const envMax = Number(process.env.GROK_MAX_TOKENS);
-    this.defaultMaxTokens = Number.isFinite(envMax) && envMax > 0 ? envMax : 1536;
+    // Adaptive max tokens based on model capabilities
+    const envMax = process.env.GROK_MAX_TOKENS;
+
+    // Handle special values
+    if (envMax === 'unlimited' || envMax === '-1') {
+      this.defaultMaxTokens = 0;  // 0 = unlimited
+    } else if (envMax && !isNaN(Number(envMax))) {
+      this.defaultMaxTokens = Number(envMax);
+    } else {
+      // Use model-specific defaults (0 = unlimited for reasoning models)
+      this.defaultMaxTokens = this.getModelDefaultMaxTokens(model);
+    }
     this.currentModel = model; // ✅ Use provided model (required)
-    
-    console.log(`✅ GrokClient initialized with baseURL=${this.baseURL}`);
+
+    // Log initialization with token limits
+    const tokenLimitInfo = this.defaultMaxTokens === 0
+      ? 'unlimited (using API maximum)'
+      : `${this.defaultMaxTokens} tokens`;
+    console.log(`✅ GrokClient initialized: model=${this.currentModel}, baseURL=${this.baseURL}, max_tokens=${tokenLimitInfo}`);
   }
   
   /**
@@ -92,14 +106,96 @@ export class GrokClient {
   }
   
   /**
+   * Get model context window size in tokens
+   */
+  private getModelContextWindow(model?: string): number {
+    const m = (model || this.currentModel).toLowerCase();
+    
+    // Claude models: 200K context
+    if (m.includes('claude') || m.includes('opus') || m.includes('sonnet')) {
+      return 200000;  // 200K
+    }
+    
+    // o3-mini: 200K
+    if (m.includes('o3-mini')) {
+      return 200000;  // 200K
+    }
+    
+    // o1-preview: 128K
+    if (m.includes('o1')) {
+      return 128000;  // 128K
+    }
+    
+    // GPT-5, GPT-4, Grok, DeepSeek, Mistral: 128K
+    if (m.includes('gpt-5') || m.includes('gpt-4') || m.includes('grok') || 
+        m.includes('deepseek') || m.includes('mistral')) {
+      return 128000;  // 128K
+    }
+    
+    // GPT-3.5: 16K
+    if (m.includes('gpt-3.5')) {
+      return 16385;  // 16K
+    }
+    
+    // Default: 128K for modern models
+    return 128000;
+  }
+
+  /**
+   * Get adaptive max tokens based on model capabilities
+   * Returns 0 for unlimited (no max_completion_tokens sent to API)
+   * Returns >0 for specific limit
+   * 
+   * IMPORTANT: These limits are for OUTPUT tokens only (model responses)
+   * Input tokens (files, context) are limited by model's context window
+   */
+  private getModelDefaultMaxTokens(model?: string): number {
+    const m = (model || this.currentModel).toLowerCase();
+
+    // Reasoning models (o1, o3, gpt-5): Unlimited by default
+    // Let the API use its natural maximum (100K for o3, 64K for GPT-5, etc.)
+    if (m.startsWith('o1') || m.startsWith('o3') || m.includes('gpt-5')) {
+      return 0;  // 0 = unlimited (don't send max_completion_tokens)
+    }
+
+    // High-end models with large context windows: Allow very long responses
+    if (m.includes('gpt-4') || m.includes('opus')) {
+      return 32768;  // 32K tokens for detailed analysis of complex projects
+    }
+
+    // Claude Sonnet: 200K context, deserves very long responses
+    if (m.includes('sonnet')) {
+      return 32768;  // 32K tokens
+    }
+
+    // Grok models: Good for code analysis, allow long responses
+    if (m.includes('grok')) {
+      return 16384;  // 16K tokens for code analysis
+    }
+
+    // DeepSeek: Has strict limit of 8192 tokens
+    if (m.includes('deepseek')) {
+      return 8192;  // 8K tokens (DeepSeek API limit)
+    }
+
+    // Mistral: Modern models with good capacity
+    if (m.includes('mistral')) {
+      return 16384;  // 16K tokens
+    }
+
+    // Default: Very generous limit for complex project analysis
+    return 16384;  // 16K tokens minimum
+  }
+
+  /**
    * Check if current model is a reasoning model (o1, o3, gpt-5)
    * These models require max_completion_tokens and no temperature
    */
   private isReasoningModel(model?: string): boolean {
     const modelName = (model || this.currentModel).toLowerCase();
-    return modelName.startsWith('o1') || 
-           modelName.startsWith('o3') || 
-           modelName.startsWith('gpt-5');
+    return modelName.startsWith('o1') ||
+           modelName.startsWith('o3') ||
+           modelName.includes('gpt-5');
   }
   
   /**
@@ -129,6 +225,7 @@ export class GrokClient {
     if (provider === 'claude') {
       // Claude uses a different format (tools with input_schema)
       return tools.map(tool => ({
+        type: "function", // Required type field for Anthropic API
         name: tool.function.name,
         description: tool.function.description,
         input_schema: {
@@ -363,6 +460,103 @@ export class GrokClient {
   }
   
   /**
+   * Estimate tokens in messages (rough approximation)
+   * 1 token ≈ 3.5 characters (conservative estimate for code-heavy content)
+   * This is more conservative than the typical 4 chars/token for English text
+   */
+  private estimateTokensInMessages(messages: GrokMessage[]): number {
+    let totalChars = 0;
+    
+    for (const msg of messages) {
+      const content = msg.content;
+      
+      if (typeof content === 'string') {
+        totalChars += content.length;
+      } else if (content && Array.isArray(content)) {
+        // Handle array content (multimodal) - simplified
+        // Just count as string if we can't parse properly
+        totalChars += JSON.stringify(content).length;
+      }
+      
+      // Add overhead for message structure
+      totalChars += 100; // Approx overhead per message
+    }
+    
+    // Conservative: 1 token ≈ 3.5 characters (better safe than sorry)
+    return Math.ceil(totalChars / 3.5);
+  }
+
+  /**
+   * Estimate tokens overhead from tool definitions
+   * Each tool adds ~200 tokens (name + description + parameters schema)
+   */
+  private estimateToolsOverhead(tools?: GrokTool[]): number {
+    if (!tools || tools.length === 0) return 0;
+
+    // Rough estimate: ~200 tokens per tool
+    // (includes name, description, and parameters JSON schema)
+    return tools.length * 200;
+  }
+
+  /**
+   * Calculate adaptive max tokens based on input size
+   * Ensures: input_tokens + max_tokens ≤ context_window
+   */
+  private calculateAdaptiveMaxTokens(
+    modelToUse: string,
+    messages: GrokMessage[],
+    defaultMaxTokens: number,
+    tools?: GrokTool[]
+  ): number {
+    // If unlimited (0), keep unlimited
+    if (defaultMaxTokens === 0) {
+      return 0;
+    }
+
+    // Get context window for this model
+    const contextWindow = this.getModelContextWindow(modelToUse);
+
+    // Estimate input tokens (messages + tools overhead)
+    const messageTokens = this.estimateTokensInMessages(messages);
+    const toolsOverhead = this.estimateToolsOverhead(tools);
+    const totalInputTokens = messageTokens + toolsOverhead;
+
+    // ✅ CRITICAL: Validate that input doesn't exceed context window
+    if (totalInputTokens >= contextWindow) {
+      const errorMsg =
+        `❌ Input size (${totalInputTokens.toLocaleString()} tokens: ` +
+        `${messageTokens.toLocaleString()} messages + ${toolsOverhead.toLocaleString()} tools) ` +
+        `exceeds model context window (${contextWindow.toLocaleString()} tokens). ` +
+        `Please reduce input (fewer files, shorter messages, or fewer tools).`;
+      debugLog.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // Calculate available tokens for output
+    const availableForOutput = contextWindow - totalInputTokens;
+
+    // Safety margin: reserve 10% of context window for model overhead
+    const safetyMargin = Math.floor(contextWindow * 0.1);
+    const safeAvailable = availableForOutput - safetyMargin;
+
+    // If not enough space even for minimal response
+    if (safeAvailable < 100) {
+      debugLog.log(`⚠️  Context window almost full: input=${totalInputTokens.toLocaleString()} (${messageTokens.toLocaleString()} msgs + ${toolsOverhead.toLocaleString()} tools), context=${contextWindow.toLocaleString()}, available=${safeAvailable}`);
+      return 100; // Minimal response
+    }
+    
+    // Use the smaller of: default limit OR available space
+    const adaptiveMaxTokens = Math.min(defaultMaxTokens, safeAvailable);
+
+    // Log adaptive adjustment
+    if (adaptiveMaxTokens < defaultMaxTokens) {
+      debugLog.log(`🔄 Adaptive max_tokens: ${defaultMaxTokens.toLocaleString()} → ${adaptiveMaxTokens.toLocaleString()} (input: ${totalInputTokens.toLocaleString()} tokens = ${messageTokens.toLocaleString()} msgs + ${toolsOverhead.toLocaleString()} tools)`);
+    }
+
+    return adaptiveMaxTokens;
+  }
+
+  /**
    * Build request payload specific to provider
    */
   private buildRequestPayload(
@@ -402,21 +596,39 @@ export class GrokClient {
       }
     }
     
+    // Calculate adaptive max tokens based on input size (including tools overhead)
+    const adaptiveMaxTokens = this.calculateAdaptiveMaxTokens(
+      modelToUse,
+      cleanedMessages,
+      this.defaultMaxTokens,
+      tools  // ✅ Pass tools to account for their token overhead
+    );
+    
     // Add provider-specific parameters
     if (provider === 'claude') {
       // Claude uses max_tokens (not max_completion_tokens)
-      requestPayload.max_tokens = this.defaultMaxTokens;
+      // Only set if not unlimited
+      if (adaptiveMaxTokens > 0) {
+        requestPayload.max_tokens = adaptiveMaxTokens;
+      }
       // Claude doesn't use temperature in tool calls
       if (!tools || tools.length === 0) {
         requestPayload.temperature = 0.7;
       }
     } else if (isReasoning) {
       // Reasoning models (o1, o3, gpt-5): max_completion_tokens, no temperature
-      requestPayload.max_completion_tokens = this.defaultMaxTokens;
+      // Only set max_completion_tokens if not unlimited (0)
+      if (adaptiveMaxTokens > 0) {
+        requestPayload.max_completion_tokens = adaptiveMaxTokens;
+      }
+      // If adaptiveMaxTokens === 0, don't set it → API uses its natural maximum
     } else {
       // Standard models: temperature + max_tokens
       requestPayload.temperature = 0.7;
-      requestPayload.max_tokens = this.defaultMaxTokens;
+      // Only set max_tokens if not unlimited
+      if (adaptiveMaxTokens > 0) {
+        requestPayload.max_tokens = adaptiveMaxTokens;
+      }
     }
     
     // Grok-specific: search_parameters
@@ -472,7 +684,14 @@ export class GrokClient {
       const response =
         await this.client.chat.completions.create(requestPayload);
 
-      debugLog.log(`✅ API Response OK - model: ${response.model}`);
+      // Log response details for debugging
+      const choice = response.choices?.[0];
+      const content = choice?.message?.content;
+      const finishReason = choice?.finish_reason;
+      const refusal = (choice?.message as any)?.refusal;
+
+      debugLog.log(`✅ API Response OK - model: ${response.model}, finish_reason: ${finishReason}, hasContent: ${!!content}, contentLength: ${content?.length || 0}, refusal: ${refusal || 'none'}`);
+
       return response as GrokResponse;
     } catch (error: any) {
       debugLog.error(`❌ API Error:`, {
@@ -536,12 +755,59 @@ export class GrokClient {
       )) as any;
 
       debugLog.log(`✅ Stream started successfully`);
-      
+
+      let chunkCount = 0;
+      let hasContent = false;
+      let contentLength = 0;
+      let hasToolCalls = false;
+      let finishReasons: string[] = [];
+
       for await (const chunk of stream) {
+        chunkCount++;
+
+        // Log FIRST chunk in detail to see what GPT-5 returns
+        if (chunkCount === 1) {
+          debugLog.log(`📦 First chunk received:`, JSON.stringify(chunk, null, 2).substring(0, 500));
+        }
+
+        // Log chunk details for debugging
+        const choice = chunk.choices?.[0];
+        if (choice) {
+          const delta = choice.delta;
+
+          // Track content
+          if (delta?.content) {
+            hasContent = true;
+            contentLength += delta.content.length;
+
+            // Log first content chunk
+            if (contentLength === delta.content.length) {
+              debugLog.log(`📝 First content chunk: "${delta.content.substring(0, 100)}..."`);
+            }
+          }
+
+          // Track tool calls
+          if (delta?.tool_calls) {
+            hasToolCalls = true;
+          }
+
+          // Track finish reasons
+          if (choice.finish_reason) {
+            finishReasons.push(choice.finish_reason);
+            debugLog.log(`📊 Stream finish_reason: ${choice.finish_reason}`);
+          }
+
+          // Detect refusal
+          const refusal = (delta as any)?.refusal || (choice as any)?.refusal;
+          if (refusal) {
+            debugLog.log(`🚫 REFUSAL detected: ${refusal}`);
+          }
+        }
+
         yield chunk;
       }
-      
-      debugLog.log(`✅ Stream completed`);
+
+      debugLog.log(`✅ Stream completed - chunks: ${chunkCount}, hasContent: ${hasContent}, contentLength: ${contentLength}, hasToolCalls: ${hasToolCalls}, finishReasons: ${finishReasons.join(',') || 'none'}`);
     } catch (error: any) {
       debugLog.error(`❌ Stream Error:`, {
         provider,

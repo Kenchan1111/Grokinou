@@ -9,7 +9,7 @@
  * Supports multiple executions, navigation, and detailed/compact modes.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { executionManager } from '../../execution/index.js';
 import type { ExecutionState, COTEntry, CommandExecution, COTType, CommandStatus } from '../../execution/index.js';
@@ -18,51 +18,72 @@ import type { ExecutionState, COTEntry, CommandExecution, COTType, CommandStatus
 // TYPES
 // ============================================================================
 
+import type { ExecutionViewerSettings } from '../../utils/settings-manager.js';
+
 export interface ExecutionViewerProps {
   mode?: 'split' | 'fullscreen';
+  settings?: Partial<ExecutionViewerSettings>;
 }
 
 // ============================================================================
 // EXECUTION VIEWER COMPONENT
 // ============================================================================
 
-export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split' }) => {
+export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split', settings }) => {
   const [executions, setExecutions] = useState<ExecutionState[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [detailsMode, setDetailsMode] = useState(false);
+  const [detailsMode, setDetailsMode] = useState(settings?.detailsMode ?? false);
   const [autoScroll, setAutoScroll] = useState(true);
 
   /**
    * Subscribe to execution manager updates
    */
   useEffect(() => {
+    const limit = settings?.maxExecutionsShown ?? 10;
+
     // Initial load - get active executions
     const active = executionManager.getActiveExecutions();
     if (active.length > 0) {
-      setExecutions(active);
+      setExecutions(active.slice(-limit));
     }
 
     // Subscribe to updates
     const unsubscribe = executionManager.subscribeToAll((execution) => {
       setExecutions(prev => {
         const index = prev.findIndex(e => e.id === execution.id);
-        
+        let updated: ExecutionState[];
+
         if (index >= 0) {
           // Update existing execution
-          const updated = [...prev];
+          updated = [...prev];
           updated[index] = execution;
-          return updated;
         } else {
           // Add new execution
-          return [...prev, execution];
+          updated = [...prev, execution];
         }
+
+        // Apply limit (keep most recent executions)
+        if (updated.length > limit) {
+          updated = updated.slice(-limit);
+        }
+
+        return updated;
       });
     });
 
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [settings]);
+
+  /**
+   * Clamp selectedIndex when executions list changes
+   */
+  useEffect(() => {
+    if (selectedIndex >= executions.length && executions.length > 0) {
+      setSelectedIndex(executions.length - 1);
+    }
+  }, [executions.length, selectedIndex]);
 
   /**
    * Keyboard shortcuts

@@ -60,18 +60,17 @@ const MemoizedChatEntry = React.memo(
         );
 
       case "assistant":
+        // ✅ Skip assistant entries that have toolCalls (internal protocol messages)
+        if (entry.toolCalls && entry.toolCalls.length > 0) {
+          return null;
+        }
+
         return (
           <Box key={index} flexDirection="column">
             <Box flexDirection="row" alignItems="flex-start">
               <Text color="white">⏺ </Text>
               <Box flexDirection="column" flexGrow={1}>
-                {entry.toolCalls ? (
-                  // If there are tool calls, just show plain text
-                  <Text color="white">{entry.content.trim()}</Text>
-                ) : (
-                  // If no tool calls, render as markdown
-                  <MarkdownRenderer content={entry.content.trim()} />
-                )}
+                <MarkdownRenderer content={entry.content.trim()} />
                 {entry.isStreaming && <Text color="cyan">█</Text>}
               </Box>
             </Box>
@@ -165,6 +164,27 @@ const MemoizedChatEntry = React.memo(
           entry.toolResult?.success &&
           !shouldShowDiff;
 
+        // Check if user wants verbose tool output (default: compact)
+        const verboseToolOutput = process.env.GROK_VERBOSE_TOOLS === "true";
+
+        // Create compact summary for file operations
+        const createCompactSummary = (content: string, toolName: string) => {
+          if (toolName === "view_file" || toolName === "create_file") {
+            const lines = content.split("\n").length;
+            const chars = content.length;
+            return `✓ ${lines} lines (${(chars / 1024).toFixed(1)}KB) - Details in Execution Viewer (Ctrl+E)`;
+          }
+          if (toolName === "search") {
+            const lines = content.split("\n").filter(l => l.trim()).length;
+            return `✓ ${lines} matches`;
+          }
+          if (toolName === "bash") {
+            const lines = content.split("\n").length;
+            return lines > 10 ? `✓ ${lines} lines output` : content;
+          }
+          return formatToolContent(content, toolName);
+        };
+
         return (
           <Box key={index} flexDirection="column" marginTop={1}>
             <Box>
@@ -178,17 +198,22 @@ const MemoizedChatEntry = React.memo(
               {isExecuting ? (
                 <Text color="cyan">⎿ Executing...</Text>
               ) : shouldShowFileContent ? (
-                <Box flexDirection="column">
-                  <Text color="gray">⎿ File contents:</Text>
-                  <Box marginLeft={2} flexDirection="column">
-                    {renderFileContent(entry.content)}
+                // Show compact summary by default, full content if GROK_VERBOSE_TOOLS=true
+                verboseToolOutput ? (
+                  <Box flexDirection="column">
+                    <Text color="gray">⎿ File contents:</Text>
+                    <Box marginLeft={2} flexDirection="column">
+                      {renderFileContent(entry.content)}
+                    </Box>
                   </Box>
-                </Box>
+                ) : (
+                  <Text color="gray">⎿ {createCompactSummary(entry.content, toolName)}</Text>
+                )
               ) : shouldShowDiff ? (
                 // For diff results, show only the summary line, not the raw content
                 <Text color="gray">⎿ {entry.content.split("\n")[0]}</Text>
               ) : (
-                <Text color="gray">⎿ {formatToolContent(entry.content, toolName)}</Text>
+                <Text color="gray">⎿ {createCompactSummary(entry.content, toolName)}</Text>
               )}
             </Box>
             {shouldShowDiff && !isExecuting && (

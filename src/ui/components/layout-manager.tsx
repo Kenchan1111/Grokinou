@@ -78,30 +78,32 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   const scheduleAutoHide = useCallback(() => {
     if (!config.autoHide) return;
 
-    // Clear existing timeout
-    if (autoHideTimeout) {
-      clearTimeout(autoHideTimeout);
-    }
-
-    // Schedule new timeout
-    const timeout = setTimeout(() => {
-      if (!hasActiveExecution && mode === 'split') {
-        changeMode('hidden');
+    setAutoHideTimeout(prevTimeout => {
+      // Clear existing timeout
+      if (prevTimeout) {
+        clearTimeout(prevTimeout);
       }
-    }, config.autoHideDelay);
 
-    setAutoHideTimeout(timeout);
-  }, [config.autoHide, config.autoHideDelay, hasActiveExecution, mode, autoHideTimeout, changeMode]);
+      // Schedule new timeout
+      return setTimeout(() => {
+        if (!hasActiveExecution && mode === 'split') {
+          changeMode('hidden');
+        }
+      }, config.autoHideDelay);
+    });
+  }, [config.autoHide, config.autoHideDelay, hasActiveExecution, mode, changeMode]);
 
   /**
    * Cancel auto-hide
    */
   const cancelAutoHide = useCallback(() => {
-    if (autoHideTimeout) {
-      clearTimeout(autoHideTimeout);
-      setAutoHideTimeout(null);
-    }
-  }, [autoHideTimeout]);
+    setAutoHideTimeout(prevTimeout => {
+      if (prevTimeout) {
+        clearTimeout(prevTimeout);
+      }
+      return null;
+    });
+  }, []);
 
   /**
    * Listen to execution lifecycle
@@ -131,11 +133,8 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     return () => {
       unsubscribeStart();
       unsubscribeEnd();
-      if (autoHideTimeout) {
-        clearTimeout(autoHideTimeout);
-      }
     };
-  }, [config.autoShow, mode, changeMode, cancelAutoHide, scheduleAutoHide, autoHideTimeout]);
+  }, [config.autoShow, mode, changeMode, cancelAutoHide, scheduleAutoHide]);
 
   /**
    * Keyboard shortcuts

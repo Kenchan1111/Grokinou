@@ -295,6 +295,57 @@ Current working directory: ${process.cwd()}`,
     debugLog.log(`✅ System message added: model="${currentModel}", now ${newSystemCount} system message(s), total: ${this.messages.length} messages`);
   }
 
+  /**
+   * Format a concise, user-facing summary of a tool result for the conversation.
+   * Avoids dumping full file contents or long outputs into the chat history.
+   */
+  private formatToolResultSummary(
+    toolCall: GrokToolCall,
+    result: ToolResult
+  ): string {
+    const raw =
+      (result.success ? result.output || "Success" : result.error || "Error occurred") ||
+      "";
+
+    let args: any = {};
+    try {
+      args = JSON.parse(toolCall.function.arguments || "{}");
+    } catch {
+      // Ignore parse errors, fall back to raw
+    }
+
+    switch (toolCall.function.name) {
+      case "view_file": {
+        const path = args.path || "unknown path";
+        const hasRange = args.start_line && args.end_line;
+        const range =
+          hasRange && typeof args.start_line === "number" && typeof args.end_line === "number"
+            ? ` (lines ${args.start_line}-${args.end_line})`
+            : "";
+
+        if (result.success && result.output) {
+          const lineCount = result.output.split("\n").length;
+          return `view_file: ${path}${range} — ${lineCount} lines read (details in viewer/logs)`;
+        }
+
+        return `view_file: ${path}${range} — error: ${result.error || "unknown error"}`;
+      }
+
+      case "search": {
+        const query = args.query || "";
+        // Use only the first line of output as a compact summary
+        const firstLine = raw.split("\n").find((l) => l.trim().length > 0) || raw || "No results";
+        return `search("${query}") — ${firstLine}`;
+      }
+
+      default: {
+        // Generic: use only first non-empty line to avoid flooding the chat
+        const firstLine = raw.split("\n").find((l) => l.trim().length > 0) || raw || "Success";
+        return `${toolCall.function.name}: ${firstLine}`;
+      }
+    }
+  }
+
   private async persist(entry: ChatEntry) {
     if (!this.persistSession) return;
     try {
@@ -388,30 +439,74 @@ Current working directory: ${process.cwd()}`,
 
   private buildSummaryPrompt(lastUserMessage: string): string {
     return [
-      "Tu as peut-être utilisé des outils (lecture de fichiers, commandes bash, timeline, etc.)",
-      "pour répondre à la DERNIÈRE question de l’utilisateur.",
+      "Tu dois maintenant FORMULER une RÉPONSE FINALE pour l’utilisateur, en français clair et naturel.",
       "",
       `Dernière question de l’utilisateur : "${lastUserMessage}"`,
       "",
-      "Maintenant, rédige une réponse NATURELLE en français qui :",
-      "- Explique ce que tu as fait (y compris les outils utilisés le cas échéant).",
-      "- Présente les principaux résultats et conclusions.",
-      "- Mentionne les difficultés éventuelles et comment tu les as résolues.",
-      "- Termine par un résumé qui met clairement en évidence tous les points importants de ce que tu as fait et trouvé (longueur libre mais suffisamment exhaustive pour que l’utilisateur comprenne bien l’ensemble).",
+      "Rédige UNE SEULE réponse structurée qui :",
+      "- Analyse le problème posé par l’utilisateur à partir du contexte dont tu disposes (code, configuration, comportement observé, etc.).",
+      "- Explique ce que fait le système actuellement et pourquoi il se comporte ainsi.",
+      "- Propose des pistes d’amélioration concrètes, en restant au niveau conceptuel (pas besoin de donner tout le code exact).",
+      "- Termine par un court paragraphe de synthèse avec les points clés et les prochaines étapes suggérées.",
       "",
       "CONTRAINTES IMPORTANTES :",
-      "- Ne propose PAS de nouveaux tools dans cette réponse.",
+      "- Ne parle PAS des outils que tu as utilisés (view_file, bash, search, etc.).",
+      "- Ne décris PAS ton processus interne, ton raisonnement étape par étape ou ton \"plan\".",
+      "- Ne dis PAS \"j’utilise les outils\" ou \"je vais\" : écris directement la réponse comme si tu expliquais le résultat final à un humain.",
       "- Ne repose PAS la question à l’utilisateur.",
-      "- Ne commence PAS par \"Plan:\" ou par une section de plan; ne répète PAS ton plan dans plusieurs blocs.",
-      "- Contente-toi d’expliquer ce que tu as fait et ce que tu as appris."
+      "- Ne commence PAS par \"Plan:\" et ne fournis PAS de todo list.",
+      "- Contente-toi de donner ton analyse, tes explications et tes recommandations finales."
     ].join("\n");
   }
 
-  private async generateAndAppendSummary(lastUserMessage: string): Promise<ChatEntry | null> {
+  /**
+   * Build a human-readable "reasoning summary" block from raw summary content.
+   * This mirrors Codex's ReasoningSummaryCell: header + attenuated body.
+   */
+  private buildReasoningSummaryBlock(content: string): string {
+    const header = "🧠 Reasoning summary (approximate, based on visible tools/logs)\n\n";
+    return header + content.trim();
+  }
+
+  /**
+   * Generate a fallback summary based on tool calls in chat history
+   * Used when LLM fails to generate a summary
+   */
+  private generateFallbackSummary(userMessage: string): string {
+    // Find tool calls from recent history
+    const recentToolCalls = this.chatHistory
+      .filter(entry => entry.type === 'tool_call' || entry.type === 'tool_result')
+      .slice(-10); // Last 10 tool-related entries
+
+    if (recentToolCalls.length === 0) {
+      return `J'ai traité votre demande : "${userMessage}"\n\nMalheureusement, je n'ai pas pu générer un résumé détaillé de mes actions. Veuillez consulter l'historique des outils ci-dessus pour plus de détails.`;
+    }
+
+    // Group by tool name
+    const toolUsage = new Map<string, number>();
+    recentToolCalls.forEach(entry => {
+      if (entry.toolCall) {
+        const toolName = entry.toolCall.function.name;
+        toolUsage.set(toolName, (toolUsage.get(toolName) || 0) + 1);
+      }
+    });
+
+    // Build summary
+    const toolsList = Array.from(toolUsage.entries())
+      .map(([tool, count]) => `• ${tool} (${count}×)`)
+      .join('\n');
+
+    return `Pour répondre à votre question : "${userMessage}"\n\nJ'ai utilisé les outils suivants :\n${toolsList}\n\n⚠️ Note : Le modèle n'a pas pu générer un résumé textuel détaillé. Les résultats des outils sont visibles dans l'historique ci-dessus et dans l'Execution Viewer (Ctrl+E).`;
+  }
+
+  /**
+   * Generate reasoning summary text only (no persistence, no ChatEntry).
+   * Used by both streaming and non-streaming paths.
+   */
+  private async generateSummaryText(lastUserMessage: string): Promise<string | null> {
     try {
       const prompt = this.buildSummaryPrompt(lastUserMessage);
       const summaryMessages: GrokMessage[] = [
-        ...this.messages,
         { role: "user", content: prompt }
       ];
 
@@ -424,12 +519,65 @@ Current working directory: ${process.cwd()}`,
 
       const content = response.choices?.[0]?.message?.content?.trim();
       if (!content) {
-        return null;
+        debugLog.log("⚠️  Primary summary returned empty content, trying simplified backup prompt");
+
+        // Backup attempt: simpler prompt focused only on the user's question
+        const backupPrompt = [
+          `Voici la question de l'utilisateur :`,
+          `"${lastUserMessage}"`,
+          "",
+          "Même si tu n'as pas accès à tous les détails internes, donne une réponse claire en français qui :",
+          "- Analyse le problème posé par l'utilisateur avec les informations dont tu disposes.",
+          "- Propose des pistes d'amélioration ou d'investigation.",
+          "",
+          "IMPORTANT :",
+          "- Ne parle PAS des outils que tu utilises.",
+          "- Ne décris PAS ton processus interne.",
+          "- Ne repose PAS la question à l'utilisateur.",
+        ].join("\n");
+
+        const backupResponse = await this.grokClient.chat(
+          [{ role: "user", content: backupPrompt }],
+          [],
+          undefined,
+          { search_parameters: { mode: "off" } }
+        );
+
+        const backupContent = backupResponse.choices?.[0]?.message?.content?.trim();
+        if (!backupContent) {
+          return null;
+        }
+
+        return backupContent;
       }
+
+      return content;
+    } catch (error: any) {
+      debugLog.log("⚠️  Summary phase failed:", error?.message || String(error));
+      return null;
+    }
+  }
+
+  /**
+   * Generate and persist a reasoning summary block as a ChatEntry.
+   * Non-streaming path uses this directly; streaming path uses generateSummaryText
+   * and manages persistence separately when needed.
+   */
+  private async generateAndAppendSummary(lastUserMessage: string): Promise<ChatEntry | null> {
+    try {
+      let content = await this.generateSummaryText(lastUserMessage);
+
+      // If LLM failed to generate summary, use fallback
+      if (!content) {
+        debugLog.log("⚠️  Summary text generation returned empty content - using fallback");
+        content = this.generateFallbackSummary(lastUserMessage);
+      }
+
+      const wrapped = this.buildReasoningSummaryBlock(content);
 
       const entry: ChatEntry = {
         type: "assistant",
-        content,
+        content: wrapped,
         timestamp: new Date(),
       };
 
@@ -503,25 +651,14 @@ Current working directory: ${process.cwd()}`,
           toolRounds++;
           hadToolCalls = true;
 
-          // Add assistant message with tool calls
-          const assistantEntry: ChatEntry = {
-            type: "assistant",
-            content: assistantMessage.content || "Using tools to help you...",
-            timestamp: new Date(),
-            toolCalls: assistantMessage.tool_calls,
-          };
-          this.chatHistory.push(assistantEntry);
-          await this.persist(assistantEntry);
-          newEntries.push(assistantEntry);
-
-          // Add assistant message to conversation
+          // Add assistant message to conversation (for API)
           this.messages.push({
             role: "assistant",
             content: assistantMessage.content || "",
             tool_calls: assistantMessage.tool_calls,
           } as any);
 
-          // Create initial tool call entries to show tools are being executed
+          // ✅ FIRST: Create and add tool call entries (tools appear first in history)
           assistantMessage.tool_calls.forEach((toolCall) => {
             const toolCallEntry: ChatEntry = {
               type: "tool_call",
@@ -532,6 +669,17 @@ Current working directory: ${process.cwd()}`,
             this.chatHistory.push(toolCallEntry);
             newEntries.push(toolCallEntry);
           });
+
+          // ✅ THEN: Add assistant message after tools (appears after tools in history)
+          const assistantEntry: ChatEntry = {
+            type: "assistant",
+            content: assistantMessage.content || "",  // ✅ Empty string instead of placeholder
+            timestamp: new Date(),
+            toolCalls: assistantMessage.tool_calls,
+          };
+          this.chatHistory.push(assistantEntry);
+          await this.persist(assistantEntry);
+          newEntries.push(assistantEntry);
 
           // Execute tool calls and update the entries
           for (const toolCall of assistantMessage.tool_calls) {
@@ -547,9 +695,7 @@ Current working directory: ${process.cwd()}`,
               const updatedEntry: ChatEntry = {
                 ...this.chatHistory[entryIndex],
                 type: "tool_result",
-                content: result.success
-                  ? result.output || "Success"
-                  : result.error || "Error occurred",
+                content: this.formatToolResultSummary(toolCall, result),
                 toolResult: result,
               };
               this.chatHistory[entryIndex] = updatedEntry;
@@ -643,31 +789,23 @@ Current working directory: ${process.cwd()}`,
         newEntries.push(warningEntry);
       }
 
-      if (hadToolCalls) {
-        const contentTrimmed = finalAssistantContent.trim();
-        
-        // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
-        if (contentTrimmed === "Using tools to help you...") {
-          debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
-          return newEntries;
+      const contentTrimmed = finalAssistantContent.trim();
+      // Générer synthèse si :
+      // - Réponse vide/placeholder
+      // - Réponse trop courte (< 150 caractères)
+      const needsSummary =
+        !contentTrimmed ||
+        contentTrimmed === "Using tools to help you..." ||
+        contentTrimmed.length < 150;
+      
+      if (needsSummary) {
+        debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
+        const summaryEntry = await this.generateAndAppendSummary(message);
+        if (summaryEntry) {
+          newEntries.push(summaryEntry);
         }
-        
-        // Générer synthèse si :
-        // - Réponse vide
-        // - Réponse trop courte (< 150 caractères)
-        const needsSummary =
-          !contentTrimmed ||
-          contentTrimmed.length < 150;
-        
-        if (needsSummary) {
-          debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
-          const summaryEntry = await this.generateAndAppendSummary(message);
-          if (summaryEntry) {
-            newEntries.push(summaryEntry);
-          }
-        } else {
-          debugLog.log("✅ LLM provided sufficient response, skipping summary");
-        }
+      } else {
+        debugLog.log("✅ LLM provided sufficient response, skipping summary");
       }
 
       return newEntries;
@@ -745,6 +883,9 @@ Current working directory: ${process.cwd()}`,
     this.chatHistory.push(userEntry);
     await this.persist(userEntry);
     this.messages.push({ role: "user", content: message });
+
+    // ✅ Removed hardcoded greeting response - LLM will respond naturally
+    // Identity check is already implemented in switchToModel() with server verification
 
     // Calculate input tokens
     let inputTokens = this.tokenCounter.countMessageTokens(
@@ -868,7 +1009,7 @@ Current working directory: ${process.cwd()}`,
         // Add assistant entry to history
         const assistantEntry: ChatEntry = {
           type: "assistant",
-          content: accumulatedMessage.content || "Using tools to help you...",
+          content: accumulatedMessage.content || "",  // ✅ Empty string instead of placeholder
           timestamp: new Date(),
           toolCalls: accumulatedMessage.tool_calls || undefined,
         };
@@ -911,9 +1052,7 @@ Current working directory: ${process.cwd()}`,
 
             const toolResultEntry: ChatEntry = {
               type: "tool_result",
-              content: result.success
-                ? result.output || "Success"
-                : result.error || "Error occurred",
+              content: this.formatToolResultSummary(toolCall, result),
               timestamp: new Date(),
               toolCall: toolCall,
               toolResult: result,
@@ -971,35 +1110,49 @@ Current working directory: ${process.cwd()}`,
         };
       }
 
-      if (hadToolCalls) {
-        const contentTrimmed = finalAssistantContent.trim();
-        
-        // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
-        if (contentTrimmed === "Using tools to help you...") {
-          debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
-          yield { type: "done" };
-          return;
+      const contentTrimmed = finalAssistantContent.trim();
+      // Générer synthèse si :
+      // - Réponse vide/placeholder
+      // - Réponse trop courte (< 150 caractères)
+      const needsSummary =
+        !contentTrimmed ||
+        contentTrimmed === "Using tools to help you..." ||
+        contentTrimmed.length < 150;
+      
+      if (needsSummary) {
+        debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
+        // Inform the user that a reasoning summary is being generated
+        yield {
+          type: "content",
+          content: "\n\n[Generating reasoning summary based on tool usage…]",
+        };
+
+        let summaryText = await this.generateSummaryText(message);
+
+        // If LLM failed to generate summary, use fallback
+        if (!summaryText) {
+          debugLog.log("⚠️  Summary text generation returned empty content - using fallback");
+          summaryText = this.generateFallbackSummary(message);
         }
-        
-        // Générer synthèse si :
-        // - Réponse vide
-        // - Réponse trop courte (< 150 caractères)
-        const needsSummary =
-          !contentTrimmed ||
-          contentTrimmed.length < 150;
-        
-        if (needsSummary) {
-          debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
-          const summaryEntry = await this.generateAndAppendSummary(message);
-          if (summaryEntry) {
-            yield {
-              type: "content",
-              content: "\n\n" + summaryEntry.content,
-            };
-          }
-        } else {
-          debugLog.log("✅ LLM provided sufficient response, skipping summary");
-        }
+
+        const wrapped = this.buildReasoningSummaryBlock(summaryText);
+
+        // Persist reasoning summary block for session history
+        const summaryEntry: ChatEntry = {
+          type: "assistant",
+          content: wrapped,
+          timestamp: new Date(),
+        };
+        this.chatHistory.push(summaryEntry);
+        await this.persist(summaryEntry);
+
+        // Stream the reasoning summary block to the UI
+        yield {
+          type: "content",
+          content: "\n\n" + wrapped,
+        };
+      } else {
+        debugLog.log("✅ LLM provided sufficient response, skipping summary");
       }
 
       yield { type: "done" };
@@ -1097,20 +1250,54 @@ Current working directory: ${process.cwd()}`,
           break;
 
         case "create_file":
+          // 📺 COT: Creating file
+          executionStream.emitCOT('thinking', `Creating new file: ${args.path}`);
+          executionStream.emitCOT('action', `Writing ${args.content?.length || 0} characters to file`);
+
           result = await this.textEditor.create(args.path, args.content);
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `File created successfully at ${args.path}`);
+            executionStream.emitCOT('decision', `✅ File creation succeeded`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to create file: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ File creation failed`);
+          }
           break;
 
         case "str_replace_editor":
+          // 📺 COT: Replacing string in file
+          executionStream.emitCOT('thinking', `Editing file: ${args.path}`);
+          const replaceMode = args.replace_all ? 'all occurrences' : 'first occurrence';
+          executionStream.emitCOT('action', `Replacing ${replaceMode} of "${args.old_str.substring(0, 50)}${args.old_str.length > 50 ? '...' : ''}"`);
+
           result = await this.textEditor.strReplace(
             args.path,
             args.old_str,
             args.new_str,
             args.replace_all
           );
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            const changeInfo = result.output ? ` - ${result.output}` : '';
+            executionStream.emitCOT('observation', `File edited successfully${changeInfo}`);
+            executionStream.emitCOT('decision', `✅ String replacement succeeded`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to edit file: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ String replacement failed`);
+          }
           break;
 
         case "edit_file":
+          // 📺 COT: Editing file with Morph
+          executionStream.emitCOT('thinking', `Editing file with AI: ${args.target_file}`);
+          executionStream.emitCOT('action', `Applying instructions: ${args.instructions.substring(0, 100)}${args.instructions.length > 100 ? '...' : ''}`);
+
           if (!this.morphEditor) {
+            executionStream.emitCOT('observation', `Morph Fast Apply not available`);
+            executionStream.emitCOT('decision', `❌ MORPH_API_KEY not set`);
             result = {
               success: false,
               error:
@@ -1122,6 +1309,15 @@ Current working directory: ${process.cwd()}`,
               args.instructions,
               args.code_edit
             );
+
+            // 📺 COT: Observation with result
+            if (result.success) {
+              executionStream.emitCOT('observation', `AI edit applied successfully`);
+              executionStream.emitCOT('decision', `✅ File edited with Morph`);
+            } else {
+              executionStream.emitCOT('observation', `AI edit failed: ${result.error}`);
+              executionStream.emitCOT('decision', `❌ Morph edit failed`);
+            }
           }
           break;
 
@@ -1168,14 +1364,46 @@ Current working directory: ${process.cwd()}`,
           break;
 
         case "create_todo_list":
+          // 📺 COT: Creating todo list
+          executionStream.emitCOT('thinking', `Creating todo list with ${args.todos?.length || 0} items`);
+          executionStream.emitCOT('action', `Writing todos to list`);
+
           result = await this.todoTool.createTodoList(args.todos);
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `Todo list created with ${args.todos?.length || 0} items`);
+            executionStream.emitCOT('decision', `✅ Todo list creation succeeded`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to create todo list: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Todo list creation failed`);
+          }
           break;
 
         case "update_todo_list":
+          // 📺 COT: Updating todo list
+          const updateCount = args.updates ? Object.keys(args.updates).length : 0;
+          executionStream.emitCOT('thinking', `Updating ${updateCount} todo item(s)`);
+          executionStream.emitCOT('action', `Applying updates to todo list`);
+
           result = await this.todoTool.updateTodoList(args.updates);
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `Todo list updated (${updateCount} changes)`);
+            executionStream.emitCOT('decision', `✅ Todo list update succeeded`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to update todo list: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Todo list update failed`);
+          }
           break;
 
         case "search":
+          // 📺 COT: Searching
+          executionStream.emitCOT('thinking', `Searching for: "${args.query}"`);
+          const searchTypeInfo = args.search_type ? ` (${args.search_type})` : '';
+          executionStream.emitCOT('action', `Starting search${searchTypeInfo}`);
+
           result = await this.search.search(args.query, {
             searchType: args.search_type,
             includePattern: args.include_pattern,
@@ -1187,18 +1415,55 @@ Current working directory: ${process.cwd()}`,
             fileTypes: args.file_types,
             includeHidden: args.include_hidden,
           });
+
+          // 📺 COT: Observation with results
+          if (result.success) {
+            const resultCount = result.output?.split('\n').filter(l => l.trim()).length || 0;
+            executionStream.emitCOT('observation', `Found ${resultCount} results`);
+            executionStream.emitCOT('decision', `✅ Search completed successfully`);
+          } else {
+            executionStream.emitCOT('observation', `Search failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Search failed`);
+          }
           break;
         case "apply_patch":
+          // 📺 COT: Applying patch
+          const isDryRun = !!args.dry_run;
+          executionStream.emitCOT('thinking', `Applying patch${isDryRun ? ' (dry run)' : ''}`);
+          executionStream.emitCOT('action', `Processing patch content (${args.patch?.length || 0} chars)`);
+
           if (!this.applyPatch) {
             const mod = await import("../tools/apply-patch.js");
             this.applyPatch = new mod.ApplyPatchTool();
           }
-          result = await this.applyPatch.apply(args.patch, !!args.dry_run);
+          result = await this.applyPatch.apply(args.patch, isDryRun);
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `Patch applied successfully${isDryRun ? ' (dry run)' : ''}`);
+            executionStream.emitCOT('decision', `✅ Patch ${isDryRun ? 'validated' : 'applied'}`);
+          } else {
+            executionStream.emitCOT('observation', `Patch failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Patch application failed`);
+          }
           break;
 
         case "get_my_identity":
+          // 📺 COT: Getting identity
+          executionStream.emitCOT('thinking', `Retrieving current identity and configuration`);
+          executionStream.emitCOT('action', `Reading identity information`);
+
           const getMyIdentity = await import("../tools/get-my-identity.js");
           result = await getMyIdentity.get_my_identity(args, this);
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `Identity information retrieved`);
+            executionStream.emitCOT('decision', `✅ Identity retrieved`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to get identity: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Identity retrieval failed`);
+          }
           break;
         
         // ============================================
@@ -1206,8 +1471,21 @@ Current working directory: ${process.cwd()}`,
         // ============================================
         
         case "session_list": {
+          // 📺 COT: Listing sessions
+          executionStream.emitCOT('thinking', `Retrieving list of available sessions`);
+          executionStream.emitCOT('action', `Querying session database`);
+
           const sessionTools = await import('../tools/session-tools.js');
           result = await sessionTools.executeSessionList();
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `Session list retrieved`);
+            executionStream.emitCOT('decision', `✅ Sessions listed`);
+          } else {
+            executionStream.emitCOT('observation', `Failed to list sessions: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Session listing failed`);
+          }
           break;
         }
         
@@ -1294,9 +1572,22 @@ Current working directory: ${process.cwd()}`,
         // ============================================
         
         case "timeline_query": {
+          // 📺 COT: Querying timeline
           const queryArgs = JSON.parse(toolCall.function.arguments);
+          executionStream.emitCOT('thinking', `Querying timeline database`);
+          executionStream.emitCOT('action', `Executing timeline query with filters`);
+
           const { executeTimelineQuery } = await import('../tools/timeline-query-tool.js');
           result = await executeTimelineQuery(queryArgs);
+
+          // 📺 COT: Observation with result
+          if (result.success) {
+            executionStream.emitCOT('observation', `Timeline query completed`);
+            executionStream.emitCOT('decision', `✅ Timeline queried`);
+          } else {
+            executionStream.emitCOT('observation', `Timeline query failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Timeline query failed`);
+          }
           break;
         }
         
@@ -1317,8 +1608,20 @@ Current working directory: ${process.cwd()}`,
         default:
           // Check if this is an MCP tool
           if (toolCall.function.name.startsWith("mcp__")) {
+            // 📺 COT: MCP tool execution
+            executionStream.emitCOT('thinking', `Executing MCP tool: ${toolCall.function.name}`);
+            executionStream.emitCOT('action', `Calling external MCP server`);
+
             result = await this.executeMCPTool(toolCall);
+
+            // 📺 COT: Observation with result
+            if (result.success) {
+              executionStream.emitCOT('observation', `MCP tool executed successfully`);
+            } else {
+              executionStream.emitCOT('observation', `MCP tool failed: ${result.error}`);
+            }
           } else {
+            executionStream.emitCOT('observation', `Unknown tool: ${toolCall.function.name}`);
             result = {
               success: false,
               error: `Unknown tool: ${toolCall.function.name}`,
@@ -1475,7 +1778,112 @@ Current working directory: ${process.cwd()}`,
   getApiKey(): string {
     return this.grokClient.getApiKey();
   }
-  
+
+  /**
+   * Get the official API model name for a provider
+   * CRITICAL: This ensures identity check uses correct model names
+   */
+  private getOfficialModelName(model: string, provider: string): string {
+    const m = model.toLowerCase();
+
+    switch (provider) {
+      case 'claude':
+        // Claude/Anthropic official model names
+        if (m.includes('sonnet') && (m.includes('4-5') || m.includes('4.5'))) {
+          return 'claude-3-5-sonnet-20241022'; // Sonnet 4.5 → 3.5
+        }
+        if (m.includes('sonnet') && m.includes('4')) {
+          return 'claude-3-5-sonnet-20241022'; // Sonnet 4 → 3.5
+        }
+        if (m.includes('opus') && m.includes('3')) {
+          return 'claude-3-opus-20240229';
+        }
+        if (m.includes('sonnet') && m.includes('3')) {
+          return 'claude-3-sonnet-20240229';
+        }
+        if (m.includes('haiku')) {
+          return 'claude-3-haiku-20240307';
+        }
+        // If already in correct format, return as-is
+        if (m.startsWith('claude-3-')) {
+          return model;
+        }
+        // Default to Sonnet 3.5 if unclear
+        return 'claude-3-5-sonnet-20241022';
+
+      case 'openai':
+        // OpenAI models - normalize common variations
+        if (m === 'gpt-5' || m === 'gpt5') {
+          return 'gpt-5'; // Keep as-is for now
+        }
+        if (m.includes('gpt-4-turbo')) {
+          return 'gpt-4-turbo-preview';
+        }
+        if (m === 'gpt-4' || m === 'gpt4') {
+          return 'gpt-4-turbo-preview';
+        }
+        if (m.includes('o1-preview')) {
+          return 'o1-preview';
+        }
+        if (m.includes('o3-mini')) {
+          return 'o3-mini';
+        }
+        return model; // OpenAI names are usually correct
+
+      case 'deepseek':
+        // DeepSeek official names
+        if (m.includes('chat')) {
+          return 'deepseek-chat';
+        }
+        if (m.includes('coder')) {
+          return 'deepseek-coder';
+        }
+        return model;
+
+      case 'mistral':
+        // Mistral official names
+        if (m.includes('large')) {
+          return 'mistral-large-latest';
+        }
+        if (m.includes('medium')) {
+          return 'mistral-medium-latest';
+        }
+        return model;
+
+      case 'grok':
+        // Grok official names
+        if (m.includes('beta') || m.includes('grok-2')) {
+          return 'grok-beta';
+        }
+        if (m.includes('vision')) {
+          return 'grok-vision-beta';
+        }
+        return 'grok-beta'; // Default
+
+      default:
+        return model;
+    }
+  }
+
+  /**
+   * Format identity check result for display
+   */
+  private formatIdentityResult(success: boolean, apiModel: string, aiResponse: string, error?: string): string {
+    if (success) {
+      return `✅ Model Switch Successful
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 API Metadata: ${apiModel}
+🤖 Model confirms: "${aiResponse}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    } else {
+      return `⚠️  Identity Verification Failed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Error: ${error}
+⚠️  Connection established but identity uncertain
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    }
+  }
+
   // ✅ NEW: Switch to different model with new API key and baseURL
   // Used when changing providers (e.g., Grok → Claude)
   async switchToModel(model: string, apiKey: string, baseURL: string): Promise<string> {
@@ -1519,36 +1927,77 @@ If you need confirmation, use the 'get_my_identity' tool.`
     
     debugLog.log(`✅ Session manager updated for provider=${provider}`);
     
-    // ✅ NEW: Identity check (isolated message, no history) with timeout
+    // ✅ Identity check (critical for user certainty) with fallback
     try {
-      debugLog.log(`🔍 Sending identity check to model...`);
-      
-      // Add timeout to prevent hanging on unresponsive APIs
-      const identityPromise = this.grokClient.chat(
-        [{ role: "user", content: "In one short sentence, what is your exact model name and provider?" }],
-        [], // No tools
-        undefined, // Use current model
-        undefined  // No search
-      );
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Identity check timeout after 10s')), 10000)
-      );
-      
-      const identityResponse = await Promise.race([identityPromise, timeoutPromise]) as any;
-      
+      debugLog.log(`🔍 Starting identity check for ${provider}...`);
+
+      // Get official model name for this provider
+      const officialModel = this.getOfficialModelName(model, provider);
+      debugLog.log(`📝 Original model: ${model}`);
+      debugLog.log(`📝 Official model: ${officialModel}`);
+
+      let identityResponse: any;
+
+      // Try with official model name first
+      try {
+        debugLog.log(`🔍 Attempting identity check with official model name...`);
+        const identityPromise = this.grokClient.chat(
+          [{ role: "user", content: "In one short sentence, what is your exact model name and provider?" }],
+          [], // No tools
+          officialModel, // ✅ Use official model name
+          undefined  // No search
+        );
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Identity check timeout after 10s')), 10000)
+        );
+
+        identityResponse = await Promise.race([identityPromise, timeoutPromise]) as any;
+        debugLog.log(`✅ Identity check succeeded with official model name`);
+
+      } catch (firstError: any) {
+        // If official name fails, try with original model name
+        if (officialModel !== model) {
+          debugLog.log(`⚠️  Official model name failed, trying original: ${model}`);
+          debugLog.log(`   Error was: ${firstError.message}`);
+
+          const fallbackPromise = this.grokClient.chat(
+            [{ role: "user", content: "In one short sentence, what is your exact model name and provider?" }],
+            [],
+            model, // ✅ Fallback to original name
+            undefined
+          );
+
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Identity check timeout after 10s')), 10000)
+          );
+
+          identityResponse = await Promise.race([fallbackPromise, timeoutPromise]) as any;
+          debugLog.log(`✅ Identity check succeeded with original model name`);
+        } else {
+          throw firstError;
+        }
+      }
+
+      // Extract identity information
       const aiSays = identityResponse.choices[0]?.message?.content || "No response";
       const apiReturned = identityResponse.model || model;
-      
+
       debugLog.log(`✅ AI says: "${aiSays}"`);
-      debugLog.log(`📝 API returned: ${apiReturned}`);
-      
-      // Return formatted identity info
-      return `🤖 AI Response: "${aiSays}"\n📋 API Metadata: ${apiReturned}`;
-      
+      debugLog.log(`📋 API returned: ${apiReturned}`);
+
+      // Return formatted identity info (source of truth)
+      return this.formatIdentityResult(true, apiReturned, aiSays);
+
     } catch (error: any) {
-      debugLog.log(`⚠️  Identity check failed: ${error.message}`);
-      return `⚠️  Identity check skipped (${error.message || 'timeout'}), connection established`;
+      // Identity check failed - this is a real problem
+      debugLog.error(`❌ Identity check FAILED: ${error.message}`);
+      debugLog.error(`   Model: ${model}`);
+      debugLog.error(`   Provider: ${provider}`);
+      debugLog.error(`   BaseURL: ${baseURL}`);
+
+      // Return formatted error but allow connection
+      return this.formatIdentityResult(false, model, "", error.message);
     }
   }
 
