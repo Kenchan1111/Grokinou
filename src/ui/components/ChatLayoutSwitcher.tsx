@@ -8,7 +8,7 @@
  * This is the key component that replaces the old "finalContent" logic.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box } from 'ink';
 import { useChatState } from '../contexts/ChatContext.js';
 import { ConversationView } from './ConversationView.js';
@@ -50,16 +50,18 @@ export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
     searchFullscreen
   } = useChatState();
 
-  // Get execution viewer settings
-  const settingsManager = getSettingsManager();
-  const executionViewerSettings = settingsManager.getProjectSetting('executionViewer') || {
-    enabled: true,
-    defaultMode: 'hidden',
-    autoShow: true,
-    autoHide: false,
-    maxExecutionsShown: 10,
-    detailsMode: false
-  };
+  // Get execution viewer settings (memoized to prevent re-renders)
+  const executionViewerSettings = useMemo(() => {
+    const settingsManager = getSettingsManager();
+    return settingsManager.getProjectSetting('executionViewer') || {
+      enabled: true,
+      defaultMode: 'hidden' as const,
+      autoShow: true,
+      autoHide: false,
+      maxExecutionsShown: 10,
+      detailsMode: false
+    };
+  }, []);
 
   // ============================================
   // SEARCH MODE
@@ -100,12 +102,16 @@ export const ChatLayoutSwitcher: React.FC<ChatLayoutSwitcherProps> = ({
   // EXECUTION VIEWER MODE
   // ============================================
   if (executionViewerSettings.enabled) {
+    // Create stable components WITHOUT keys to prevent JSX reuse issues
+    const conversationComponent = <ConversationView scrollRef={scrollRef} />;
+    const viewerComponent = <ExecutionViewer mode="split" settings={executionViewerSettings} />;
+
     return (
       <LayoutManager
-        conversation={<ConversationView scrollRef={scrollRef} />}
-        executionViewer={<ExecutionViewer mode="split" settings={executionViewerSettings} />}
+        conversation={conversationComponent}
+        executionViewer={viewerComponent}
         config={{
-          defaultMode: executionViewerSettings.defaultMode,
+          defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
           autoShow: executionViewerSettings.autoShow,
           autoHide: executionViewerSettings.autoHide,
           splitRatio: 0.6,

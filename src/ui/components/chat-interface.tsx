@@ -23,6 +23,8 @@ import { generateStatusMessage } from "../../utils/status-message.js";
 import type { StartupConfig } from "../../index.js";
 import { LayoutManager } from "./layout-manager.js";
 import { ExecutionViewer } from "./execution-viewer.js";
+import { ChatProvider, type ChatContextValue } from "../contexts/ChatContext.js";
+import { ChatLayoutSwitcher } from "./ChatLayoutSwitcher.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
@@ -569,119 +571,9 @@ function ChatInterfaceWithAgent({
     processingStartTime.current = 0;
   };
 
-  // Tips uniquement si pas d'historique au démarrage
-  const showTips = committedHistory.length === 0 && !confirmationOptions;
+  // Note: chatViewContent has been removed - now using ChatProvider + ChatLayoutSwitcher
+  // Each layout creates its own ConversationView instance
 
-  // Chat view content (reused in both normal and split modes)
-  const chatViewContent = (
-    <Box flexDirection="column" height={searchMode ? "100%" : undefined} overflow={searchMode ? "hidden" : undefined}>
-      {/* Tips uniquement au premier démarrage sans historique */}
-      {showTips && !searchMode && (
-        <Box flexDirection="column">
-          <Text color="cyan" bold>
-            Tips for getting started:
-          </Text>
-          <Box flexDirection="column">
-            <Text color="gray">
-              1. Ask questions, edit files, or run commands.
-            </Text>
-            <Text color="gray">2. Be specific for the best results.</Text>
-            <Text color="gray">
-              3. Create GROK.md files to customize your interactions with Grok.
-            </Text>
-            <Text color="gray">
-              4. Press Shift+Tab to toggle auto-edit mode.
-            </Text>
-            <Text color="gray">5. /help for more information.</Text>
-          </Box>
-        </Box>
-      )}
-
-      <Box flexDirection="column" ref={searchMode ? undefined : scrollRef} flexGrow={1} overflow={searchMode ? "hidden" : undefined}>
-        {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
-        {/* En mode recherche, limiter l'affichage pour éviter le scroll */}
-        <Static items={searchMode ? committedHistory.slice(-10) : committedHistory}>
-          {(entry, index) => (
-            <MemoizedArchived key={`committed-${entry.timestamp.getTime()}-${index}`} entry={entry} />
-          )}
-        </Static>
-        
-        {/* MESSAGES ACTIFS : En cours de création/affichage */}
-        <ChatHistory
-          entries={activeMessages}
-          isConfirmationActive={!!confirmationOptions}
-        />
-        
-        {/* STREAMING EN COURS : Message de Grok en train d'être écrit */}
-        <StreamingDisplay
-          isStreaming={isStreaming}
-          streamingContent={streamingContent}
-          streamingTools={streamingTools}
-          streamingToolResults={streamingToolResults}
-        />
-      </Box>
-
-      {/* Show confirmation dialog if one is pending */}
-      {confirmationOptions && (
-        <ConfirmationDialog
-          operation={confirmationOptions.operation}
-          filename={confirmationOptions.filename}
-          showVSCodeOpen={confirmationOptions.showVSCodeOpen}
-          content={confirmationOptions.content}
-          onConfirm={handleConfirmation}
-          onReject={handleRejection}
-        />
-      )}
-
-      {!confirmationOptions && !searchMode && (
-        <>
-          {SHOW_STATUS && (
-            <LoadingSpinner
-              isActive={isProcessing || isStreaming}
-              processingTime={processingTime}
-              tokenCount={tokenCount}
-            />
-          )}
-
-          <InputController
-            agent={agent}
-            chatHistory={chatHistory}
-            setChatHistory={stableChatHistorySetter}
-            setCommittedHistory={stableCommittedHistorySetter}
-            setActiveMessages={stableActiveMessagesSetter}
-            isSwitchingRef={isSwitchingRef}
-            setIsProcessing={stableProcessingSetter}
-            setIsStreaming={stableStreamingSetter}
-            setStreamingContent={stableStreamingContentSetter}
-            setStreamingTools={stableStreamingToolsSetter}
-            setStreamingToolResults={stableStreamingToolResultsSetter}
-            setTokenCount={stableTokenCountSetter}
-            setProcessingTime={stableProcessingTimeSetter}
-            processingStartTime={processingStartTime}
-            isProcessing={isProcessing}
-            isStreaming={isStreaming}
-            isConfirmationActive={!!confirmationOptions}
-            searchMode={searchMode}
-            onSearchCommand={handleSearchCommand}
-            inputInjectionRef={inputInjectionRef}
-          />
-        </>
-      )}
-      
-      {/* Search mode status indicator */}
-      {!confirmationOptions && searchMode && (
-        <Box borderStyle="single" borderColor="cyan" paddingX={1} marginTop={1}>
-          <Text color="cyan" bold>
-            🔍 Search Mode Active
-          </Text>
-          <Text dimColor>
-            {" "}• Use ↑/↓ to navigate results • Enter to expand • Ctrl+S to copy • Esc to close
-          </Text>
-        </Box>
-      )}
-    </Box>
-  );
-  
   // Get terminal height for fixed viewport (prevent stacking on scroll)
   const { stdout: mainStdout } = useStdout();
   const terminalHeight = mainStdout?.rows || 24;
@@ -703,72 +595,122 @@ function ChatInterfaceWithAgent({
   }, []);
   
   // Determine final content based on search mode and execution viewer
-  const finalContent = useMemo(() => {
-    if (searchMode) {
-      // Search mode takes precedence - use existing search split layout
-      return searchFullscreen ? (
-        <SearchResults
-          query={searchQuery}
-          results={searchResults}
-          onClose={handleCloseSearch}
-          onPasteToInput={handlePasteToInput}
-          onToggleFullscreen={handleToggleFullscreen}
-          fullscreen={true}
-        />
-      ) : (
-        <SplitLayout
-          left={chatViewContent}
-          right={
-            <SearchResults
-              query={searchQuery}
-              results={searchResults}
-              onClose={handleCloseSearch}
-              onPasteToInput={handlePasteToInput}
-              onToggleFullscreen={handleToggleFullscreen}
-              fullscreen={false}
-            />
-          }
-          splitRatio={0.5}
-        />
-      );
+  // Create ChatContext value from current state
+  const chatContextValue: ChatContextValue = useMemo(() => ({
+    state: {
+      chatHistory,
+      committedHistory,
+      activeMessages,
+      isStreaming,
+      streamingContent,
+      streamingTools,
+      streamingToolResults,
+      isProcessing,
+      processingTime,
+      tokenCount,
+      showTips: committedHistory.length === 0 && !confirmationOptions,
+      confirmationOptions,
+      searchMode,
+      searchQuery,
+      searchResults,
+      searchFullscreen
+    },
+    actions: {
+      setChatHistory: stableChatHistorySetter,
+      setCommittedHistory: stableCommittedHistorySetter,
+      setActiveMessages: stableActiveMessagesSetter,
+      setIsStreaming: stableStreamingSetter,
+      setIsProcessing: stableProcessingSetter,
+      setSearchMode,
+      setSearchQuery,
+      setSearchResults,
+      setSearchFullscreen
     }
-    
-    // Normal mode - wrap with LayoutManager if execution viewer is enabled
-    if (executionViewerSettings.enabled) {
-      return (
-        <LayoutManager
-          conversation={chatViewContent}
-          executionViewer={<ExecutionViewer mode="split" settings={executionViewerSettings} />}
-          config={{
-            defaultMode: executionViewerSettings.defaultMode,
-            autoShow: executionViewerSettings.autoShow,
-            autoHide: executionViewerSettings.autoHide,
-            autoHideDelay: executionViewerSettings.autoHideDelay,
-            splitRatio: executionViewerSettings.splitRatio,
-            layout: executionViewerSettings.layout,
-          }}
-        />
-      );
-    }
-    
-    // Execution viewer disabled - show conversation only
-    return chatViewContent;
-  }, [
+  }), [
+    chatHistory,
+    committedHistory,
+    activeMessages,
+    isStreaming,
+    streamingContent,
+    streamingTools,
+    streamingToolResults,
+    isProcessing,
+    processingTime,
+    tokenCount,
+    confirmationOptions,
     searchMode,
-    searchFullscreen,
     searchQuery,
     searchResults,
-    handleCloseSearch,
-    handlePasteToInput,
-    handleToggleFullscreen,
-    chatViewContent,
-    executionViewerSettings,
+    searchFullscreen,
+    stableChatHistorySetter,
+    stableCommittedHistorySetter,
+    stableActiveMessagesSetter,
+    stableStreamingSetter,
+    stableProcessingSetter,
+    setSearchMode,
+    setSearchQuery,
+    setSearchResults,
+    setSearchFullscreen
   ]);
   
   return (
-    <Box flexDirection="column" paddingX={2} height={searchMode ? terminalHeight : undefined} overflow={searchMode ? "hidden" : undefined}>
-      {finalContent}
-    </Box>
+    <ChatProvider value={chatContextValue}>
+      <Box
+        key={`chat-${isStreaming ? 'streaming' : 'idle'}-${committedHistory.length}`}
+        flexDirection="column"
+        paddingX={2}
+        height={searchMode ? terminalHeight : undefined}
+        overflow={searchMode ? "hidden" : undefined}
+      >
+        {/* Confirmation dialog */}
+        {confirmationOptions && (
+          <ConfirmationDialog
+            operation={confirmationOptions.operation}
+            filename={confirmationOptions.filename}
+            showVSCodeOpen={confirmationOptions.showVSCodeOpen}
+            content={confirmationOptions.content}
+            onConfirm={handleConfirmation}
+            onReject={handleRejection}
+          />
+        )}
+
+        {/* Layout switcher (replaces finalContent) */}
+        {!confirmationOptions && (
+          <ChatLayoutSwitcher
+            scrollRef={scrollRef}
+            onCloseSearch={handleCloseSearch}
+            onPasteToInput={handlePasteToInput}
+            onToggleFullscreen={handleToggleFullscreen}
+          />
+        )}
+
+        {/* Input controller */}
+        {!confirmationOptions && !searchMode && (
+          <InputController
+            agent={agent}
+            chatHistory={chatHistory}
+            setChatHistory={stableChatHistorySetter}
+            setCommittedHistory={stableCommittedHistorySetter}
+            setActiveMessages={stableActiveMessagesSetter}
+            isSwitchingRef={isSwitchingRef}
+            setIsProcessing={stableProcessingSetter}
+            setIsStreaming={stableStreamingSetter}
+            setStreamingContent={setStreamingContent}
+            setStreamingTools={setStreamingTools}
+            setStreamingToolResults={setStreamingToolResults}
+            setTokenCount={stableTokenCountSetter}
+            setProcessingTime={stableProcessingTimeSetter}
+            processingStartTime={processingStartTime}
+            isProcessing={isProcessing}
+            isStreaming={isStreaming}
+            isConfirmationActive={!!confirmationOptions}
+            searchMode={searchMode}
+            onSearchCommand={handleSearchCommand}
+            inputInjectionRef={inputInjectionRef}
+          />
+        )}
+      </Box>
+    </ChatProvider>
   );
 }
 
