@@ -58,9 +58,19 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
           updated = [...prev];
           updated[index] = execution;
         } else {
-          // Add new execution
-          updated = [...prev, execution];
+          // Add new execution ONLY if it's active
+          if (execution.status === 'running') {
+            updated = [...prev, execution];
+          } else {
+            // Don't add completed executions
+            return prev;
+          }
         }
+
+        // ✅ CRITICAL FIX: Filter out completed executions to prevent "frozen view" in viewer mode
+        // This ensures that when an execution completes (running → success/error),
+        // it's automatically removed from the viewer display
+        updated = updated.filter(exec => exec.status === 'running');
 
         // Apply limit (keep most recent executions)
         if (updated.length > limit) {
