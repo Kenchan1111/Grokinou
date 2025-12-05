@@ -81,7 +81,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
         </Box>
       )}
 
-      <Box flexDirection="column" ref={scrollRef} flexGrow={1} overflow={searchMode ? "hidden" : undefined}>
+      <Box flexDirection="column" ref={scrollRef} flexGrow={1}>
         {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
         {/* En mode recherche, limiter l'affichage pour éviter le scroll */}
         {/* NOTE: Pas de clé dynamique ici - chaque instance de ConversationView est indépendante */}
