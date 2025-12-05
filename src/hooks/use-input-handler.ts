@@ -325,7 +325,7 @@ export function useInputHandler({
   } = useEnhancedInput({
     onSubmit: handleInputSubmit,
     onSpecialKey: handleSpecialKey,
-    disabled: isConfirmationActive,
+    disabled: isConfirmationActive || showModelSelection,
   });
 
   // Expose input injection function for external use (e.g., paste from search)

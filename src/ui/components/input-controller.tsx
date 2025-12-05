@@ -91,12 +91,14 @@ const InputControllerComponent = (props: InputControllerProps) => {
 
   return (
     <>
-      <ChatInput
-        input={input}
-        cursorPosition={cursorPosition}
-        isProcessing={isProcessing}
-        isStreaming={isStreaming}
-      />
+      {!showModelSelection && (
+        <ChatInput
+          input={input}
+          cursorPosition={cursorPosition}
+          isProcessing={isProcessing}
+          isStreaming={isStreaming}
+        />
+      )}
 
       <Box flexDirection="row" marginTop={1}>
         <Box marginRight={2}>

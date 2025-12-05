@@ -123,8 +123,6 @@ export function useEnhancedInput({
   }, [input, addToHistory, onSubmit, clearInput]);
 
   const handleInput = useCallback((inputChar: string, key: Key) => {
-    if (disabled) return;
-    
     // Use refs to get current values without depending on them
     const currentInput = inputRef.current;
     const currentCursor = cursorRef.current;
@@ -136,10 +134,13 @@ export function useEnhancedInput({
       return;
     }
 
-    // Allow special key handler to override default behavior
+    // Allow special key handler to override default behavior (even when disabled)
     if (onSpecialKey?.(key)) {
       return;
     }
+
+    // If disabled, stop processing regular input
+    if (disabled) return;
 
     // Handle Escape
     if (key.escape) {
