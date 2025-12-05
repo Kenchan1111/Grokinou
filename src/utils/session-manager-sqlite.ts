@@ -468,10 +468,14 @@ export class SessionManagerSQLite {
    */
   async loadChatHistory(): Promise<ChatEntry[]> {
     if (!this.currentSession) {
+      sessionDebugLog.log('⚠️  [loadChatHistory] No active session - returning empty history');
+      sessionDebugLog.log('   Make sure initSession() was called in GrokAgent constructor');
       return [];
     }
 
+    sessionDebugLog.log(`✅ [loadChatHistory] Loading history for session ${this.currentSession.id}`);
     const messages = this.messageRepo.getBySession(this.currentSession.id);
+    sessionDebugLog.log(`✅ [loadChatHistory] Loaded ${messages.length} messages`);
     return messages.map(this.messageToEntry);
   }
 
