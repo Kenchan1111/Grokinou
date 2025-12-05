@@ -613,9 +613,6 @@ program
         initialMessage = initialConfigMessage;
       }
 
-      // Disable alternate screen buffer for native terminal scrolling
-      process.stdout.write('\x1b[?1049l');
-
       render(React.createElement(ChatInterface, {
         agent,
         initialMessage,

@@ -134,7 +134,7 @@ const DEFAULT_EXECUTION_VIEWER_SETTINGS: ExecutionViewerSettings = {
   showCOT: true,
   showCommands: true,
   detailsMode: false,
-  maxExecutionsShown: 10,
+  maxExecutionsShown: 10000, // Unlimited tool calls history (increased from 10)
   colorScheme: 'default',
 };
 
