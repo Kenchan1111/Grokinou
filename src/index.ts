@@ -613,10 +613,13 @@ program
         initialMessage = initialConfigMessage;
       }
 
-      render(React.createElement(ChatInterface, { 
-        agent, 
+      // Disable alternate screen buffer for native terminal scrolling
+      process.stdout.write('\x1b[?1049l');
+
+      render(React.createElement(ChatInterface, {
+        agent,
         initialMessage,
-        startupConfig 
+        startupConfig
       }));
     } catch (error: any) {
       console.error("❌ Error initializing Grok CLI:", error.message);
