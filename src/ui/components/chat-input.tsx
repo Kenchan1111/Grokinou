@@ -19,11 +19,13 @@ export const ChatInput = React.memo(function ChatInput({
   const beforeCursor = input.slice(0, cursorPosition);
   const afterCursor = input.slice(cursorPosition);
 
+  // Get pending pastes and images (will cause re-render when they change)
+  const pendingPastes = pasteManager.getPendingPastes();
+  const attachedImages = imagePathManager.getAttachedImages();
+
   // Function to render text with styled placeholders (cyan for text, magenta for images)
   const renderWithPlaceholders = useMemo(() => {
     return (text: string) => {
-      const pendingPastes = pasteManager.getPendingPastes();
-      const attachedImages = imagePathManager.getAttachedImages();
       
       if (pendingPastes.length === 0 && attachedImages.length === 0) {
         return text;
@@ -83,7 +85,7 @@ export const ChatInput = React.memo(function ChatInput({
         }
       });
     };
-  }, []);
+  }, [pendingPastes, attachedImages]);
 
   // Handle multiline input display
   const lines = input.split("\n");
