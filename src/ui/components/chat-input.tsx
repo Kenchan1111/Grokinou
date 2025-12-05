@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Box, Text } from "ink";
 import { pasteManager } from "../../utils/paste-manager.js";
 import { imagePathManager } from "../../utils/image-path-detector.js";
@@ -10,7 +10,7 @@ interface ChatInputProps {
   isStreaming: boolean;
 }
 
-export const ChatInput = React.memo(function ChatInput({
+export function ChatInput({
   input,
   cursorPosition,
   isProcessing,
@@ -19,9 +19,27 @@ export const ChatInput = React.memo(function ChatInput({
   const beforeCursor = input.slice(0, cursorPosition);
   const afterCursor = input.slice(cursorPosition);
 
+  // Force re-render when input changes (to pick up paste changes)
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    forceUpdate(prev => prev + 1);
+  }, [input]);
+
   // Get pending pastes and images (will cause re-render when they change)
   const pendingPastes = pasteManager.getPendingPastes();
   const attachedImages = imagePathManager.getAttachedImages();
+
+  // Debug: log when component renders
+  console.log('[ChatInput] RENDER - input length:', input.length, 'pending pastes:', pendingPastes.length, 'input preview:', input.substring(0, 50));
+
+  // Debug: Check for problematic long lines
+  if (input.length > 0) {
+    const lines = input.split('\n');
+    const maxLineLength = Math.max(...lines.map(l => l.length));
+    if (maxLineLength > 100) {
+      console.log('[ChatInput] WARNING: Long line detected:', maxLineLength, 'chars');
+    }
+  }
 
   // Function to render text with styled placeholders (cyan for text, magenta for images)
   const renderWithPlaceholders = useMemo(() => {
@@ -205,4 +223,4 @@ export const ChatInput = React.memo(function ChatInput({
       </Box>
     </Box>
   );
-});
+}

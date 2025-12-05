@@ -31,13 +31,23 @@ export class PasteBurstDetector {
     const isPasteBurst = this.lastInputTime !== null &&
                          (now - this.lastInputTime) <= PASTE_BURST_CHAR_INTERVAL_MS;
 
+    // Special detection: A lone newline at the start suggests a paste with leading blank line
+    const startsWithNewline = !this.isActive && this.buffer.length === 0 && inputChar === '\n';
+
     // Debug large inputs
     if (inputChar.length > 10) {
       debugLog.log('[PasteBurstDetector] Large input detected:', inputChar.length, 'chars');
     }
 
+    if (startsWithNewline) {
+      debugLog.log('[PasteBurstDetector] Lone newline detected at start - activating burst mode (likely paste with blank first line)');
+    }
+
+    // Special case: If buffer already has content and a newline arrives quickly, it's likely a paste
+    const isLikelyPasteContinuation = this.buffer.length > 0 && isPasteBurst;
+
     // If we're in an active burst or this looks like a new burst
-    if (this.isActive || isPasteBurst || inputChar.length > 10) {
+    if (this.isActive || isPasteBurst || inputChar.length > 10 || isLikelyPasteContinuation || startsWithNewline) {
       // Activate burst mode
       if (!this.isActive) {
         debugLog.log('[PasteBurstDetector] Activating burst mode, input length:', inputChar.length);

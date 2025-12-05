@@ -33,15 +33,17 @@ export class PasteManager {
     textToInsert: string;
     pendingPaste: PendingPaste | null;
   } {
-    const charCount = content.length;
-    debugLog.log('[PasteManager] processPaste called, content length:', charCount, 'threshold:', LARGE_PASTE_THRESHOLD);
+    // Trim leading/trailing whitespace from pasted content to avoid issues with empty first lines
+    const trimmedContent = content.trim();
+    const charCount = trimmedContent.length;
+    debugLog.log('[PasteManager] processPaste called, original length:', content.length, 'trimmed length:', charCount, 'threshold:', LARGE_PASTE_THRESHOLD);
 
     // If content is small enough, insert normally
     if (charCount <= LARGE_PASTE_THRESHOLD) {
       debugLog.log('[PasteManager] Small paste, inserting normally');
       // Normalize whitespace: replace newlines/tabs with single spaces
       // to avoid rendering issues in single-line input
-      const normalizedContent = content
+      const normalizedContent = trimmedContent
         .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
         .replace(/\t/g, ' ')        // Replace tabs with spaces
         .replace(/\s{2,}/g, ' ');   // Collapse multiple spaces into one
@@ -62,7 +64,7 @@ export class PasteManager {
     const pendingPaste: PendingPaste = {
       id,
       placeholder,
-      content,
+      content: trimmedContent,  // Store trimmed content
       charCount,
     };
 

@@ -347,46 +347,36 @@ export function useInputHandler({
       return;
     }
 
-    // Debug: Log paste events
-    if (inputChar && inputChar.length > 5) {
-      debugLog.log('[PASTE DEBUG] inputChar.length:', inputChar.length, 'key.paste:', key.paste);
-    }
+    // Debug: Log ALL input events
+    debugLog.log('[INPUT]', JSON.stringify({
+      length: inputChar?.length || 0,
+      preview: inputChar ? inputChar.substring(0, 30).replace(/\n/g, '\\n') : '',
+      keyReturn: key.return,
+    }));
 
-    // Handle paste: either Ink's key.paste OR large input (>50 chars = likely paste)
-    const isPasteEvent = key.paste || (inputChar && inputChar.length > 50);
+    // SIMPLE DIRECT APPROACH: If input is large (>50 chars), it's a paste - handle it immediately
+    if (inputChar && inputChar.length > 50) {
+      debugLog.log(`[PASTE] Large input detected (${inputChar.length} chars) - processing immediately`);
+      debugLog.log(`[PASTE] insertAtCursor type: ${typeof insertAtCursor}, is function: ${typeof insertAtCursor === 'function'}`);
 
-    if (isPasteEvent && inputChar) {
-      debugLog.log(`[PASTE] Detected paste (key.paste=${key.paste}, length=${inputChar.length})`);
-      pasteBurstDetector.clear(); // Clear any buffering since we detected a full paste
-      // Process as paste operation
+      // Process as paste
       const imageResult = imagePathManager.processPaste(inputChar);
       if (imageResult.isImage) {
+        debugLog.log(`[PASTE] Image: ${imageResult.textToInsert}`);
+        console.log('[PASTE] About to call insertAtCursor for IMAGE');
         insertAtCursor(imageResult.textToInsert);
+        console.log('[PASTE] insertAtCursor returned for IMAGE');
       } else {
         const { textToInsert } = pasteManager.processPaste(inputChar);
+        debugLog.log(`[PASTE] Text placeholder: ${textToInsert}`);
+        console.log('[PASTE] About to call insertAtCursor for TEXT, placeholder:', textToInsert);
         insertAtCursor(textToInsert);
+        console.log('[PASTE] insertAtCursor returned for TEXT');
       }
       return;
     }
 
-    // PasteBurstDetector fallback for fragmented pastes (e.g., emojis split across events)
-    const isBuffering = pasteBurstDetector.handleInput(inputChar, (bufferedContent) => {
-      debugLog.log(`[PASTE BURST] Flushed buffer, length=${bufferedContent.length}`);
-      // Process the buffered content as a paste
-      const imageResult = imagePathManager.processPaste(bufferedContent);
-      if (imageResult.isImage) {
-        insertAtCursor(imageResult.textToInsert);
-      } else {
-        const { textToInsert } = pasteManager.processPaste(bufferedContent);
-        insertAtCursor(textToInsert);
-      }
-    });
-
-    // If buffering, don't process input yet (waiting for more)
-    if (isBuffering) {
-      return;
-    }
-
+    // Normal input - handle as usual
     handleInput(inputChar, key);
   });
 
