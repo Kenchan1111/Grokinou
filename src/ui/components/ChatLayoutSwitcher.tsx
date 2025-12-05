@@ -111,42 +111,43 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
       </Box>
 
       {/* ============================================
-          SEARCH MODE
+          SEARCH MODE (conditional rendering to avoid useInput issues)
           ============================================ */}
-      <Box
-        display={isSearchMode ? 'flex' : 'none'}
-        flexDirection="column"
-        width="100%"
-        height="100%"
-      >
-        {searchFullscreen ? (
-          // Fullscreen search results
-          <SearchResults
-            key="search-fullscreen"
-            query={searchQuery}
-            results={searchResults}
-            onClose={onCloseSearch}
-            onPasteToInput={onPasteToInput}
-            fullscreen={true}
-          />
-        ) : (
-          // Split layout: conversation left, search right
-          <SplitLayout
-            key="search-split-layout"
-            left={<ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true} />}
-            right={
-              <SearchResults
-                query={searchQuery}
-                results={searchResults}
-                onClose={onCloseSearch}
-                onPasteToInput={onPasteToInput}
-                onToggleFullscreen={onToggleFullscreen}
-                fullscreen={false}
-              />
-            }
-          />
-        )}
-      </Box>
+      {isSearchMode && (
+        <Box
+          flexDirection="column"
+          width="100%"
+          height="100%"
+        >
+          {searchFullscreen ? (
+            // Fullscreen search results
+            <SearchResults
+              key="search-fullscreen"
+              query={searchQuery}
+              results={searchResults}
+              onClose={onCloseSearch}
+              onPasteToInput={onPasteToInput}
+              fullscreen={true}
+            />
+          ) : (
+            // Split layout: conversation left, search right
+            <SplitLayout
+              key="search-split-layout"
+              left={<ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true} />}
+              right={
+                <SearchResults
+                  query={searchQuery}
+                  results={searchResults}
+                  onClose={onCloseSearch}
+                  onPasteToInput={onPasteToInput}
+                  onToggleFullscreen={onToggleFullscreen}
+                  fullscreen={false}
+                />
+              }
+            />
+          )}
+        </Box>
+      )}
     </Box>
   );
 };
