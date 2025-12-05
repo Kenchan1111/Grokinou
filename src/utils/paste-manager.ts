@@ -1,14 +1,16 @@
 /**
  * Paste Manager - Handles large paste content with placeholder links
- * 
+ *
  * Inspired by Codex implementation:
- * - Large pastes (>500 chars) are replaced with placeholders
+ * - Large pastes (>100 chars) are replaced with placeholders
  * - Placeholders are styled distinctly (cyan color)
  * - On submit, placeholders are expanded to full content
  * - Multiple pastes supported
  */
 
-export const LARGE_PASTE_THRESHOLD = 500; // chars
+import { debugLog } from './debug-logger.js';
+
+export const LARGE_PASTE_THRESHOLD = 100; // chars (lowered from 500)
 
 export interface PendingPaste {
   id: string;
@@ -27,32 +29,36 @@ export class PasteManager {
    * @param content - The pasted content
    * @returns Object with the text to insert and optional pending paste info
    */
-  processPaste(content: string): { 
-    textToInsert: string; 
+  processPaste(content: string): {
+    textToInsert: string;
     pendingPaste: PendingPaste | null;
   } {
     const charCount = content.length;
-    
+    debugLog.log('[PasteManager] processPaste called, content length:', charCount, 'threshold:', LARGE_PASTE_THRESHOLD);
+
     // If content is small enough, insert normally
     if (charCount <= LARGE_PASTE_THRESHOLD) {
+      debugLog.log('[PasteManager] Small paste, inserting normally');
       // Normalize whitespace: replace newlines/tabs with single spaces
       // to avoid rendering issues in single-line input
       const normalizedContent = content
         .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
         .replace(/\t/g, ' ')        // Replace tabs with spaces
         .replace(/\s{2,}/g, ' ');   // Collapse multiple spaces into one
-      
+
       return { textToInsert: normalizedContent, pendingPaste: null };
     }
 
     // Create placeholder for large content
+    debugLog.log('[PasteManager] Large paste detected, creating placeholder');
     this.pasteCounter++;
     const id = `paste-${this.pasteCounter}-${Date.now()}`;
-    
+
     // Format character count with thousand separators for readability
     const formattedCount = charCount.toLocaleString('en-US');
     const placeholder = `[Pasted ${formattedCount} chars]`;
-    
+    debugLog.log('[PasteManager] Placeholder created:', placeholder);
+
     const pendingPaste: PendingPaste = {
       id,
       placeholder,
