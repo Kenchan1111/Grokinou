@@ -76,39 +76,41 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   return (
     <Box flexDirection="column" width="100%" height="100%">
       {/* ============================================
-          NORMAL MODE (No viewer, no search)
+          NORMAL MODE (No viewer, no search) - Conditional rendering
           ============================================ */}
-      <Box
-        display={isNormalMode ? 'flex' : 'none'}
-        flexDirection="column"
-        width="100%"
-        height="100%"
-      >
-        <ConversationView key="normal-conversation" scrollRef={scrollRef} />
-      </Box>
+      {isNormalMode && (
+        <Box
+          flexDirection="column"
+          width="100%"
+          height="100%"
+        >
+          <ConversationView key="normal-conversation" scrollRef={scrollRef} />
+        </Box>
+      )}
 
       {/* ============================================
-          EXECUTION VIEWER MODE
+          EXECUTION VIEWER MODE - Conditional rendering
           ============================================ */}
-      <Box
-        display={isViewerMode ? 'flex' : 'none'}
-        flexDirection="column"
-        width="100%"
-        height="100%"
-      >
-        <LayoutManager
-          key="viewer-layout"
-          conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} disableStatic={true} />}
-          executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
-          config={{
-            defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
-            autoShow: executionViewerSettings.autoShow,
-            autoHide: executionViewerSettings.autoHide,
-            splitRatio: 0.6,
-            layout: 'horizontal'
-          }}
-        />
-      </Box>
+      {isViewerMode && (
+        <Box
+          flexDirection="column"
+          width="100%"
+          height="100%"
+        >
+          <LayoutManager
+            key="viewer-layout"
+            conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} />}
+            executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
+            config={{
+              defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
+              autoShow: executionViewerSettings.autoShow,
+              autoHide: executionViewerSettings.autoHide,
+              splitRatio: 0.6,
+              layout: 'horizontal'
+            }}
+          />
+        </Box>
+      )}
 
       {/* ============================================
           SEARCH MODE (conditional rendering to avoid useInput issues)

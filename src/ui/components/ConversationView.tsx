@@ -36,19 +36,12 @@ interface ConversationViewProps {
    * Whether to limit history in search mode
    */
   searchMode?: boolean;
-
-  /**
-   * Disable Static component to prevent duplicate rendering
-   * when multiple ConversationView instances are mounted
-   */
-  disableStatic?: boolean;
 }
 
 export const ConversationView: React.FC<ConversationViewProps> = ({
   showStatus = true,
   scrollRef,
-  searchMode = false,
-  disableStatic = false
+  searchMode = false
 }) => {
   // Get data from context
   const {
@@ -95,14 +88,11 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
       <Box flexDirection="column" ref={scrollRef} flexGrow={1}>
         {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
         {/* En mode recherche, limiter l'affichage pour éviter le scroll */}
-        {/* NOTE: disableStatic prevents duplicate rendering when multiple instances are mounted */}
-        {!disableStatic && (
-          <Static items={searchMode ? committedHistory.slice(-100) : committedHistory}>
-            {(entry, index) => (
-              <MemoizedArchived key={`committed-${entry.timestamp.getTime()}-${index}`} entry={entry} />
-            )}
-          </Static>
-        )}
+        <Static items={searchMode ? committedHistory.slice(-100) : committedHistory}>
+          {(entry, index) => (
+            <MemoizedArchived key={`committed-${entry.timestamp.getTime()}-${index}`} entry={entry} />
+          )}
+        </Static>
 
         {/* MESSAGES ACTIFS : En cours de création/affichage */}
         <ChatHistory
