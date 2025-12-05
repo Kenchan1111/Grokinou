@@ -124,11 +124,15 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
       const stillActive = executionManager.hasActiveExecutions();
       setHasActiveExecution(stillActive);
 
-      // ✅ Auto-hide viewer immediately when execution completes
-      // This prevents the "frozen view" issue where the old execution
-      // remains visible in the viewer after completion
-      if (!stillActive && mode === 'split') {
-        changeMode('hidden');
+      // Auto-hide viewer when execution completes (if enabled)
+      // By default, viewer stays open to allow user to examine modified files
+      // and continue iterative workflow (e.g., "modify file2 as well")
+      if (!stillActive && config.autoHide && mode === 'split') {
+        if (config.autoHideDelay > 0) {
+          scheduleAutoHide();
+        } else {
+          changeMode('hidden');
+        }
       }
     });
 

@@ -32,6 +32,7 @@ export interface ExecutionViewerProps {
 export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split', settings }) => {
   const [executions, setExecutions] = useState<ExecutionState[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [detailsMode, setDetailsMode] = useState(settings?.detailsMode ?? false);
   const [autoScroll, setAutoScroll] = useState(true);
 
@@ -86,9 +87,19 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
   }, [executions.length, selectedIndex]);
 
   /**
+   * Reset command index when changing execution
+   */
+  useEffect(() => {
+    setSelectedCommandIndex(0);
+  }, [selectedIndex]);
+
+  /**
    * Keyboard shortcuts
    */
   useInput((input, key) => {
+    const current = executions[selectedIndex];
+    const commandCount = current?.commands.length ?? 0;
+
     // Ctrl+D: Toggle details mode
     if (key.ctrl && input === 'd') {
       setDetailsMode(d => !d);
@@ -96,7 +107,6 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
 
     // Ctrl+C: Copy current execution output
     if (key.ctrl && input === 'c') {
-      const current = executions[selectedIndex];
       if (current) {
         handleCopyExecution(current);
       }
@@ -104,7 +114,6 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
 
     // Ctrl+S: Save current execution to file
     if (key.ctrl && input === 's') {
-      const current = executions[selectedIndex];
       if (current) {
         handleSaveExecution(current).catch(console.error);
       }
@@ -118,6 +127,21 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
     // Arrow Down: Navigate to next execution
     if (key.downArrow && selectedIndex < executions.length - 1) {
       setSelectedIndex(i => i + 1);
+    }
+
+    // Arrow Left: Navigate to previous command
+    if (key.leftArrow && selectedCommandIndex > 0) {
+      setSelectedCommandIndex(i => i - 1);
+    }
+
+    // Arrow Right: Navigate to next command
+    if (key.rightArrow && selectedCommandIndex < commandCount - 1) {
+      setSelectedCommandIndex(i => i + 1);
+    }
+
+    // Enter: Toggle expand for selected command
+    if (key.return && commandCount > 0) {
+      setDetailsMode(d => !d);
     }
   });
 
@@ -167,7 +191,14 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
             paddingX={1}
             flexGrow={1}
           >
-            <Text bold color="green">📜 Command Output</Text>
+            <Box flexDirection="row" justifyContent="space-between">
+              <Text bold color="green">📜 Command Output</Text>
+              {currentExecution.commands.length > 1 && (
+                <Text dimColor>
+                  [{selectedCommandIndex + 1}/{currentExecution.commands.length}] [←→ navigate • Enter expand]
+                </Text>
+              )}
+            </Box>
             <Box flexDirection="column" marginTop={1}>
               {currentExecution.commands.length > 0 ? (
                 currentExecution.commands.map((cmd, i) => (
@@ -176,6 +207,8 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
                     command={cmd}
                     detailed={detailsMode}
                     mode={mode}
+                    isSelected={i === selectedCommandIndex}
+                    isVisible={i === selectedCommandIndex || currentExecution.commands.length === 1}
                   />
                 ))
               ) : (
@@ -253,13 +286,19 @@ interface CommandDisplayProps {
   command: CommandExecution;
   detailed?: boolean;
   mode?: 'split' | 'fullscreen';
+  isSelected?: boolean;
+  isVisible?: boolean;
 }
 
 const CommandDisplay: React.FC<CommandDisplayProps> = ({
   command,
   detailed = false,
-  mode = 'split'
+  mode = 'split',
+  isSelected = false,
+  isVisible = true
 }) => {
+  // Don't render if not visible (for navigation)
+  if (!isVisible) return null;
   const statusIcons: Record<CommandStatus, string> = {
     pending: '⏳',
     running: '🔄',
@@ -277,10 +316,19 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   const hasMore = command.output.length > displayLines.length;
 
   return (
-    <Box flexDirection="column" marginTop={1} marginBottom={1}>
+    <Box
+      flexDirection="column"
+      marginTop={1}
+      marginBottom={1}
+      borderStyle={isSelected ? "round" : undefined}
+      borderColor={isSelected ? "cyan" : undefined}
+      paddingX={isSelected ? 1 : 0}
+    >
       {/* Command line */}
       <Box>
-        <Text color="cyan" bold>$ {command.command}</Text>
+        <Text color={isSelected ? "black" : "cyan"} bold backgroundColor={isSelected ? "cyan" : undefined}>
+          $ {command.command}
+        </Text>
         <Text> {statusIcon}</Text>
       </Box>
 
