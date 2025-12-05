@@ -291,7 +291,7 @@ function ChatInterfaceWithAgent({
     // Avoid duplicate execution in React strict mode
     if (statusAddedRef.current) return;
     statusAddedRef.current = true;
-    
+
     (async () => {
       try {
         const manager = getSettingsManager();
@@ -299,6 +299,18 @@ function ChatInterfaceWithAgent({
         const autoRestoreSession = manager.getProjectSetting("autoRestoreSession");
 
         if (persistSession !== false && autoRestoreSession !== false) {
+          // Initialize session BEFORE loading history
+          const { SessionManagerSQLite } = await import("../../utils/session-manager-sqlite.js");
+          const sessionManager = SessionManagerSQLite.getInstance();
+          const cwd = process.cwd();
+
+          // Try to get model and provider from last session, otherwise use defaults
+          const lastSession = sessionManager.findLastSessionByWorkdir(cwd);
+          const provider = lastSession?.default_provider || 'grok';
+          const model = lastSession?.default_model || 'grok-code-fast-1';
+
+          sessionManager.initSession(cwd, provider, model);
+
           const entries = await loadChatHistory();
           
           // Generate status message using the same logic as /status command
