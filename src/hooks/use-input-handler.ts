@@ -12,6 +12,8 @@ import { providerManager } from "../utils/provider-manager.js";
 import { sessionManager } from "../utils/session-manager-sqlite.js";
 import { generateStatusMessage } from "../utils/status-message.js";
 import { HelpFormatter } from "../utils/help-formatter.js";
+import { imagePathManager } from "../utils/image-path-detector.js";
+import { insertText } from "../utils/text-utils.js";
 
 /**
  * Parse date from various formats:
@@ -315,6 +317,7 @@ export function useInputHandler({
     setInput,
     setCursorPosition,
     clearInput,
+    insertAtCursor,
     resetHistory,
     handleInput,
   } = useEnhancedInput({
@@ -341,7 +344,26 @@ export function useInputHandler({
     if (searchMode) {
       return;
     }
-    
+
+    // Debug: Log paste events
+    if (inputChar && inputChar.length > 5) {
+      console.log('[PASTE DEBUG] inputChar.length:', inputChar.length, 'key.paste:', key.paste);
+    }
+
+    // Handle native paste event from Ink
+    if (key.paste && inputChar) {
+      console.log('[PASTE] Ink detected paste, length:', inputChar.length);
+      // Ink detected a paste operation - process as paste
+      const imageResult = imagePathManager.processPaste(inputChar);
+      if (imageResult.isImage) {
+        insertAtCursor(imageResult.textToInsert);
+      } else {
+        const { textToInsert } = pasteManager.processPaste(inputChar);
+        insertAtCursor(textToInsert);
+      }
+      return;
+    }
+
     handleInput(inputChar, key);
   });
 

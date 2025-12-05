@@ -39,7 +39,7 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
    * Subscribe to execution manager updates
    */
   useEffect(() => {
-    const limit = settings?.maxExecutionsShown ?? 10;
+    const limit = settings?.maxExecutionsShown ?? 1000;
 
     // Initial load - get active executions
     const active = executionManager.getActiveExecutions();
@@ -270,7 +270,7 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   const statusIcon = statusIcons[command.status];
 
   // Limit output lines in split mode
-  const maxLines = mode === 'split' ? 10 : 50;
+  const maxLines = mode === 'split' ? 20 : 100;
   const displayLines = detailed
     ? command.output
     : command.output.slice(0, maxLines);
