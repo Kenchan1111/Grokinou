@@ -58,50 +58,64 @@ const DEFAULT_USER_SETTINGS: Partial<UserSettings> = {
   baseURL: "https://api.x.ai/v1",
   defaultModel: "grok-4-latest",
   models: [
-    // === GROK (X.AI) ===
+    // === GROK (X.AI) - 6 models ===
     "grok-4-latest",
     "grok-code-fast-1",
     "grok-3-latest",
     "grok-3-fast",
     "grok-3-mini-fast",
     "grok2-vision-beta",
-    
-    // === CLAUDE (Anthropic) - Verified names ===
-    "claude-sonnet-4-5-20250514", // Latest Sonnet 4.5 (May 2025)
+
+    // === CLAUDE (Anthropic) - 5 models ===
+    "claude-sonnet-4-5-20250514",
     "claude-3-5-sonnet-20241022",
     "claude-3-5-haiku-20241022",
     "claude-3-opus-20240229",
-    
-    // === OPENAI - Verified ✅ (Tested 2025-11-22) ===
-    "gpt-5", // ✅ Latest GPT-5 (Aug 2025)
-    "gpt-5-2025-08-07", // ✅ Explicit date version
-    "o3", // ✅ Latest O3 reasoning (Apr 2025)
-    "o3-mini", // ✅ O3 Mini (Jan 2025)
-    "o1", // ✅ O1 reasoning (Dec 2024)
-    "gpt-4o", // ✅ Latest GPT-4o
-    "gpt-4o-2024-11-20", // ✅ Nov 2024 version
-    "gpt-4o-2024-08-06", // ✅ Aug 2024 version
-    "gpt-4o-mini", // ✅ Mini version
-    "chatgpt-4o-latest", // ✅ ChatGPT version
-    "gpt-4-turbo", // ✅ GPT-4 Turbo
-    "gpt-3.5-turbo", // ✅ GPT-3.5
-    
-    // === DEEPSEEK - Verified ✅ (Tested 2025-11-22) ===
-    "deepseek-chat", // ✅ General chat
-    "deepseek-coder", // ✅ Coding (→ deepseek-chat)
-    "deepseek-reasoner", // ✅ R1 reasoning model
-    
-    // === MISTRAL - Verified ✅ (Tested 2025-11-22) ===
-    "mistral-large-latest", // ✅
-    "mistral-large-2407", // ✅
-    "mistral-medium-latest", // ✅
-    "mistral-small-latest", // ✅
-    "mistral-tiny", // ✅
-    "codestral-latest", // ✅
-    "codestral-2405", // ✅
-    "open-mistral-7b", // ✅
-    "open-mixtral-8x7b", // ✅
-    "open-mixtral-8x22b", // ✅
+    "claude-3-sonnet-20240229",
+
+    // === OPENAI - 19 models ===
+    // GPT-5
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    // O3 Reasoning
+    "o3",
+    "o3-mini",
+    // O1 Reasoning
+    "o1",
+    "o1-preview",
+    "o1-mini",
+    // GPT-4o
+    "gpt-4o",
+    "gpt-4o-2024-11-20",
+    "gpt-4o-2024-08-06",
+    "gpt-4o-mini",
+    "gpt-4o-mini-2024-07-18",
+    "chatgpt-4o-latest",
+    // GPT-4 Turbo
+    "gpt-4-turbo",
+    "gpt-4-turbo-preview",
+    "gpt-4-turbo-2024-04-09",
+    "gpt-4",
+    // GPT-3.5
+    "gpt-3.5-turbo",
+    "gpt-3.5-turbo-0125",
+
+    // === DEEPSEEK - 3 models ===
+    "deepseek-chat",
+    "deepseek-coder",
+    "deepseek-reasoner",
+
+    // === MISTRAL - 10 models ===
+    "mistral-large-latest",
+    "mistral-large-2407",
+    "mistral-medium-latest",
+    "mistral-small-latest",
+    "mistral-tiny",
+    "codestral-latest",
+    "codestral-2405",
+    "open-mistral-7b",
+    "open-mixtral-8x7b",
+    "open-mixtral-8x22b",
   ],
   persistInputHistory: true,
 };
@@ -176,7 +190,7 @@ export class SettingsManager {
   private migrateModelsIfNeeded(): void {
     try {
       const currentModels = this.getUserSetting("models") || [];
-      const defaultCount = DEFAULT_USER_SETTINGS.models?.length || 35;
+      const defaultCount = DEFAULT_USER_SETTINGS.models?.length || 43;
       
       // Check if migration is needed
       // Migrate if:
