@@ -265,11 +265,11 @@ export class SearchTool {
     }
   ): Promise<FileSearchResult[]> {
     const files: FileSearchResult[] = [];
-    const maxResults = options.maxResults || 50;
+    const maxResults = options.maxResults || 10000;
     const searchPattern = pattern.toLowerCase();
 
     const walkDir = async (dir: string, depth: number = 0): Promise<void> => {
-      if (depth > 10 || files.length >= maxResults) return; // Prevent infinite recursion and limit results
+      if (depth > 1000 || files.length >= maxResults) return; // Allow deep scanning (1000 levels, 10000 files)
 
       try {
         const entries = await fs.readdir(dir, { withFileTypes: true });

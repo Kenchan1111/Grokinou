@@ -473,10 +473,10 @@ Current working directory: ${process.cwd()}`,
    * Used when LLM fails to generate a summary
    */
   private generateFallbackSummary(userMessage: string): string {
-    // Find tool calls from recent history
+    // Find tool calls from history (unlimited)
     const recentToolCalls = this.chatHistory
-      .filter(entry => entry.type === 'tool_call' || entry.type === 'tool_result')
-      .slice(-10); // Last 10 tool-related entries
+      .filter(entry => entry.type === 'tool_call' || entry.type === 'tool_result');
+      // No limit - keep full tool call history for complete traceability
 
     if (recentToolCalls.length === 0) {
       return `J'ai traité votre demande : "${userMessage}"\n\nMalheureusement, je n'ai pas pu générer un résumé détaillé de mes actions. Veuillez consulter l'historique des outils ci-dessus pour plus de détails.`;

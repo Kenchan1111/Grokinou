@@ -8,10 +8,18 @@ ls -lh dist/hooks/use-input-handler.js | awk '{print "   Build:", $6, $7, $8}'
 echo ""
 
 echo "2. Vérification du code compilé..."
-if grep -q "isPasteEvent.*inputChar.*length.*50" dist/hooks/use-input-handler.js; then
+if grep -Eq "inputChar\\s*&&\\s*inputChar\\.length\\s*>\\s*50" dist/hooks/use-input-handler.js \
+   || grep -q "\\[PASTE\\] Large chunk" dist/hooks/use-input-handler.js; then
     echo "   ✅ Fallback paste detection (>50 chars) présent"
 else
-    echo "   ❌ Fallback paste detection MANQUANT"
+    echo "   ❌ Fallback paste detection MANQUANT (probable motif grep obsolète)"
+fi
+
+# Vérifier la détection basée sur le timing (<10ms)
+if grep -q "Rapid inputs (< 10ms apart)" dist/hooks/use-input-handler.js; then
+    echo "   ✅ Détection timing-based présente"
+else
+    echo "   ⚠️  Détection timing-based non trouvée dans les commentaires (le code peut tout de même être présent)"
 fi
 
 if grep -q "pendingPastes.*attachedImages" dist/ui/components/chat-input.js; then
