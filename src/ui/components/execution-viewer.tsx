@@ -35,6 +35,7 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [detailsMode, setDetailsMode] = useState(settings?.detailsMode ?? false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   /**
    * Subscribe to execution manager updates
@@ -87,11 +88,19 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
   }, [executions.length, selectedIndex]);
 
   /**
-   * Reset command index when changing execution
+   * Reset command index and scroll when changing execution
    */
   useEffect(() => {
     setSelectedCommandIndex(0);
+    setScrollOffset(0);
   }, [selectedIndex]);
+
+  /**
+   * Reset scroll when changing command
+   */
+  useEffect(() => {
+    setScrollOffset(0);
+  }, [selectedCommandIndex]);
 
   /**
    * Keyboard shortcuts
@@ -142,6 +151,40 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
     // Enter: Toggle expand for selected command
     if (key.return && commandCount > 0) {
       setDetailsMode(d => !d);
+    }
+
+    // PageDown: Scroll down (10 lines at a time)
+    if (key.pageDown) {
+      const currentCommand = current?.commands[selectedCommandIndex];
+      if (currentCommand) {
+        const maxLines = mode === 'split' ? 20 : 100;
+        const totalLines = currentCommand.output.length;
+        const visibleLines = detailsMode ? totalLines : Math.min(maxLines, totalLines);
+        const maxScroll = Math.max(0, totalLines - visibleLines);
+        setScrollOffset(prev => Math.min(prev + 10, maxScroll));
+      }
+    }
+
+    // PageUp: Scroll up (10 lines at a time)
+    if (key.pageUp) {
+      setScrollOffset(prev => Math.max(0, prev - 10));
+    }
+
+    // Home: Scroll to top
+    if (input === 'h' && !key.ctrl) {
+      setScrollOffset(0);
+    }
+
+    // End: Scroll to bottom
+    if (input === 'e' && !key.ctrl) {
+      const currentCommand = current?.commands[selectedCommandIndex];
+      if (currentCommand) {
+        const maxLines = mode === 'split' ? 20 : 100;
+        const totalLines = currentCommand.output.length;
+        const visibleLines = detailsMode ? totalLines : Math.min(maxLines, totalLines);
+        const maxScroll = Math.max(0, totalLines - visibleLines);
+        setScrollOffset(maxScroll);
+      }
     }
   });
 
@@ -209,6 +252,7 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
                     mode={mode}
                     isSelected={i === selectedCommandIndex}
                     isVisible={i === selectedCommandIndex || currentExecution.commands.length === 1}
+                    scrollOffset={i === selectedCommandIndex ? scrollOffset : 0}
                   />
                 ))
               ) : (
@@ -288,6 +332,7 @@ interface CommandDisplayProps {
   mode?: 'split' | 'fullscreen';
   isSelected?: boolean;
   isVisible?: boolean;
+  scrollOffset?: number;
 }
 
 const CommandDisplay: React.FC<CommandDisplayProps> = ({
@@ -295,7 +340,8 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
   detailed = false,
   mode = 'split',
   isSelected = false,
-  isVisible = true
+  isVisible = true,
+  scrollOffset = 0
 }) => {
   // Don't render if not visible (for navigation)
   if (!isVisible) return null;
@@ -308,12 +354,17 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
 
   const statusIcon = statusIcons[command.status];
 
-  // Limit output lines in split mode
+  // Limit output lines in split mode and apply scroll offset
   const maxLines = mode === 'split' ? 20 : 100;
-  const displayLines = detailed
-    ? command.output
-    : command.output.slice(0, maxLines);
-  const hasMore = command.output.length > displayLines.length;
+  const totalLines = command.output.length;
+
+  // Calculate the window of lines to display
+  const startLine = scrollOffset;
+  const endLine = detailed ? totalLines : Math.min(startLine + maxLines, totalLines);
+  const displayLines = command.output.slice(startLine, endLine);
+
+  const hasMore = endLine < totalLines;
+  const hasScrolled = scrollOffset > 0;
 
   return (
     <Box
@@ -351,9 +402,20 @@ const CommandDisplay: React.FC<CommandDisplayProps> = ({
               </Text>
             );
           })}
+          {/* Scroll indicators */}
+          {hasScrolled && (
+            <Text dimColor italic>
+              ... ({scrollOffset} lines above, use PageUp or 'h' to scroll up)
+            </Text>
+          )}
           {hasMore && (
             <Text dimColor italic>
-              ... ({command.output.length - displayLines.length} more lines, press Ctrl+D for details)
+              ... ({totalLines - endLine} more lines below, use PageDown or 'e' to scroll down)
+            </Text>
+          )}
+          {!hasMore && !hasScrolled && totalLines > maxLines && (
+            <Text dimColor italic>
+              (Showing lines {startLine + 1}-{endLine} of {totalLines}, use PageUp/PageDown or h/e to scroll)
             </Text>
           )}
         </Box>
