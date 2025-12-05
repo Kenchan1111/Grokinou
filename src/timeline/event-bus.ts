@@ -93,9 +93,9 @@ export class EventBus {
       
       if (this.options.enableLogging) {
         logResult = await this.logger.log(input);
-        
+
         if (!logResult.success) {
-          console.error(`❌ Failed to log event ${input.event_type}:`, logResult.error);
+          // Silent fail - don't pollute console with timeline errors
           return logResult;
         }
       }

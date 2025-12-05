@@ -162,7 +162,7 @@ export class TimelineLogger {
         sequence_number: sequence,
       };
     } catch (error: any) {
-      console.error('❌ Timeline logging failed:', error);
+      // Silent fail - don't pollute console with timeline errors
       return {
         success: false,
         event_id: '',
@@ -202,7 +202,7 @@ export class TimelineLogger {
       transaction(inputs);
       return results;
     } catch (error: any) {
-      console.error('❌ Timeline batch logging failed:', error);
+      // Silent fail - don't pollute console with timeline errors
       return inputs.map(() => ({
         success: false,
         event_id: '',
@@ -275,7 +275,7 @@ export class TimelineLogger {
       
       return event.checksum === expectedChecksum;
     } catch (error) {
-      console.error('❌ Event verification failed:', error);
+      // Silent fail - don't pollute console with timeline errors
       return false;
     }
   }

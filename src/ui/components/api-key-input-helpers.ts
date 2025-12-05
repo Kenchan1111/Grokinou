@@ -4,21 +4,24 @@
  */
 
 import { providerManager } from "../../utils/provider-manager.js";
+import { getSettingsManager } from "../../utils/settings-manager.js";
 
 /**
  * Get all models from all providers as flat sorted array
  * @returns Array of model names sorted alphabetically
  */
 export function getAllModelsFlat(): string[] {
-  const providers = providerManager.getAllProviders();
-  const models: string[] = [];
-  
-  for (const provider of Object.values(providers)) {
-    models.push(...provider.models);
-  }
-  
+  // Use unified model list from settings manager so that:
+  // - /models shows the same models as the main CLI
+  // - Adding API keys via /apikey does not shrink the visible model list
+  const manager = getSettingsManager();
+  const models = manager.getAvailableModels() || [];
+
   // Sort alphabetically for consistent display
-  return models.sort((a, b) => a.localeCompare(b));
+  return models
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 /**

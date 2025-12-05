@@ -220,7 +220,7 @@ export class FileHook {
           }
         } catch (error) {
           // File might have been deleted between event and processing
-          console.warn(`Failed to read file ${relativePath}:`, error);
+          // Silent fail - don't pollute console with transient filesystem errors
           return;
         }
       }
@@ -248,7 +248,8 @@ export class FileHook {
         },
       });
     } catch (error) {
-      console.error('Failed to emit file event:', error);
+      // Silent fail - Timeline errors shouldn't pollute user console
+      // Errors are already logged in timeline-logger.ts
     }
   }
 

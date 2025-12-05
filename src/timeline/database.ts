@@ -60,12 +60,14 @@ export class TimelineDatabase {
       verbose: config.verbose ? console.log : undefined,
     });
     
-    // Configure SQLite for performance
-    this.db.pragma('journal_mode = WAL');          // Write-Ahead Logging
+    // Configure SQLite for performance and concurrency
+    this.db.pragma('journal_mode = WAL');          // Write-Ahead Logging (allows concurrent reads)
     this.db.pragma('synchronous = NORMAL');        // Balance safety/performance
     this.db.pragma('cache_size = -64000');         // 64MB cache
     this.db.pragma('foreign_keys = ON');           // Enforce foreign keys
     this.db.pragma('temp_store = MEMORY');         // Temp tables in RAM
+    this.db.pragma('busy_timeout = 5000');         // Wait up to 5s for locks (instead of failing immediately)
+    this.db.pragma('wal_autocheckpoint = 1000');   // Checkpoint WAL every 1000 pages
     
     // Initialize schema if needed
     if (!config.readOnly) {

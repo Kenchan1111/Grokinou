@@ -18,10 +18,12 @@ export class GrokDatabase {
     }
 
     this.db = new Database(DB_PATH);
-    
+
     // Enable WAL mode for better concurrency
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
+    this.db.pragma('busy_timeout = 5000');  // Wait up to 5s for locks
+    this.db.pragma('synchronous = NORMAL'); // Balance safety/performance
     
     this.initialize();
     this.runMigrations();
