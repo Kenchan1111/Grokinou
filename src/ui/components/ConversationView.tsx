@@ -15,6 +15,7 @@ import { ChatHistory, MemoizedArchived } from './chat-history.js';
 // TODO: Import or create StreamingDisplay component
 // import { StreamingDisplay } from './streaming-display.js';
 import { LoadingSpinner } from './loading-spinner.js';
+import { useScrollPosition } from '../hooks/use-scroll-position.js';
 
 // ============================================================================
 // CONVERSATION VIEW
@@ -57,6 +58,9 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
     tokenCount
   } = useChatState();
 
+  // Preserve scroll position during re-renders (disabled in searchMode)
+  useScrollPosition(!searchMode && !isStreaming);
+
   return (
     <Box flexDirection="column" height={searchMode ? "100%" : undefined} overflow={searchMode ? "hidden" : undefined}>
       {/* Tips uniquement au premier démarrage sans historique */}
@@ -85,7 +89,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
         {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
         {/* En mode recherche, limiter l'affichage pour éviter le scroll */}
         {/* NOTE: Pas de clé dynamique ici - chaque instance de ConversationView est indépendante */}
-        <Static items={searchMode ? committedHistory.slice(-10) : committedHistory}>
+        <Static items={searchMode ? committedHistory.slice(-100) : committedHistory}>
           {(entry, index) => (
             <MemoizedArchived key={`committed-${entry.timestamp.getTime()}-${index}`} entry={entry} />
           )}
