@@ -14,6 +14,7 @@ import { useInputHistory } from "./use-input-history.js";
 import { pasteManager } from "../utils/paste-manager.js";
 import { pasteBurstDetector } from "../utils/paste-burst-detector.js";
 import { imagePathManager } from "../utils/image-path-detector.js";
+import { debugLog } from "../utils/debug-logger.js";
 
 export interface Key {
   name?: string;
@@ -313,12 +314,14 @@ export function useEnhancedInput({
     if (inputChar && !key.ctrl && !key.meta) {
       // Use paste burst detector to buffer rapid inputs (paste chunks)
       const shouldBuffer = pasteBurstDetector.handleInput(inputChar, (bufferedContent) => {
-        // This callback is called after the burst ends (20ms timeout)
+        // This callback is called after the burst ends (100ms timeout)
         // Process the complete buffered content
-        
+        debugLog.log('[use-enhanced-input] Paste burst callback fired! Content length:', bufferedContent.length);
+
         // First, check if it's an image path (like Codex does)
         const imageResult = imagePathManager.processPaste(bufferedContent);
-        
+        debugLog.log('[use-enhanced-input] Image detection result:', imageResult.isImage);
+
         if (imageResult.isImage) {
           // It's an image path! Insert placeholder
           // Use functional state update to avoid stale ref values

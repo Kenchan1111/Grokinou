@@ -594,9 +594,10 @@ program
         env: "node",
       }) as any;
       console.log(logoOutput.string);
-      
+
       console.log("\x1b[33m                    Based on Grok-CLI\x1b[0m\n");
       console.log("\x1b[90mType your request in natural language. Ctrl+C to clear, 'exit' to quit.\x1b[0m");
+      console.log("\x1b[90mDebug logs: ~/.grok/debug.log\x1b[0m");
       console.log("\x1b[90mLoading session...\x1b[0m\n");
 
       ensureUserSettingsDirectory();

@@ -14,6 +14,7 @@ import { generateStatusMessage } from "../utils/status-message.js";
 import { HelpFormatter } from "../utils/help-formatter.js";
 import { imagePathManager } from "../utils/image-path-detector.js";
 import { insertText } from "../utils/text-utils.js";
+import { debugLog } from "../utils/debug-logger.js";
 
 /**
  * Parse date from various formats:
@@ -347,12 +348,12 @@ export function useInputHandler({
 
     // Debug: Log paste events
     if (inputChar && inputChar.length > 5) {
-      console.log('[PASTE DEBUG] inputChar.length:', inputChar.length, 'key.paste:', key.paste);
+      debugLog.log('[PASTE DEBUG] inputChar.length:', inputChar.length, 'key.paste:', key.paste);
     }
 
     // Handle native paste event from Ink
     if (key.paste && inputChar) {
-      console.log('[PASTE] Ink detected paste, length:', inputChar.length);
+      debugLog.log('[PASTE] Ink detected paste, length:', inputChar.length);
       // Ink detected a paste operation - process as paste
       const imageResult = imagePathManager.processPaste(inputChar);
       if (imageResult.isImage) {
