@@ -98,7 +98,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
       >
         <LayoutManager
           key="viewer-layout"
-          conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} />}
+          conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} disableStatic={true} />}
           executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
           config={{
             defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
