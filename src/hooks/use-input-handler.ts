@@ -340,6 +340,14 @@ export function useInputHandler({
     }
   }, [input, setInput, setCursorPosition, inputInjectionRef]);
 
+  // Timing-based paste detection state
+  const pasteBufferRef = useRef({
+    buffer: '',
+    lastInputTime: 0,
+    isBuffering: false,
+    timer: null as NodeJS.Timeout | null,
+  });
+
   // Hook up the actual input handling
   useInput((inputChar: string, key: Key) => {
     // Don't process input in search mode (SearchResults component handles it)
@@ -347,36 +355,80 @@ export function useInputHandler({
       return;
     }
 
-    // Debug: Log ALL input events
+    const now = Date.now();
+    const timeSinceLast = pasteBufferRef.current.lastInputTime > 0
+      ? now - pasteBufferRef.current.lastInputTime
+      : Infinity;
+
+    // Debug: Log ALL input events with timing
     debugLog.log('[INPUT]', JSON.stringify({
       length: inputChar?.length || 0,
       preview: inputChar ? inputChar.substring(0, 30).replace(/\n/g, '\\n') : '',
-      keyReturn: key.return,
+      timeSinceLast: timeSinceLast === Infinity ? 'first' : timeSinceLast + 'ms',
     }));
 
-    // SIMPLE DIRECT APPROACH: If input is large (>50 chars), it's a paste - handle it immediately
+    // DIRECT APPROACH: If input is large (>50 chars), it's definitely a paste
     if (inputChar && inputChar.length > 50) {
-      debugLog.log(`[PASTE] Large input detected (${inputChar.length} chars) - processing immediately`);
-      debugLog.log(`[PASTE] insertAtCursor type: ${typeof insertAtCursor}, is function: ${typeof insertAtCursor === 'function'}`);
+      debugLog.log(`[PASTE] Large chunk (${inputChar.length} chars)`);
 
-      // Process as paste
+      // Clear any pending buffer
+      if (pasteBufferRef.current.timer) {
+        clearTimeout(pasteBufferRef.current.timer);
+      }
+      pasteBufferRef.current = { buffer: '', lastInputTime: 0, isBuffering: false, timer: null };
+
+      // Process immediately
       const imageResult = imagePathManager.processPaste(inputChar);
       if (imageResult.isImage) {
-        debugLog.log(`[PASTE] Image: ${imageResult.textToInsert}`);
-        console.log('[PASTE] About to call insertAtCursor for IMAGE');
         insertAtCursor(imageResult.textToInsert);
-        console.log('[PASTE] insertAtCursor returned for IMAGE');
       } else {
         const { textToInsert } = pasteManager.processPaste(inputChar);
-        debugLog.log(`[PASTE] Text placeholder: ${textToInsert}`);
-        console.log('[PASTE] About to call insertAtCursor for TEXT, placeholder:', textToInsert);
         insertAtCursor(textToInsert);
-        console.log('[PASTE] insertAtCursor returned for TEXT');
       }
       return;
     }
 
-    // Normal input - handle as usual
+    // TIMING-BASED DETECTION: Rapid inputs (< 10ms apart) = paste burst
+    const isRapidInput = timeSinceLast < 10 && timeSinceLast !== Infinity;
+    const shouldBuffer = pasteBufferRef.current.isBuffering || isRapidInput;
+
+    if (shouldBuffer) {
+      debugLog.log(`[BURST] Buffering (timeSinceLast=${timeSinceLast}ms, total=${pasteBufferRef.current.buffer.length + (inputChar?.length || 0)})`);
+
+      pasteBufferRef.current.isBuffering = true;
+      pasteBufferRef.current.buffer += inputChar || '';
+      pasteBufferRef.current.lastInputTime = now;
+
+      // Clear existing timer
+      if (pasteBufferRef.current.timer) {
+        clearTimeout(pasteBufferRef.current.timer);
+      }
+
+      // Flush after 50ms of silence
+      pasteBufferRef.current.timer = setTimeout(() => {
+        const bufferedContent = pasteBufferRef.current.buffer;
+        debugLog.log(`[BURST] Flushing ${bufferedContent.length} chars`);
+
+        // Reset
+        pasteBufferRef.current = { buffer: '', lastInputTime: 0, isBuffering: false, timer: null };
+
+        // Process
+        if (bufferedContent.length > 0) {
+          const imageResult = imagePathManager.processPaste(bufferedContent);
+          if (imageResult.isImage) {
+            insertAtCursor(imageResult.textToInsert);
+          } else {
+            const { textToInsert } = pasteManager.processPaste(bufferedContent);
+            insertAtCursor(textToInsert);
+          }
+        }
+      }, 50);
+
+      return;
+    }
+
+    // Normal input
+    pasteBufferRef.current.lastInputTime = now;
     handleInput(inputChar, key);
   });
 

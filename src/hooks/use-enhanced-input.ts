@@ -109,9 +109,7 @@ export function useEnhancedInput({
   }, [setOriginalInput]);
 
   const insertAtCursor = useCallback((text: string) => {
-    console.log('[insertAtCursor] CALLED with text length:', text.length, 'preview:', text.substring(0, 30));
     const result = insertText(input, cursorPosition, text);
-    console.log('[insertAtCursor] Setting input to:', result.text.substring(0, 30), 'cursor:', result.position);
     setInputAndCursor({ text: result.text, cursor: result.position });
     setOriginalInput(result.text);
   }, [input, cursorPosition, setOriginalInput]);

@@ -29,17 +29,7 @@ export function ChatInput({
   const pendingPastes = pasteManager.getPendingPastes();
   const attachedImages = imagePathManager.getAttachedImages();
 
-  // Debug: log when component renders
-  console.log('[ChatInput] RENDER - input length:', input.length, 'pending pastes:', pendingPastes.length, 'input preview:', input.substring(0, 50));
-
-  // Debug: Check for problematic long lines
-  if (input.length > 0) {
-    const lines = input.split('\n');
-    const maxLineLength = Math.max(...lines.map(l => l.length));
-    if (maxLineLength > 100) {
-      console.log('[ChatInput] WARNING: Long line detected:', maxLineLength, 'chars');
-    }
-  }
+  // Component renders (debug logs removed for cleaner output)
 
   // Function to render text with styled placeholders (cyan for text, magenta for images)
   const renderWithPlaceholders = useMemo(() => {
