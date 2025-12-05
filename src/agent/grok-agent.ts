@@ -339,7 +339,11 @@ Current working directory: ${process.cwd()}`,
       }
 
       default: {
-        // Generic: use only first non-empty line to avoid flooding the chat
+        // For errors (including user rejection feedback), show the full message
+        // For success, use only first non-empty line to avoid flooding the chat
+        if (!result.success) {
+          return `${toolCall.function.name}: ${raw}`;
+        }
         const firstLine = raw.split("\n").find((l) => l.trim().length > 0) || raw || "Success";
         return `${toolCall.function.name}: ${firstLine}`;
       }
