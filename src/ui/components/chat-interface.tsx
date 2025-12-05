@@ -564,12 +564,10 @@ function ChatInterfaceWithAgent({
     confirmationService.rejectOperation(feedback);
     setConfirmationOptions(null);
 
-    // Reset processing states when operation is cancelled
-    setIsProcessing(false);
-    setIsStreaming(false);
-    setTokenCount(0);
-    setProcessingTime(0);
-    processingStartTime.current = 0;
+    // Note: Do NOT reset processing states here!
+    // The agent will continue after rejection and generate a response
+    // explaining what it understood from the rejection feedback.
+    // Resetting states would stop the agent from responding.
   };
 
   // Note: chatViewContent has been removed - now using ChatProvider + ChatLayoutSwitcher
