@@ -16,9 +16,22 @@ import { loadChatHistory, loadState } from "../../utils/session-manager-sqlite.j
 import { getSettingsManager } from "../../utils/settings-manager.js";
 import { SplitLayout } from "./search/split-layout.js";
 import { SearchResults } from "./search/search-results.js";
-import { parseSearchCommand, executeSearchCommand } from "../../commands/search.js";
+import {
+  parseSearchInConversationsCommand,
+  executeSearchInConversationsCommand
+} from "../../commands/search.js";
 import { SearchResult } from "../../utils/search-manager.js";
 import { sessionManager } from "../../utils/session-manager-sqlite.js";
+import {
+  parseSearchFilesCommand,
+  executeSearchFilesCommand,
+  formatSearchFilesResults
+} from "../../commands/search-files.js";
+import {
+  parseSearchInFilesCommand,
+  executeSearchInFilesCommand,
+  formatSearchInFilesResults
+} from "../../commands/search-in-files.js";
 import { generateStatusMessage } from "../../utils/status-message.js";
 import type { StartupConfig } from "../../index.js";
 import { LayoutManager } from "./layout-manager.js";
@@ -226,26 +239,53 @@ function ChatInterfaceWithAgent({
     }, 200); // Token count can be even slower
   }, []);
 
-  // Handle search command
+  // Handle search in conversations command
   const handleSearchCommand = useCallback((input: string): boolean => {
-    const searchCmd = parseSearchCommand(input);
-    
-    if (searchCmd) {
-      // Get current session ID
+    // Check for /search_in_conversations
+    const searchConvCmd = parseSearchInConversationsCommand(input);
+    if (searchConvCmd) {
       const currentSession = sessionManager.getCurrentSession();
       const sessionId = currentSession?.id;
-      
-      // Execute search
-      const results = executeSearchCommand(searchCmd, sessionId);
-      
-      // Update search state
-      setSearchQuery(searchCmd.query);
+      const results = executeSearchInConversationsCommand(searchConvCmd, sessionId);
+
+      setSearchQuery(searchConvCmd.query);
       setSearchResults(results);
       setSearchMode(true);
-      
-      return true; // Command handled
+      return true;
     }
-    
+
+    // Check for /search_files (async execution in background)
+    const searchFilesCmd = parseSearchFilesCommand(input);
+    if (searchFilesCmd) {
+      // Execute async but return true immediately
+      executeSearchFilesCommand(searchFilesCmd).then((results) => {
+        const formatted = formatSearchFilesResults(results, searchFilesCmd.pattern);
+        const systemEntry: ChatEntry = {
+          type: 'assistant',
+          content: formatted,
+          timestamp: new Date(),
+        };
+        setChatHistory(prev => [...prev, systemEntry]);
+      });
+      return true;
+    }
+
+    // Check for /search_in_files (async execution in background)
+    const searchInFilesCmd = parseSearchInFilesCommand(input);
+    if (searchInFilesCmd) {
+      // Execute async but return true immediately
+      executeSearchInFilesCommand(searchInFilesCmd).then((results) => {
+        const formatted = formatSearchInFilesResults(results, searchInFilesCmd.pattern);
+        const systemEntry: ChatEntry = {
+          type: 'assistant',
+          content: formatted,
+          timestamp: new Date(),
+        };
+        setChatHistory(prev => [...prev, systemEntry]);
+      });
+      return true;
+    }
+
     return false; // Not a search command
   }, []);
   
