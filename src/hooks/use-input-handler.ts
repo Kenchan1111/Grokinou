@@ -351,10 +351,12 @@ export function useInputHandler({
       debugLog.log('[PASTE DEBUG] inputChar.length:', inputChar.length, 'key.paste:', key.paste);
     }
 
-    // Handle native paste event from Ink
-    if (key.paste && inputChar) {
-      debugLog.log('[PASTE] Ink detected paste, length:', inputChar.length);
-      // Ink detected a paste operation - process as paste
+    // Handle paste: either Ink's key.paste OR large input (>50 chars = likely paste)
+    const isPasteEvent = key.paste || (inputChar && inputChar.length > 50);
+
+    if (isPasteEvent && inputChar) {
+      debugLog.log(`[PASTE] Detected paste (key.paste=${key.paste}, length=${inputChar.length})`);
+      // Process as paste operation
       const imageResult = imagePathManager.processPaste(inputChar);
       if (imageResult.isImage) {
         insertAtCursor(imageResult.textToInsert);
