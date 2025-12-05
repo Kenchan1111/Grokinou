@@ -1,11 +1,13 @@
 /**
- * Chat Layout Switcher
+ * Chat Layout Switcher - Smooth Transitions Edition
  *
- * Decides which layout to render based on current mode.
- * Each layout creates its OWN instance of ConversationView,
- * preventing the JSX reuse glitch.
+ * Uses display-based rendering instead of conditional mounting to eliminate:
+ * - Unmount/remount glitches during mode transitions
+ * - Scroll position loss
+ * - Flash/blink visual artifacts
  *
- * This is the key component that replaces the old "finalContent" logic.
+ * All layouts are mounted once and toggled via CSS display property.
+ * This preserves component state and enables smooth transitions.
  */
 
 import React, { useMemo } from 'react';
@@ -19,7 +21,7 @@ import { SearchResults } from './search/search-results.js';
 import { getSettingsManager } from '../../utils/settings-manager.js';
 
 // ============================================================================
-// CHAT LAYOUT SWITCHER
+// CHAT LAYOUT SWITCHER - SMOOTH MODE
 // ============================================================================
 
 interface ChatLayoutSwitcherProps {
@@ -58,73 +60,95 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
       defaultMode: 'hidden' as const,
       autoShow: true,
       autoHide: false,
-      maxExecutionsShown: 10,
+      maxExecutionsShown: 1000,
       detailsMode: false
     };
   }, []);
 
-  // ============================================
-  // SEARCH MODE
-  // ============================================
-  if (searchMode) {
-    if (searchFullscreen) {
-      // Fullscreen search results
-      return (
-        <SearchResults
-          key="search-fullscreen"
-          query={searchQuery}
-          results={searchResults}
-          onClose={onCloseSearch}
-          onPasteToInput={onPasteToInput}
-          fullscreen={true}
-        />
-      );
-    } else {
-      // Split layout: conversation left, search right
-      return (
-        <SplitLayout
-          key="search-split-layout"
-          left={<ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true} />}
-          right={
-            <SearchResults
-              query={searchQuery}
-              results={searchResults}
-              onClose={onCloseSearch}
-              onPasteToInput={onPasteToInput}
-              onToggleFullscreen={onToggleFullscreen}
-              fullscreen={false}
-            />
-          }
-        />
-      );
-    }
-  }
+  const viewerEnabled = executionViewerSettings.enabled;
 
-  // ============================================
-  // EXECUTION VIEWER MODE
-  // ============================================
-  if (executionViewerSettings.enabled) {
-    // Add unique keys to prevent JSX reuse and duplication
-    return (
-      <LayoutManager
-        key="viewer-layout"
-        conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} />}
-        executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
-        config={{
-          defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
-          autoShow: executionViewerSettings.autoShow,
-          autoHide: executionViewerSettings.autoHide,
-          splitRatio: 0.6,
-          layout: 'horizontal'
-        }}
-      />
-    );
-  }
+  // Calculate which layout should be visible
+  const isNormalMode = !searchMode && !viewerEnabled;
+  const isViewerMode = !searchMode && viewerEnabled;
+  const isSearchMode = searchMode;
 
-  // ============================================
-  // NORMAL MODE (No viewer, no search)
-  // ============================================
-  return <ConversationView key="normal-conversation" scrollRef={scrollRef} />;
+  // All layouts are always mounted, visibility controlled by display
+  return (
+    <Box flexDirection="column" width="100%" height="100%">
+      {/* ============================================
+          NORMAL MODE (No viewer, no search)
+          ============================================ */}
+      <Box
+        display={isNormalMode ? 'flex' : 'none'}
+        flexDirection="column"
+        width="100%"
+        height="100%"
+      >
+        <ConversationView key="normal-conversation" scrollRef={scrollRef} />
+      </Box>
+
+      {/* ============================================
+          EXECUTION VIEWER MODE
+          ============================================ */}
+      <Box
+        display={isViewerMode ? 'flex' : 'none'}
+        flexDirection="column"
+        width="100%"
+        height="100%"
+      >
+        <LayoutManager
+          key="viewer-layout"
+          conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} />}
+          executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
+          config={{
+            defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
+            autoShow: executionViewerSettings.autoShow,
+            autoHide: executionViewerSettings.autoHide,
+            splitRatio: 0.6,
+            layout: 'horizontal'
+          }}
+        />
+      </Box>
+
+      {/* ============================================
+          SEARCH MODE
+          ============================================ */}
+      <Box
+        display={isSearchMode ? 'flex' : 'none'}
+        flexDirection="column"
+        width="100%"
+        height="100%"
+      >
+        {searchFullscreen ? (
+          // Fullscreen search results
+          <SearchResults
+            key="search-fullscreen"
+            query={searchQuery}
+            results={searchResults}
+            onClose={onCloseSearch}
+            onPasteToInput={onPasteToInput}
+            fullscreen={true}
+          />
+        ) : (
+          // Split layout: conversation left, search right
+          <SplitLayout
+            key="search-split-layout"
+            left={<ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true} />}
+            right={
+              <SearchResults
+                query={searchQuery}
+                results={searchResults}
+                onClose={onCloseSearch}
+                onPasteToInput={onPasteToInput}
+                onToggleFullscreen={onToggleFullscreen}
+                fullscreen={false}
+              />
+            }
+          />
+        )}
+      </Box>
+    </Box>
+  );
 };
 
 // Memoize to prevent re-renders when ChatContext changes but props don't
