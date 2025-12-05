@@ -8,6 +8,7 @@ import { filterCommandSuggestions } from "../ui/components/command-suggestions.j
 import { loadModelConfig, updateCurrentModel, updateDefaultModel } from "../utils/model-config.js";
 import { clearSession } from "../utils/session-manager.js";
 import { pasteManager } from "../utils/paste-manager.js";
+import { pasteBurstDetector } from "../utils/paste-burst-detector.js";
 import { providerManager } from "../utils/provider-manager.js";
 import { sessionManager } from "../utils/session-manager-sqlite.js";
 import { generateStatusMessage } from "../utils/status-message.js";
@@ -356,6 +357,7 @@ export function useInputHandler({
 
     if (isPasteEvent && inputChar) {
       debugLog.log(`[PASTE] Detected paste (key.paste=${key.paste}, length=${inputChar.length})`);
+      pasteBurstDetector.clear(); // Clear any buffering since we detected a full paste
       // Process as paste operation
       const imageResult = imagePathManager.processPaste(inputChar);
       if (imageResult.isImage) {
@@ -364,6 +366,24 @@ export function useInputHandler({
         const { textToInsert } = pasteManager.processPaste(inputChar);
         insertAtCursor(textToInsert);
       }
+      return;
+    }
+
+    // PasteBurstDetector fallback for fragmented pastes (e.g., emojis split across events)
+    const isBuffering = pasteBurstDetector.handleInput(inputChar, (bufferedContent) => {
+      debugLog.log(`[PASTE BURST] Flushed buffer, length=${bufferedContent.length}`);
+      // Process the buffered content as a paste
+      const imageResult = imagePathManager.processPaste(bufferedContent);
+      if (imageResult.isImage) {
+        insertAtCursor(imageResult.textToInsert);
+      } else {
+        const { textToInsert } = pasteManager.processPaste(bufferedContent);
+        insertAtCursor(textToInsert);
+      }
+    });
+
+    // If buffering, don't process input yet (waiting for more)
+    if (isBuffering) {
       return;
     }
 
