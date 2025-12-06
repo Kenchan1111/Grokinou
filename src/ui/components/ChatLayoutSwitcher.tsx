@@ -49,11 +49,6 @@ interface ChatLayoutSwitcherProps {
   confirmationOptions?: ConfirmationOptions | null;
   onConfirmation?: (dontAskAgain?: boolean) => void;
   onRejection?: (feedback?: string) => void;
-
-  /**
-   * Callback when viewer mode changes (for InputController width)
-   */
-  onViewerModeChange?: (mode: 'hidden' | 'split' | 'fullscreen') => void;
 }
 
 const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
@@ -64,8 +59,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   onToggleFullscreen,
   confirmationOptions,
   onConfirmation,
-  onRejection,
-  onViewerModeChange
+  onRejection
 }) => {
   // Get state from context
   const {
@@ -94,13 +88,6 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   const isNormalMode = !searchMode && !viewerEnabled;
   const isViewerMode = !searchMode && viewerEnabled;
   const isSearchMode = searchMode;
-
-  // Notify parent of viewer mode when in normal mode
-  React.useEffect(() => {
-    if (isNormalMode && onViewerModeChange) {
-      onViewerModeChange('hidden');
-    }
-  }, [isNormalMode, onViewerModeChange]);
 
   // All layouts are always mounted, visibility controlled by display
   return (
@@ -152,7 +139,6 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
               splitRatio: 0.6,
               layout: 'horizontal'
             }}
-            onModeChange={onViewerModeChange}
           />
         </Box>
       )}
