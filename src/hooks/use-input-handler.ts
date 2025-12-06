@@ -1663,7 +1663,8 @@ export function useInputHandler({
         console.log('🐛 [DEBUG] Parsed args:', args);
         
         // Parse options
-        let importHistory = false;
+        // ✅ CHANGED: Default to true (import history by default)
+        let importHistory = true;
         let specificModel: string | undefined;
         let specificProvider: string | undefined;
         let targetDirectory: string | undefined;
@@ -1673,12 +1674,14 @@ export function useInputHandler({
         let cloneGit = false;
         let copyFiles = false;
         let fromRewind: string | undefined;
-        
+
         for (let i = 0; i < args.length; i++) {
           const arg = args[i];
-          
+
           if (arg === '--import-history') {
             importHistory = true;
+          } else if (arg === '--no-import-history') {
+            importHistory = false;
           } else if (arg === '--model' && args[i + 1]) {
             specificModel = args[i + 1];
             i++; // Skip next arg
@@ -2035,7 +2038,8 @@ export function useInputHandler({
           type: "assistant",
           content: `❌ Failed to create new session: ${error?.message || 'Unknown error'}\n\n` +
                    `Stack trace:\n${error.stack}\n\n` +
-                   `Usage: /new-session [--import-history] [--model <name>] [--provider <name>]`,
+                   `Usage: /new-session [--no-import-history] [--model <name>] [--provider <name>]\n` +
+                   `Note: History is imported by default. Use --no-import-history for a fresh session.`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);

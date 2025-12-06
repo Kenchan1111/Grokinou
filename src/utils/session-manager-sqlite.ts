@@ -176,7 +176,9 @@ export class SessionManagerSQLite {
     }
   ): Promise<{ session: Session; history: ChatEntry[]; importWarning?: string }> {
     const apiKeyHash = apiKey ? this.hashApiKey(apiKey) : undefined;
-    const importHistory = options?.importHistory || false;
+    // ✅ CHANGED: Default to true (import history by default)
+    // Use --no-import-history to create a fresh session without context
+    const importHistory = options?.importHistory !== false;
     const fromSessionId = options?.fromSessionId;
     const dateRange = options?.dateRange;
     
