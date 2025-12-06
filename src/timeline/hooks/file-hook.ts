@@ -126,6 +126,8 @@ export class FileHook {
         ignored: this.config.ignorePatterns,
         persistent: true,
         ignoreInitial: true, // Don't emit events for existing files
+        ignorePermissionErrors: true, // Ignore permission errors
+        depth: 10, // Limit recursion depth to avoid deep .git traversal
         awaitWriteFinish: {
           stabilityThreshold: 100,
           pollInterval: 50,
