@@ -49,11 +49,6 @@ interface ChatLayoutSwitcherProps {
   confirmationOptions?: ConfirmationOptions | null;
   onConfirmation?: (dontAskAgain?: boolean) => void;
   onRejection?: (feedback?: string) => void;
-
-  /**
-   * Input controller to render (placed appropriately based on mode)
-   */
-  inputController?: React.ReactNode;
 }
 
 const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
@@ -64,8 +59,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   onToggleFullscreen,
   confirmationOptions,
   onConfirmation,
-  onRejection,
-  inputController
+  onRejection
 }) => {
   // Get state from context
   const {
@@ -113,9 +107,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
             confirmationOptions={confirmationOptions}
             onConfirmation={onConfirmation}
             onRejection={onRejection}
-          >
-            {inputController}
-          </ConversationView>
+          />
         </Box>
       )}
 
@@ -137,9 +129,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
                 confirmationOptions={confirmationOptions}
                 onConfirmation={onConfirmation}
                 onRejection={onRejection}
-              >
-                {inputController}
-              </ConversationView>
+              />
             }
             executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
             config={{
