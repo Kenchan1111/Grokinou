@@ -38,7 +38,6 @@ import { LayoutManager } from "./layout-manager.js";
 import { ExecutionViewer } from "./execution-viewer.js";
 import { ChatProvider, type ChatContextValue } from "../contexts/ChatContext.js";
 import { ChatLayoutSwitcher } from "./ChatLayoutSwitcher.js";
-import { executionManager } from "../../execution/index.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
@@ -326,16 +325,9 @@ function ChatInterfaceWithAgent({
     };
   }, []);
 
-  // Listen to execution end events to force re-render (prevents ghost duplication)
-  useEffect(() => {
-    const unsubscribe = executionManager.onExecutionEnd(() => {
-      // Increment renderKey to force ChatLayoutSwitcher remount
-      // This clears any ghost/duplicate rendering from Static component
-      setRenderKey(prev => prev + 1);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Note: renderKey is now incremented during commit to committedHistory
+  // (see useEffect below that commits activeMessages when streaming ends)
+  // This avoids remounting during execution and only remounts when history is actually updated
 
   // Input is handled by InputController to avoid rerendering parent on each keystroke
 
@@ -451,6 +443,10 @@ function ChatInterfaceWithAgent({
       // Commit tous les messages actifs dans l'historique statique
       setCommittedHistory(prev => [...prev, ...activeMessages]);
       setActiveMessages([]);
+
+      // Increment renderKey to force ConversationView remount after commit
+      // This clears any ghost/duplicate rendering from Static component
+      setRenderKey(prev => prev + 1);
 
       // Reset flag after React finishes batching
       setTimeout(() => {
