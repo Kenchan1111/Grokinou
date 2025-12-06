@@ -77,10 +77,18 @@ export class FileHook {
 
   private constructor(config: FileHookConfig = {}) {
     this.bus = EventBus.getInstance();
+
+    // Default watch paths: watch source files, not everything
+    const defaultWatchPaths = config.watchPaths ?? [
+      process.cwd() + '/src/**',
+      process.cwd() + '/scripts/**',
+      process.cwd() + '/*.{ts,js,json,md}',
+    ];
+
     this.config = {
       enabled: config.enabled ?? true,
       debounceMs: config.debounceMs ?? 500,
-      watchPaths: config.watchPaths ?? [process.cwd()],
+      watchPaths: defaultWatchPaths,
       ignorePatterns: config.ignorePatterns ?? [
         '**/node_modules/**',
         '**/.git/**',
@@ -126,8 +134,6 @@ export class FileHook {
         ignored: this.config.ignorePatterns,
         persistent: true,
         ignoreInitial: true, // Don't emit events for existing files
-        ignorePermissionErrors: true, // Ignore permission errors
-        depth: 10, // Limit recursion depth to avoid deep .git traversal
         awaitWriteFinish: {
           stabilityThreshold: 100,
           pollInterval: 50,
