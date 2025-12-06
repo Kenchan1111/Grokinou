@@ -35,6 +35,11 @@ const CRITICAL_PATTERNS = [
   'dist/**/*.js',
   'package.json',
   'tsconfig.json',
+  // Git integrity (prevent commit tampering before push)
+  '.git/config',
+  '.git/HEAD',
+  '.git/refs/heads/**',
+  '.git/hooks/**',
 ];
 
 // ⚠️ MALICIOUS PATTERNS (Heuristic Detection)
