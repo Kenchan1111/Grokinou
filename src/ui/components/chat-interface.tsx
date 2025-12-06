@@ -718,7 +718,7 @@ function ChatInterfaceWithAgent({
         {/* Layout switcher (always rendered to preserve viewer state) */}
         {/* Internal components now have unique keys to prevent JSX reuse */}
         <ChatLayoutSwitcher
-          key={renderKey}
+          renderKey={renderKey}
           scrollRef={scrollRef}
           onCloseSearch={handleCloseSearch}
           onPasteToInput={handlePasteToInput}

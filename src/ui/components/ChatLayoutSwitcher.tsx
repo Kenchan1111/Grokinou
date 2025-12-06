@@ -26,6 +26,11 @@ import { getSettingsManager } from '../../utils/settings-manager.js';
 
 interface ChatLayoutSwitcherProps {
   /**
+   * Render key to force re-render of ConversationView (prevents ghost duplication)
+   */
+  renderKey?: number;
+
+  /**
    * Scroll ref to pass to ConversationView
    */
   scrollRef?: React.RefObject<any>;
@@ -39,6 +44,7 @@ interface ChatLayoutSwitcherProps {
 }
 
 const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
+  renderKey = 0,
   scrollRef,
   onCloseSearch,
   onPasteToInput,
@@ -84,7 +90,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
           width="100%"
           height="100%"
         >
-          <ConversationView key="normal-conversation" scrollRef={scrollRef} />
+          <ConversationView key={`normal-conversation-${renderKey}`} scrollRef={scrollRef} />
         </Box>
       )}
 
@@ -99,7 +105,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
         >
           <LayoutManager
             key="viewer-layout"
-            conversation={<ConversationView key="viewer-conversation" scrollRef={scrollRef} />}
+            conversation={<ConversationView key={`viewer-conversation-${renderKey}`} scrollRef={scrollRef} />}
             executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
             config={{
               defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
