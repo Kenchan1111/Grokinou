@@ -38,6 +38,7 @@ import { LayoutManager } from "./layout-manager.js";
 import { ExecutionViewer } from "./execution-viewer.js";
 import { ChatProvider, type ChatContextValue } from "../contexts/ChatContext.js";
 import { ChatLayoutSwitcher } from "./ChatLayoutSwitcher.js";
+import { executionManager } from "../../execution/index.js";
 
 interface ChatInterfaceProps {
   agent?: GrokAgent;
@@ -155,6 +156,9 @@ function ChatInterfaceWithAgent({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchFullscreen, setSearchFullscreen] = useState(false);
   const inputInjectionRef = useRef<((text: string) => void) | null>(null);
+
+  // Render key to force re-render after execution completes (prevents ghost duplication)
+  const [renderKey, setRenderKey] = useState(0);
 
   // Stabilize setters with useCallback to prevent InputController re-renders
   const stableChatHistorySetter = useCallback((value: React.SetStateAction<ChatEntry[]>) => {
@@ -322,8 +326,19 @@ function ChatInterfaceWithAgent({
     };
   }, []);
 
+  // Listen to execution end events to force re-render (prevents ghost duplication)
+  useEffect(() => {
+    const unsubscribe = executionManager.onExecutionEnd(() => {
+      // Increment renderKey to force ChatLayoutSwitcher remount
+      // This clears any ghost/duplicate rendering from Static component
+      setRenderKey(prev => prev + 1);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   // Input is handled by InputController to avoid rerendering parent on each keystroke
-  
+
   // Track if status was already added (to avoid duplicates in React strict mode)
   const statusAddedRef = useRef(false);
 
@@ -703,6 +718,7 @@ function ChatInterfaceWithAgent({
         {/* Layout switcher (always rendered to preserve viewer state) */}
         {/* Internal components now have unique keys to prevent JSX reuse */}
         <ChatLayoutSwitcher
+          key={renderKey}
           scrollRef={scrollRef}
           onCloseSearch={handleCloseSearch}
           onPasteToInput={handlePasteToInput}
