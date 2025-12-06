@@ -445,13 +445,12 @@ function ChatInterfaceWithAgent({
       setCommittedHistory(prev => [...prev, ...activeMessages]);
       setActiveMessages([]);
 
-      // Increment renderKey AFTER React finishes batching the commit
-      // This ensures the Static component has the new data before remounting
-      // Delay slightly to let Ink finish the current render cycle
-      setTimeout(() => {
+      // Increment renderKey in next microtask (after React batching)
+      // Use queueMicrotask for minimal delay while ensuring React has committed
+      queueMicrotask(() => {
         setRenderKey(prev => prev + 1);
         isCommittingRef.current = false;
-      }, 50); // 50ms delay to ensure Ink has finished rendering
+      });
     }
   }, [isStreaming, isProcessing, activeMessages, confirmationOptions]);
 
