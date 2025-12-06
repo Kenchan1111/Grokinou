@@ -16,6 +16,8 @@ import { ChatHistory, MemoizedArchived } from './chat-history.js';
 // import { StreamingDisplay } from './streaming-display.js';
 import { LoadingSpinner } from './loading-spinner.js';
 import { useScrollPosition } from '../hooks/use-scroll-position.js';
+import ConfirmationDialog from './confirmation-dialog.js';
+import type { ConfirmationOptions } from '../../utils/confirmation-service.js';
 
 // ============================================================================
 // CONVERSATION VIEW
@@ -36,12 +38,22 @@ interface ConversationViewProps {
    * Whether to limit history in search mode
    */
   searchMode?: boolean;
+
+  /**
+   * Confirmation dialog props (passed from parent, overrides context)
+   */
+  confirmationOptions?: ConfirmationOptions | null;
+  onConfirmation?: (dontAskAgain?: boolean) => void;
+  onRejection?: (feedback?: string) => void;
 }
 
 export const ConversationView: React.FC<ConversationViewProps> = ({
   showStatus = true,
   scrollRef,
-  searchMode = false
+  searchMode = false,
+  confirmationOptions: confirmationOptionsProp,
+  onConfirmation,
+  onRejection
 }) => {
   // Get data from context
   const {
@@ -52,11 +64,14 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
     streamingTools,
     streamingToolResults,
     showTips,
-    confirmationOptions,
+    confirmationOptions: confirmationOptionsContext,
     isProcessing,
     processingTime,
     tokenCount
   } = useChatState();
+
+  // Use prop if provided, otherwise use context
+  const confirmationOptions = confirmationOptionsProp ?? confirmationOptionsContext;
 
   // Preserve scroll position during re-renders (disabled in searchMode)
   useScrollPosition(!searchMode && !isStreaming);
@@ -116,6 +131,26 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
           processingTime={processingTime}
           tokenCount={tokenCount}
         />
+      )}
+
+      {/* Confirmation dialog (rendered at end, visible above conversation) */}
+      {confirmationOptions && onConfirmation && onRejection && (
+        <Box
+          borderStyle="round"
+          borderColor="yellow"
+          paddingX={1}
+          paddingY={1}
+          marginTop={1}
+        >
+          <ConfirmationDialog
+            operation={confirmationOptions.operation}
+            filename={confirmationOptions.filename}
+            showVSCodeOpen={confirmationOptions.showVSCodeOpen}
+            content={confirmationOptions.content}
+            onConfirm={onConfirmation}
+            onReject={onRejection}
+          />
+        </Box>
       )}
     </Box>
   );

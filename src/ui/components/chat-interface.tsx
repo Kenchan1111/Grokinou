@@ -713,25 +713,17 @@ function ChatInterfaceWithAgent({
       >
         {/* Layout switcher (always rendered to preserve viewer state) */}
         {/* Internal components now have unique keys to prevent JSX reuse */}
+        {/* Confirmation dialog is passed down to be rendered inside conversation view */}
         <ChatLayoutSwitcher
           renderKey={renderKey}
           scrollRef={scrollRef}
           onCloseSearch={handleCloseSearch}
           onPasteToInput={handlePasteToInput}
           onToggleFullscreen={handleToggleFullscreen}
+          confirmationOptions={confirmationOptions}
+          onConfirmation={handleConfirmation}
+          onRejection={handleRejection}
         />
-
-        {/* Confirmation dialog (rendered over layout) */}
-        {confirmationOptions && (
-          <ConfirmationDialog
-            operation={confirmationOptions.operation}
-            filename={confirmationOptions.filename}
-            showVSCodeOpen={confirmationOptions.showVSCodeOpen}
-            content={confirmationOptions.content}
-            onConfirm={handleConfirmation}
-            onReject={handleRejection}
-          />
-        )}
 
         {/* Input controller */}
         {!confirmationOptions && !searchMode && (

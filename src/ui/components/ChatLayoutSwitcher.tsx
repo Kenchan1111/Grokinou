@@ -19,6 +19,7 @@ import { ExecutionViewer } from './execution-viewer.js';
 import { SplitLayout } from './search/split-layout.js';
 import { SearchResults } from './search/search-results.js';
 import { getSettingsManager } from '../../utils/settings-manager.js';
+import type { ConfirmationOptions } from '../../utils/confirmation-service.js';
 
 // ============================================================================
 // CHAT LAYOUT SWITCHER - SMOOTH MODE
@@ -41,6 +42,13 @@ interface ChatLayoutSwitcherProps {
   onCloseSearch?: () => void;
   onPasteToInput?: (text: string) => void;
   onToggleFullscreen?: () => void;
+
+  /**
+   * Confirmation dialog props (passed down to ConversationView)
+   */
+  confirmationOptions?: ConfirmationOptions | null;
+  onConfirmation?: (dontAskAgain?: boolean) => void;
+  onRejection?: (feedback?: string) => void;
 }
 
 const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
@@ -48,7 +56,10 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   scrollRef,
   onCloseSearch,
   onPasteToInput,
-  onToggleFullscreen
+  onToggleFullscreen,
+  confirmationOptions,
+  onConfirmation,
+  onRejection
 }) => {
   // Get state from context
   const {
@@ -90,7 +101,13 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
           width="100%"
           height="100%"
         >
-          <ConversationView key={`normal-conversation-${renderKey}`} scrollRef={scrollRef} />
+          <ConversationView
+            key={`normal-conversation-${renderKey}`}
+            scrollRef={scrollRef}
+            confirmationOptions={confirmationOptions}
+            onConfirmation={onConfirmation}
+            onRejection={onRejection}
+          />
         </Box>
       )}
 
@@ -105,7 +122,15 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
         >
           <LayoutManager
             key="viewer-layout"
-            conversation={<ConversationView key={`viewer-conversation-${renderKey}`} scrollRef={scrollRef} />}
+            conversation={
+              <ConversationView
+                key={`viewer-conversation-${renderKey}`}
+                scrollRef={scrollRef}
+                confirmationOptions={confirmationOptions}
+                onConfirmation={onConfirmation}
+                onRejection={onRejection}
+              />
+            }
             executionViewer={<ExecutionViewer key="execution-viewer" mode="split" settings={executionViewerSettings} />}
             config={{
               defaultMode: executionViewerSettings.defaultMode as 'hidden' | 'split' | 'fullscreen',
