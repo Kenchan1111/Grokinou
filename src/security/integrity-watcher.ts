@@ -688,6 +688,13 @@ REASON: [explanation]`;
     this.watcher = chokidar.watch(patterns, {
       persistent: true,
       ignoreInitial: true,
+      ignored: [
+        '**/.git/**',
+        '**/node_modules/**',
+        '**/.grok/**',
+        '**/dist/**',
+        '**/build/**',
+      ],
       awaitWriteFinish: {
         stabilityThreshold: 500,
         pollInterval: 100,
