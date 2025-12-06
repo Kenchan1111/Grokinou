@@ -1,12 +1,14 @@
 /**
  * Layout Manager Component
- * 
+ *
  * Manages the 3-mode layout system:
  * - HIDDEN: Full-width conversation (no execution viewer)
  * - SPLIT: Side-by-side conversation + execution viewer (60/40)
  * - FULLSCREEN: Full-width execution viewer
- * 
- * Handles automatic transitions, keyboard shortcuts, and mode persistence.
+ *
+ * Uses a FIXED STRUCTURE with both panels always mounted to prevent
+ * ConversationView remounting and Static component re-rendering.
+ * Only visibility and dimensions change between modes.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -61,6 +63,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
 }) => {
   const config = { ...DEFAULT_CONFIG, ...userConfig };
   const [mode, setMode] = useState<ViewerMode>(config.defaultMode);
+  const [focused, setFocused] = useState<'conversation' | 'viewer'>('conversation');
   const [hasActiveExecution, setHasActiveExecution] = useState(false);
   const [autoHideTimeout, setAutoHideTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -125,8 +128,6 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
       setHasActiveExecution(stillActive);
 
       // Auto-hide viewer when execution completes (if enabled)
-      // By default, viewer stays open to allow user to examine modified files
-      // and continue iterative workflow (e.g., "modify file2 as well")
       if (!stillActive && config.autoHide && mode === 'split') {
         if (config.autoHideDelay > 0) {
           scheduleAutoHide();
@@ -155,7 +156,6 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         changeMode('hidden');
         cancelAutoHide();
       }
-      // If fullscreen, do nothing (must Esc first)
     }
 
     // Ctrl+F: Fullscreen viewer (from split only)
@@ -178,179 +178,132 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
       changeMode('hidden');
       cancelAutoHide();
     }
-  });
 
-  /**
-   * Render layout based on mode
-   */
-  return (
-    <Box flexDirection="column" width="100%" height="100%">
-      {/* Main content area */}
-      <Box flexGrow={1} flexDirection="column">
-        {mode === 'hidden' && (
-          <ConversationOnly>{conversation}</ConversationOnly>
-        )}
-
-        {mode === 'split' && (
-          <SplitView
-            conversation={conversation}
-            viewer={executionViewer}
-            splitRatio={config.splitRatio}
-            layout={config.layout}
-          />
-        )}
-
-        {mode === 'fullscreen' && (
-          <FullscreenViewer>{executionViewer}</FullscreenViewer>
-        )}
-      </Box>
-
-      {/* Keyboard hints bar */}
-      <KeyboardHints mode={mode} hasExecution={hasActiveExecution} />
-    </Box>
-  );
-};
-
-// ============================================================================
-// CONVERSATION ONLY VIEW
-// ============================================================================
-
-const ConversationOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <Box flexDirection="column" width="100%" height="100%">
-      {children}
-    </Box>
-  );
-};
-
-// ============================================================================
-// SPLIT VIEW
-// ============================================================================
-
-interface SplitViewProps {
-  conversation: React.ReactNode;
-  viewer: React.ReactNode;
-  splitRatio: number;
-  layout: 'horizontal' | 'vertical';
-}
-
-const SplitView: React.FC<SplitViewProps> = ({
-  conversation,
-  viewer,
-  splitRatio,
-  layout
-}) => {
-  const [focused, setFocused] = useState<'conversation' | 'viewer'>('conversation');
-
-  useInput((input, key) => {
-    // Tab: Switch focus between panels
-    if (key.tab) {
+    // Tab: Switch focus between panels (only in split mode)
+    if (key.tab && mode === 'split') {
       setFocused(f => f === 'conversation' ? 'viewer' : 'conversation');
     }
   });
 
-  if (layout === 'vertical') {
-    // Vertical split (conversation top, viewer bottom)
-    return (
-      <Box flexDirection="column" width="100%" height="100%">
-        {/* Conversation panel (top) */}
+  /**
+   * Calculate panel dimensions and visibility based on mode
+   */
+  const getConversationStyle = () => {
+    if (mode === 'hidden') {
+      return { width: '100%', display: 'flex' as const };
+    } else if (mode === 'split') {
+      const width = config.layout === 'horizontal'
+        ? `${Math.floor(config.splitRatio * 100)}%`
+        : '100%';
+      const height = config.layout === 'vertical'
+        ? `${Math.floor(config.splitRatio * 100)}%`
+        : undefined;
+      return { width, height, display: 'flex' as const };
+    } else {
+      // fullscreen: hide conversation
+      return { width: 0, display: 'none' as const };
+    }
+  };
+
+  const getViewerStyle = () => {
+    if (mode === 'hidden') {
+      return { width: 0, display: 'none' as const };
+    } else if (mode === 'split') {
+      const width = config.layout === 'horizontal'
+        ? `${Math.floor((1 - config.splitRatio) * 100)}%`
+        : '100%';
+      const height = config.layout === 'vertical'
+        ? `${Math.floor((1 - config.splitRatio) * 100)}%`
+        : undefined;
+      return { width, height, display: 'flex' as const };
+    } else {
+      // fullscreen: viewer takes full width
+      return { width: '100%', display: 'flex' as const };
+    }
+  };
+
+  const conversationStyle = getConversationStyle();
+  const viewerStyle = getViewerStyle();
+  const isVertical = config.layout === 'vertical';
+
+  /**
+   * Render fixed structure with both panels always mounted
+   */
+  return (
+    <Box flexDirection="column" width="100%" height="100%">
+      {/* Main content area - FIXED STRUCTURE */}
+      <Box
+        flexGrow={1}
+        flexDirection={isVertical ? 'column' : 'row'}
+        width="100%"
+        height="100%"
+      >
+        {/* Conversation panel - ALWAYS MOUNTED */}
         <Box
+          width={conversationStyle.width}
+          height={conversationStyle.height}
+          display={conversationStyle.display}
           flexDirection="column"
-          borderStyle="single"
-          borderColor={focused === 'conversation' ? 'cyan' : 'gray'}
-          paddingX={1}
-          height={`${Math.floor(splitRatio * 100)}%`}
+          borderStyle={mode !== 'fullscreen' ? 'single' : undefined}
+          borderColor={
+            mode === 'hidden'
+              ? undefined
+              : (mode === 'split' && focused === 'conversation')
+                ? 'cyan'
+                : 'gray'
+          }
+          paddingX={mode !== 'fullscreen' ? 1 : 0}
         >
-          <Box marginBottom={1}>
-            <Text bold color="cyan">💬 Conversation</Text>
-            {focused === 'conversation' && <Text dimColor> (focused)</Text>}
-          </Box>
+          {mode !== 'fullscreen' && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">💬 Conversation</Text>
+              {mode === 'split' && focused === 'conversation' && (
+                <Text dimColor> (focused)</Text>
+              )}
+            </Box>
+          )}
           <Box flexGrow={1} flexDirection="column" overflow="hidden">
             {conversation}
           </Box>
         </Box>
 
-        {/* Execution viewer panel (bottom) */}
+        {/* Execution viewer panel - ALWAYS MOUNTED */}
         <Box
+          width={viewerStyle.width}
+          height={viewerStyle.height}
+          display={viewerStyle.display}
           flexDirection="column"
-          borderStyle="single"
-          borderColor={focused === 'viewer' ? 'green' : 'gray'}
-          paddingX={1}
-          height={`${Math.floor((1 - splitRatio) * 100)}%`}
+          borderStyle={mode !== 'hidden' ? (mode === 'fullscreen' ? 'double' : 'single') : undefined}
+          borderColor={
+            mode === 'hidden'
+              ? undefined
+              : (mode === 'split' && focused === 'viewer')
+                ? 'green'
+                : mode === 'fullscreen'
+                  ? 'green'
+                  : 'gray'
+          }
+          paddingX={mode !== 'hidden' ? 1 : 0}
         >
-          <Box marginBottom={1}>
-            <Text bold color="green">🔧 Execution Viewer</Text>
-            {focused === 'viewer' && <Text dimColor> (focused)</Text>}
+          {mode !== 'hidden' && (
+            <Box marginBottom={1}>
+              <Text bold color="green">🔧 Execution Viewer</Text>
+              {mode === 'split' && focused === 'viewer' && (
+                <Text dimColor> (focused)</Text>
+              )}
+              {mode === 'fullscreen' && (
+                <Text dimColor> (fullscreen)</Text>
+              )}
+            </Box>
+          )}
+          <Box flexGrow={1} flexDirection="column">
+            {executionViewer}
           </Box>
-          <Box flexGrow={1} flexDirection="column" overflow="hidden">
-            {viewer}
-          </Box>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Horizontal split (conversation left, viewer right) - DEFAULT
-  return (
-    <Box width="100%" height="100%">
-      {/* Conversation panel (left) */}
-      <Box
-        width={`${Math.floor(splitRatio * 100)}%`}
-        flexDirection="column"
-        borderStyle="single"
-        borderColor={focused === 'conversation' ? 'cyan' : 'gray'}
-        paddingX={1}
-      >
-        <Box marginBottom={1}>
-          <Text bold color="cyan">💬 Conversation</Text>
-          {focused === 'conversation' && <Text dimColor> (focused)</Text>}
-        </Box>
-        <Box flexGrow={1} flexDirection="column" overflow="hidden">
-          {conversation}
         </Box>
       </Box>
 
-      {/* Execution viewer panel (right) */}
-      <Box
-        width={`${Math.floor((1 - splitRatio) * 100)}%`}
-        flexDirection="column"
-        borderStyle="single"
-        borderColor={focused === 'viewer' ? 'green' : 'gray'}
-        paddingX={1}
-      >
-        <Box marginBottom={1}>
-          <Text bold color="green">🔧 Execution Viewer</Text>
-          {focused === 'viewer' && <Text dimColor> (focused)</Text>}
-        </Box>
-        <Box flexGrow={1} flexDirection="column" overflow="hidden">
-          {viewer}
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
-// ============================================================================
-// FULLSCREEN VIEWER
-// ============================================================================
-
-const FullscreenViewer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <Box
-      flexDirection="column"
-      width="100%"
-      height="100%"
-      borderStyle="double"
-      borderColor="green"
-      paddingX={1}
-    >
-      <Box marginBottom={1}>
-        <Text bold color="green">🔧 Execution Viewer</Text>
-        <Text dimColor> (fullscreen)</Text>
-      </Box>
-      <Box flexGrow={1} flexDirection="column">
-        {children}
-      </Box>
+      {/* Keyboard hints bar */}
+      <KeyboardHints mode={mode} hasExecution={hasActiveExecution} />
     </Box>
   );
 };
