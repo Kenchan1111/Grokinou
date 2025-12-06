@@ -364,6 +364,10 @@ Current working directory: ${process.cwd()}`,
     if (!entries || entries.length === 0) return;
     for (const entry of entries) {
       try {
+        // ✅ FIX: Add to chatHistory for UI display
+        this.chatHistory.push(entry);
+
+        // Add to messages for API context
         if (entry.type === "user") {
           this.messages.push({ role: "user", content: entry.content });
         } else if (entry.type === "assistant") {
@@ -379,13 +383,13 @@ Current working directory: ${process.cwd()}`,
             content: entry.content,
             tool_call_id: entry.toolCall.id,
           };
-          
+
           // Add "name" field for Mistral (required by their API spec)
           const currentProvider = providerManager.detectProvider(this.grokClient.getCurrentModel());
           if (currentProvider === 'mistral') {
             toolMessage.name = entry.toolCall.function?.name || 'unknown';
           }
-          
+
           this.messages.push(toolMessage);
         }
       } catch {}
