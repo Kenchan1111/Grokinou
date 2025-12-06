@@ -45,6 +45,11 @@ interface ConversationViewProps {
   confirmationOptions?: ConfirmationOptions | null;
   onConfirmation?: (dontAskAgain?: boolean) => void;
   onRejection?: (feedback?: string) => void;
+
+  /**
+   * Optional children to render at the end (e.g., InputController)
+   */
+  children?: React.ReactNode;
 }
 
 export const ConversationView: React.FC<ConversationViewProps> = ({
@@ -53,7 +58,8 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
   searchMode = false,
   confirmationOptions: confirmationOptionsProp,
   onConfirmation,
-  onRejection
+  onRejection,
+  children
 }) => {
   // Get data from context
   const {
@@ -152,6 +158,9 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
           />
         </Box>
       )}
+
+      {/* Optional children (e.g., InputController in splitview mode) */}
+      {children}
     </Box>
   );
 };
