@@ -10,7 +10,7 @@
 
 import { debugLog } from './debug-logger.js';
 
-export const LARGE_PASTE_THRESHOLD = 100; // chars (lowered from 500)
+export const LARGE_PASTE_THRESHOLD = 50; // chars (aligned with use-input-handler direct detection)
 
 export interface PendingPaste {
   id: string;

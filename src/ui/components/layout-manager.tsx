@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useStdout } from 'ink';
 import { executionManager } from '../../execution/index.js';
 import type { ExecutionState } from '../../execution/index.js';
 
@@ -66,6 +66,10 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   const [focused, setFocused] = useState<'conversation' | 'viewer'>('conversation');
   const [hasActiveExecution, setHasActiveExecution] = useState(false);
   const [autoHideTimeout, setAutoHideTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Get terminal dimensions for numeric width calculation
+  const { stdout } = useStdout();
+  const terminalColumns = stdout?.columns || 80;
 
   /**
    * Change mode and notify
@@ -187,18 +191,22 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
 
   /**
    * Calculate panel dimensions and visibility based on mode
+   * Uses numeric widths (columns) instead of percentages for precise layout control
    */
   const getConversationStyle = () => {
     if (mode === 'hidden') {
-      return { width: '100%', display: 'flex' as const };
+      return { width: terminalColumns, display: 'flex' as const };
     } else if (mode === 'split') {
-      const width = config.layout === 'horizontal'
-        ? `${Math.floor(config.splitRatio * 100)}%`
-        : '100%';
-      const height = config.layout === 'vertical'
-        ? `${Math.floor(config.splitRatio * 100)}%`
-        : undefined;
-      return { width, height, display: 'flex' as const };
+      if (config.layout === 'horizontal') {
+        // Account for borders (2 chars per panel) and padding (2 chars per panel)
+        const borderAndPadding = 4; // 2 for left border+padding, 2 for right
+        const availableColumns = terminalColumns - borderAndPadding;
+        const leftColumns = Math.floor(availableColumns * config.splitRatio);
+        return { width: leftColumns, display: 'flex' as const };
+      } else {
+        const height = `${Math.floor(config.splitRatio * 100)}%`;
+        return { width: terminalColumns, height, display: 'flex' as const };
+      }
     } else {
       // fullscreen: hide conversation
       return { width: 0, display: 'none' as const };
@@ -209,16 +217,20 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     if (mode === 'hidden') {
       return { width: 0, display: 'none' as const };
     } else if (mode === 'split') {
-      const width = config.layout === 'horizontal'
-        ? `${Math.floor((1 - config.splitRatio) * 100)}%`
-        : '100%';
-      const height = config.layout === 'vertical'
-        ? `${Math.floor((1 - config.splitRatio) * 100)}%`
-        : undefined;
-      return { width, height, display: 'flex' as const };
+      if (config.layout === 'horizontal') {
+        // Account for borders (2 chars per panel) and padding (2 chars per panel)
+        const borderAndPadding = 4;
+        const availableColumns = terminalColumns - borderAndPadding;
+        const leftColumns = Math.floor(availableColumns * config.splitRatio);
+        const rightColumns = availableColumns - leftColumns;
+        return { width: rightColumns, display: 'flex' as const };
+      } else {
+        const height = `${Math.floor((1 - config.splitRatio) * 100)}%`;
+        return { width: terminalColumns, height, display: 'flex' as const };
+      }
     } else {
       // fullscreen: viewer takes full width
-      return { width: '100%', display: 'flex' as const };
+      return { width: terminalColumns, display: 'flex' as const };
     }
   };
 

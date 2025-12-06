@@ -129,7 +129,8 @@ export function ChatInput({
         paddingY={0}
         marginTop={1}
         flexDirection="column"
-        flexShrink={0}
+        flexShrink={1}
+        width="100%"
       >
         {lines.map((line, index) => {
           const isCurrentLine = index === currentLineIndex;
@@ -144,7 +145,7 @@ export function ChatInput({
             return (
               <Box key={index}>
                 <Text color={promptColor}>{promptChar} </Text>
-                <Text>
+                <Text wrap="wrap">
                   {renderWithPlaceholders(beforeCursorInLine)}
                   {showCursor && (
                     <Text backgroundColor="white" color="black">
@@ -160,7 +161,7 @@ export function ChatInput({
             return (
               <Box key={index}>
                 <Text color={promptColor}>{promptChar} </Text>
-                <Text>{renderWithPlaceholders(line)}</Text>
+                <Text wrap="wrap">{renderWithPlaceholders(line)}</Text>
               </Box>
             );
           }
@@ -181,9 +182,10 @@ export function ChatInput({
       paddingY={0}
       marginTop={1}
       flexDirection="column"
-      flexShrink={0}
+      flexShrink={1}
+      width="100%"
     >
-      <Box flexDirection="column" width="100%" flexShrink={0}>
+      <Box flexDirection="column" width="100%" flexShrink={1}>
         <Box flexDirection="row" flexWrap="wrap" width="100%">
           <Text color={promptColor}>❯ </Text>
           {isPlaceholder ? (
