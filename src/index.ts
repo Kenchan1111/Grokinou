@@ -148,16 +148,58 @@ export interface StartupConfig {
 async function resolveStartupConfiguration(
   cliModel?: string,
   cliApiKey?: string,
-  cliBaseURL?: string
+  cliBaseURL?: string,
+  cliSessionId?: number
 ): Promise<StartupConfig> {
   const cwd = process.cwd();
   const settingsManager = getSettingsManager();
-  
+
   // Import dynamically to avoid circular deps
   const { SessionManagerSQLite } = await import('./utils/session-manager-sqlite.js');
   const { providerManager } = await import('./utils/provider-manager.js');
   const sessionManager = SessionManagerSQLite.getInstance();
-  
+
+  // PRIORITY 0: CLI --session <id> (highest priority)
+  if (cliSessionId !== undefined) {
+    const { SessionRepository } = await import('./db/repositories/session-repository.js');
+    const { db } = await import('./db/database.js');
+    const repo = new SessionRepository(db.getDb());
+    const targetSession = repo.findById(cliSessionId);
+
+    if (!targetSession) {
+      throw new Error(
+        `❌ Session #${cliSessionId} not found\n\n` +
+        `Use /list_sessions to see available sessions`
+      );
+    }
+
+    const model = targetSession.default_model;
+    const provider = targetSession.default_provider || providerManager.detectProvider(model) || 'grok';
+
+    // Try to find API key for this provider
+    const apiKey = settingsManager.getApiKeyForProvider(provider);
+
+    if (!apiKey) {
+      throw new Error(
+        `❌ No API key found for provider: ${provider}\n\n` +
+        `Session #${cliSessionId} uses ${model} (${provider})\n` +
+        `Please configure API key: /apikey ${provider} <your-key>\n` +
+        `Or use grokinou --api-key <key> --session ${cliSessionId}`
+      );
+    }
+
+    const baseURL = providerManager.getProviderForModel(model)?.baseURL;
+
+    return {
+      status: 'restored',
+      model,
+      provider,
+      apiKey,
+      baseURL,
+      message: `🎯 Launching Session #${cliSessionId}: ${targetSession.session_name || 'Unnamed'} (${model})`
+    };
+  }
+
   // PRIORITY 1: CLI args
   if (cliModel) {
     const provider = providerManager.detectProvider(cliModel) || 'grok';
@@ -491,6 +533,10 @@ program
     "AI model to use (e.g., grok-code-fast-1, grok-4-latest) (or set GROK_MODEL env var)"
   )
   .option(
+    "-s, --session <id>",
+    "launch specific session by ID (overrides last session detection)"
+  )
+  .option(
     "-p, --prompt <prompt>",
     "process a single prompt and exit (headless mode)"
   )
@@ -524,10 +570,12 @@ program
 
       // Resolve startup configuration with proper priority
       const maxToolRounds = parseInt(options.maxToolRounds) || 400;
+      const sessionId = options.session ? parseInt(options.session) : undefined;
       const startupConfig = await resolveStartupConfiguration(
         options.model || effective.model,
         options.apiKey || effective.provider?.apiKey,
-        options.baseUrl || effective.provider?.baseURL
+        options.baseUrl || effective.provider?.baseURL,
+        sessionId
       );
 
       // Save API key and base URL to user settings if provided via command line
@@ -577,11 +625,29 @@ program
       } else {
         // API key available - initialize agent normally
         agent = new GrokAgent(
-          startupConfig.apiKey, 
-          startupConfig.baseURL, 
-          startupConfig.model, 
+          startupConfig.apiKey,
+          startupConfig.baseURL,
+          startupConfig.model,
           maxToolRounds
         );
+
+        // If --session was provided, switch to that session immediately
+        if (sessionId !== undefined) {
+          try {
+            const { SessionManagerSQLite } = await import('./utils/session-manager-sqlite.js');
+            const sessionManager = SessionManagerSQLite.getInstance();
+            await sessionManager.switchSession(sessionId);
+
+            // Load history from the target session
+            const history = await sessionManager.loadChatHistory();
+
+            // Note: History will be loaded by ChatInterface via agent.getChatHistory()
+            // This just ensures the session is active in sessionManager
+          } catch (error: any) {
+            console.error(`❌ Failed to switch to session #${sessionId}:`, error.message);
+            process.exit(1);
+          }
+        }
       }
       
       // Afficher le logo et instructions AVANT le démarrage d'Ink (une seule fois, jamais re-rendu)
