@@ -444,14 +444,13 @@ function ChatInterfaceWithAgent({
       setCommittedHistory(prev => [...prev, ...activeMessages]);
       setActiveMessages([]);
 
-      // Increment renderKey to force ConversationView remount after commit
-      // This clears any ghost/duplicate rendering from Static component
-      setRenderKey(prev => prev + 1);
-
-      // Reset flag after React finishes batching
+      // Increment renderKey AFTER React finishes batching the commit
+      // This ensures the Static component has the new data before remounting
+      // Delay slightly to let Ink finish the current render cycle
       setTimeout(() => {
+        setRenderKey(prev => prev + 1);
         isCommittingRef.current = false;
-      }, 0);
+      }, 50); // 50ms delay to ensure Ink has finished rendering
     }
   }, [isStreaming, isProcessing, activeMessages]);
 
