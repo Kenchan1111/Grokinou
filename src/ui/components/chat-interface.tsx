@@ -701,7 +701,10 @@ function ChatInterfaceWithAgent({
     setSearchResults,
     setSearchFullscreen
   ]);
-  
+
+  // Check if execution viewer is enabled (needed for input width in splitview)
+  const viewerEnabled = executionViewerSettings.enabled !== false;
+
   return (
     <ChatProvider value={chatContextValue}>
       <Box
@@ -724,30 +727,32 @@ function ChatInterfaceWithAgent({
           onRejection={handleRejection}
         />
 
-        {/* Input controller */}
+        {/* Input controller - width limited to 60% in splitview to match conversation panel */}
         {!confirmationOptions && !searchMode && (
-          <InputController
-            agent={agent}
-            chatHistory={chatHistory}
-            setChatHistory={stableChatHistorySetter}
-            setCommittedHistory={stableCommittedHistorySetter}
-            setActiveMessages={stableActiveMessagesSetter}
-            isSwitchingRef={isSwitchingRef}
-            setIsProcessing={stableProcessingSetter}
-            setIsStreaming={stableStreamingSetter}
-            setStreamingContent={setStreamingContent}
-            setStreamingTools={setStreamingTools}
-            setStreamingToolResults={setStreamingToolResults}
-            setTokenCount={stableTokenCountSetter}
-            setProcessingTime={stableProcessingTimeSetter}
-            processingStartTime={processingStartTime}
-            isProcessing={isProcessing}
-            isStreaming={isStreaming}
-            isConfirmationActive={!!confirmationOptions}
-            searchMode={searchMode}
-            onSearchCommand={handleSearchCommand}
-            inputInjectionRef={inputInjectionRef}
-          />
+          <Box width={viewerEnabled ? "60%" : "100%"}>
+            <InputController
+              agent={agent}
+              chatHistory={chatHistory}
+              setChatHistory={stableChatHistorySetter}
+              setCommittedHistory={stableCommittedHistorySetter}
+              setActiveMessages={stableActiveMessagesSetter}
+              isSwitchingRef={isSwitchingRef}
+              setIsProcessing={stableProcessingSetter}
+              setIsStreaming={stableStreamingSetter}
+              setStreamingContent={setStreamingContent}
+              setStreamingTools={setStreamingTools}
+              setStreamingToolResults={setStreamingToolResults}
+              setTokenCount={stableTokenCountSetter}
+              setProcessingTime={stableProcessingTimeSetter}
+              processingStartTime={processingStartTime}
+              isProcessing={isProcessing}
+              isStreaming={isStreaming}
+              isConfirmationActive={!!confirmationOptions}
+              searchMode={searchMode}
+              onSearchCommand={handleSearchCommand}
+              inputInjectionRef={inputInjectionRef}
+            />
+          </Box>
         )}
       </Box>
     </ChatProvider>
