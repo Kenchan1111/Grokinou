@@ -1502,15 +1502,25 @@ Current working directory: ${process.cwd()}`,
             // Update agent's context after switch
             const { sessionManager } = await import('../utils/session-manager-sqlite.js');
             const currentSession = sessionManager.getCurrentSession();
-            
+
             if (currentSession) {
               const { providerManager } = await import('../utils/provider-manager.js');
               const providerConfig = providerManager.getProviderForModel(currentSession.default_model);
-              
+
               if (providerConfig) {
+                // ✅ FIX: Use API key from target session's provider, not current agent's key
+                const apiKey = providerConfig.apiKey || this.getApiKey();
+
+                if (!apiKey) {
+                  throw new Error(
+                    `No API key configured for provider: ${currentSession.default_provider}\n` +
+                    `Please configure it with: /apikey ${currentSession.default_provider} <your-key>`
+                  );
+                }
+
                 await this.switchToModel(
                   currentSession.default_model,
-                  this.getApiKey(),
+                  apiKey,
                   providerConfig.baseURL
                 );
               }
@@ -1528,15 +1538,25 @@ Current working directory: ${process.cwd()}`,
             // Update agent's context
             const { sessionManager } = await import('../utils/session-manager-sqlite.js');
             const currentSession = sessionManager.getCurrentSession();
-            
+
             if (currentSession) {
               const { providerManager } = await import('../utils/provider-manager.js');
               const providerConfig = providerManager.getProviderForModel(currentSession.default_model);
-              
+
               if (providerConfig) {
+                // ✅ FIX: Use API key from new session's provider
+                const apiKey = providerConfig.apiKey || this.getApiKey();
+
+                if (!apiKey) {
+                  throw new Error(
+                    `No API key configured for provider: ${currentSession.default_provider}\n` +
+                    `Please configure it with: /apikey ${currentSession.default_provider} <your-key>`
+                  );
+                }
+
                 await this.switchToModel(
                   currentSession.default_model,
-                  this.getApiKey(),
+                  apiKey,
                   providerConfig.baseURL
                 );
               }
@@ -1544,25 +1564,35 @@ Current working directory: ${process.cwd()}`,
           }
           break;
         }
-        
+
         case "session_rewind": {
           const rewindArgs = JSON.parse(toolCall.function.arguments);
           const sessionTools = await import('../tools/session-tools.js');
           result = await sessionTools.executeSessionRewind(rewindArgs);
-          
+
           if (result.success) {
             // Update agent's context
             const { sessionManager } = await import('../utils/session-manager-sqlite.js');
             const currentSession = sessionManager.getCurrentSession();
-            
+
             if (currentSession) {
               const { providerManager } = await import('../utils/provider-manager.js');
               const providerConfig = providerManager.getProviderForModel(currentSession.default_model);
-              
+
               if (providerConfig) {
+                // ✅ FIX: Use API key from rewound session's provider
+                const apiKey = providerConfig.apiKey || this.getApiKey();
+
+                if (!apiKey) {
+                  throw new Error(
+                    `No API key configured for provider: ${currentSession.default_provider}\n` +
+                    `Please configure it with: /apikey ${currentSession.default_provider} <your-key>`
+                  );
+                }
+
                 await this.switchToModel(
                   currentSession.default_model,
-                  this.getApiKey(),
+                  apiKey,
                   providerConfig.baseURL
                 );
               }

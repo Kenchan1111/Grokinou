@@ -801,8 +801,18 @@ export function useInputHandler({
         if (!providerConfig) {
           throw new Error(`Unknown provider for model: ${session.default_model}`);
         }
-        
-        const apiKey = agent.getApiKey(); // Keep current API key
+
+        // ✅ FIX: Use the API key from the target session's provider, not current agent's key
+        // This prevents API key contamination when switching between sessions with different providers
+        const apiKey = providerConfig.apiKey || agent.getApiKey();
+
+        if (!apiKey) {
+          throw new Error(
+            `No API key configured for provider: ${session.default_provider}\n` +
+            `Please configure it with: /apikey ${session.default_provider} <your-key>`
+          );
+        }
+
         await agent.switchToModel(session.default_model, apiKey, providerConfig.baseURL);
         
         // Add confirmation message
