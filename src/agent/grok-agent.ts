@@ -371,11 +371,24 @@ Current working directory: ${process.cwd()}`,
         if (entry.type === "user") {
           this.messages.push({ role: "user", content: entry.content });
         } else if (entry.type === "assistant") {
-          this.messages.push({
+          // ✅ FIX: Ensure tool_calls is array or undefined (not string)
+          let toolCalls = entry.toolCalls;
+          if (toolCalls && typeof toolCalls === 'string') {
+            try {
+              toolCalls = JSON.parse(toolCalls);
+            } catch {
+              toolCalls = undefined;
+            }
+          }
+          // Only include tool_calls if it's a non-empty array
+          const message: any = {
             role: "assistant",
             content: entry.content,
-            tool_calls: entry.toolCalls as any,
-          } as any);
+          };
+          if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+            message.tool_calls = toolCalls;
+          }
+          this.messages.push(message);
         } else if (entry.type === "tool_result" && entry.toolCall) {
           // ✅ For Mistral: include "name" field (required by their API)
           const toolMessage: any = {
