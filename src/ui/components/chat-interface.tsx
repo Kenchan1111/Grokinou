@@ -712,7 +712,7 @@ function ChatInterfaceWithAgent({
       >
         {/* Layout switcher (always rendered to preserve viewer state) */}
         {/* Internal components now have unique keys to prevent JSX reuse */}
-        {/* Confirmation dialog is passed down to be rendered inside conversation view */}
+        {/* Confirmation dialog and InputController are passed down */}
         <ChatLayoutSwitcher
           renderKey={renderKey}
           scrollRef={scrollRef}
@@ -722,33 +722,33 @@ function ChatInterfaceWithAgent({
           confirmationOptions={confirmationOptions}
           onConfirmation={handleConfirmation}
           onRejection={handleRejection}
+          inputController={
+            !confirmationOptions && !searchMode ? (
+              <InputController
+                agent={agent}
+                chatHistory={chatHistory}
+                setChatHistory={stableChatHistorySetter}
+                setCommittedHistory={stableCommittedHistorySetter}
+                setActiveMessages={stableActiveMessagesSetter}
+                isSwitchingRef={isSwitchingRef}
+                setIsProcessing={stableProcessingSetter}
+                setIsStreaming={stableStreamingSetter}
+                setStreamingContent={setStreamingContent}
+                setStreamingTools={setStreamingTools}
+                setStreamingToolResults={setStreamingToolResults}
+                setTokenCount={stableTokenCountSetter}
+                setProcessingTime={stableProcessingTimeSetter}
+                processingStartTime={processingStartTime}
+                isProcessing={isProcessing}
+                isStreaming={isStreaming}
+                isConfirmationActive={!!confirmationOptions}
+                searchMode={searchMode}
+                onSearchCommand={handleSearchCommand}
+                inputInjectionRef={inputInjectionRef}
+              />
+            ) : undefined
+          }
         />
-
-        {/* Input controller */}
-        {!confirmationOptions && !searchMode && (
-          <InputController
-            agent={agent}
-            chatHistory={chatHistory}
-            setChatHistory={stableChatHistorySetter}
-            setCommittedHistory={stableCommittedHistorySetter}
-            setActiveMessages={stableActiveMessagesSetter}
-            isSwitchingRef={isSwitchingRef}
-            setIsProcessing={stableProcessingSetter}
-            setIsStreaming={stableStreamingSetter}
-            setStreamingContent={setStreamingContent}
-            setStreamingTools={setStreamingTools}
-            setStreamingToolResults={setStreamingToolResults}
-            setTokenCount={stableTokenCountSetter}
-            setProcessingTime={stableProcessingTimeSetter}
-            processingStartTime={processingStartTime}
-            isProcessing={isProcessing}
-            isStreaming={isStreaming}
-            isConfirmationActive={!!confirmationOptions}
-            searchMode={searchMode}
-            onSearchCommand={handleSearchCommand}
-            inputInjectionRef={inputInjectionRef}
-          />
-        )}
       </Box>
     </ChatProvider>
   );
