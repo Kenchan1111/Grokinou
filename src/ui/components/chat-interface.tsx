@@ -159,6 +159,9 @@ function ChatInterfaceWithAgent({
   // Render key to force re-render after execution completes (prevents ghost duplication)
   const [renderKey, setRenderKey] = useState(0);
 
+  // Track viewer mode for InputController width
+  const [viewerMode, setViewerMode] = useState<'hidden' | 'split' | 'fullscreen'>('hidden');
+
   // Stabilize setters with useCallback to prevent InputController re-renders
   const stableChatHistorySetter = useCallback((value: React.SetStateAction<ChatEntry[]>) => {
     setChatHistory(value);
@@ -702,9 +705,6 @@ function ChatInterfaceWithAgent({
     setSearchFullscreen
   ]);
 
-  // Check if execution viewer is enabled (needed for input width in splitview)
-  const viewerEnabled = executionViewerSettings.enabled !== false;
-
   return (
     <ChatProvider value={chatContextValue}>
       <Box
@@ -725,11 +725,12 @@ function ChatInterfaceWithAgent({
           confirmationOptions={confirmationOptions}
           onConfirmation={handleConfirmation}
           onRejection={handleRejection}
+          onViewerModeChange={setViewerMode}
         />
 
-        {/* Input controller - width limited to 60% in splitview to match conversation panel */}
+        {/* Input controller - width limited to 60% when viewer is in split mode */}
         {!confirmationOptions && !searchMode && (
-          <Box width={viewerEnabled ? "60%" : "100%"}>
+          <Box width={viewerMode === 'split' ? "60%" : "100%"}>
             <InputController
               agent={agent}
               chatHistory={chatHistory}
