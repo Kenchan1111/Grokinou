@@ -36,6 +36,15 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
   const [detailsMode, setDetailsMode] = useState(settings?.detailsMode ?? false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  /**
+   * Show temporary feedback message (auto-hide after 3s)
+   */
+  const showFeedback = (message: string) => {
+    setFeedbackMessage(message);
+    setTimeout(() => setFeedbackMessage(null), 3000);
+  };
 
   /**
    * Subscribe to execution manager updates
@@ -117,14 +126,16 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
     // Ctrl+C: Copy current execution output
     if (key.ctrl && input === 'c') {
       if (current) {
-        handleCopyExecution(current);
+        handleCopyExecution(current, showFeedback);
       }
     }
 
     // Ctrl+S: Save current execution to file
     if (key.ctrl && input === 's') {
       if (current) {
-        handleSaveExecution(current).catch(console.error);
+        handleSaveExecution(current, showFeedback).catch((error) => {
+          showFeedback(`❌ Save failed: ${error.message}`);
+        });
       }
     }
 
@@ -269,7 +280,13 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
             paddingX={1}
             flexShrink={0}
           >
-            <ExecutionStatusBar execution={currentExecution} />
+            {feedbackMessage ? (
+              <Box>
+                <Text color="green">{feedbackMessage}</Text>
+              </Box>
+            ) : (
+              <ExecutionStatusBar execution={currentExecution} />
+            )}
           </Box>
         </>
       ) : (
@@ -533,24 +550,30 @@ import {
 /**
  * Copy execution to clipboard (wrapper with UI feedback)
  */
-function handleCopyExecution(execution: ExecutionState): void {
+function handleCopyExecution(
+  execution: ExecutionState,
+  showFeedback: (message: string) => void
+): void {
   try {
     copyExecutionToClipboard(execution);
-    // In a real implementation, show a toast notification
-    console.log('✅ Execution copied to clipboard');
+    showFeedback('✅ Execution formatted (clipboard pending)');
   } catch (error) {
-    console.error('❌ Failed to copy to clipboard:', error);
+    showFeedback(`❌ Copy failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
  * Save execution to file (wrapper with UI feedback)
  */
-async function handleSaveExecution(execution: ExecutionState): Promise<void> {
+async function handleSaveExecution(
+  execution: ExecutionState,
+  showFeedback: (message: string) => void
+): Promise<void> {
   try {
     const filepath = await saveExecutionToFile(execution);
-    console.log(`✅ Execution saved to: ${filepath}`);
+    const filename = filepath.split('/').pop() || 'file';
+    showFeedback(`✅ Saved: ${filename}`);
   } catch (error) {
-    console.error('❌ Failed to save execution:', error);
+    showFeedback(`❌ Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

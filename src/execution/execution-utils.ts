@@ -110,15 +110,14 @@ export function formatExecutionOutput(execution: ExecutionState): string {
  */
 export function copyExecutionToClipboard(execution: ExecutionState): void {
   const output = formatExecutionOutput(execution);
-  
-  // For now, just log a message
+
+  // For now, just format the output silently
   // In production, use a clipboard library:
   // import clipboardy from 'clipboardy';
   // clipboardy.writeSync(output);
-  
-  console.log('\n📋 Execution output formatted (clipboard functionality pending):\n');
-  console.log(output);
-  console.log('\n💡 To enable clipboard: npm install clipboardy\n');
+
+  // NOTE: No console.log here to avoid polluting Ink TUI
+  // Feedback is handled by the calling component (ExecutionViewer)
 }
 
 /**
