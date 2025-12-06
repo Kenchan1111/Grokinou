@@ -9,9 +9,13 @@ export class SessionRepository {
    * Generate hash from working directory and provider
    */
   private generateSessionHash(workdir: string, provider: string): string {
+    // ✅ FIX: Add timestamp to make hash unique per session
+    // Multiple sessions can exist in same workdir with same provider
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
     return crypto
       .createHash('sha256')
-      .update(`${workdir}:${provider}`)
+      .update(`${workdir}:${provider}:${timestamp}:${random}`)
       .digest('hex')
       .substring(0, 16);
   }
