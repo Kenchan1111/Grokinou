@@ -436,7 +436,8 @@ function ChatInterfaceWithAgent({
     // Si on n'est pas en train de streamer et qu'il y a des messages actifs
     // ET qu'on n'est PAS en train de switcher de session
     // ET qu'on n'est PAS déjà en train de committer
-    if (!isStreaming && !isProcessing && activeMessages.length > 0 && !isSwitchingRef.current && !isCommittingRef.current) {
+    // ET qu'il n'y a PAS de dialogue de confirmation actif (évite d'interrompre le feedback)
+    if (!isStreaming && !isProcessing && activeMessages.length > 0 && !isSwitchingRef.current && !isCommittingRef.current && !confirmationOptions) {
       // Set flag to prevent re-entry
       isCommittingRef.current = true;
 
@@ -452,7 +453,7 @@ function ChatInterfaceWithAgent({
         isCommittingRef.current = false;
       }, 50); // 50ms delay to ensure Ink has finished rendering
     }
-  }, [isStreaming, isProcessing, activeMessages]);
+  }, [isStreaming, isProcessing, activeMessages, confirmationOptions]);
 
   // Process initial message if provided (streaming for faster feedback)
   useEffect(() => {
