@@ -188,14 +188,16 @@ export class GrokClient {
   }
 
   /**
-   * Check if current model is a reasoning model (o1, o3, gpt-5)
+   * Check if current model is a reasoning model (o1, o3 ONLY)
    * These models require max_completion_tokens and no temperature
+   * Note: GPT-5 is NOT a reasoning model - it supports tools normally
    */
   private isReasoningModel(model?: string): boolean {
     const modelName = (model || this.currentModel).toLowerCase();
+    // Only o1 and o3 are true reasoning models without tool support
+    // GPT-5 is a regular model that DOES support tools
     return modelName.startsWith('o1') ||
-           modelName.startsWith('o3') ||
-           modelName.includes('gpt-5');
+           modelName.startsWith('o3');
   }
   
   /**
@@ -581,7 +583,8 @@ export class GrokClient {
     };
     
     // Add tools if provided (formatted for provider)
-    // ⚠️ Reasoning models (o1, o3, gpt-5) do NOT support tools
+    // ⚠️ Reasoning models (o1, o3 ONLY) do NOT support tools
+    // Note: GPT-5 DOES support tools - it's not a reasoning model
     if (tools && tools.length > 0 && !isReasoning) {
       const formattedTools = this.formatToolsForProvider(tools);
       

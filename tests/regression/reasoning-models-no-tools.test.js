@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 /**
- * Regression guard: ensure reasoning models (o1, o3, gpt-5) do NOT receive tools
+ * Regression guard: ensure reasoning models (o1, o3 ONLY) do NOT receive tools
  *
  * Rationale:
- * - Reasoning models like o1, o3, gpt-5 do NOT support function calling
- * - If we send tools to them, OpenAI API returns: 400 Invalid value for tool_choice
+ * - True reasoning models (o1, o3) do NOT support function calling
+ * - GPT-5 is NOT a reasoning model - it DOES support tools normally
+ * - If we send tools to o1/o3, OpenAI API returns: 400 Invalid value for tool_choice
  * - This causes the model to generate "reasoning summaries" instead of actual responses
  *
  * Past regression:
- * - Commit 3ead8ad added `!isReasoning` check
- * - Later commit removed this check
- * - Bug returned: reasoning models received tools and generated summaries
+ * - Initial fix incorrectly classified GPT-5 as reasoning model
+ * - This prevented GPT-5 from using tools (wrong!)
+ * - Corrected: Only o1/o3 are reasoning models
  *
  * Expected result:
  * - Code should check `!isReasoning` before adding tools to payload
  * - Pattern: `if (tools && tools.length > 0 && !isReasoning)`
+ * - isReasoningModel() should only return true for o1/o3 (NOT gpt-5)
  *
  * Usage:
  *   node tests/regression/reasoning-models-no-tools.test.js
@@ -84,7 +86,18 @@ if (!hasComment) {
   );
 }
 
+// Pattern 4: Verify GPT-5 is NOT classified as reasoning model
+const gpt5Check = /modelName\.includes\s*\(\s*['"]gpt-5['"]\s*\)/;
+const hasGpt5InCheck = gpt5Check.test(content);
+
+if (hasGpt5InCheck) {
+  fail(
+    "GPT-5 incorrectly classified as reasoning model! " +
+    "GPT-5 DOES support tools. Only o1/o3 are reasoning models."
+  );
+}
+
 pass(
   "Reasoning models correctly excluded from tool calls ✅ " +
-  "(checks !isReasoning before adding tools)"
+  "(checks !isReasoning before adding tools, GPT-5 NOT classified as reasoning)"
 );
