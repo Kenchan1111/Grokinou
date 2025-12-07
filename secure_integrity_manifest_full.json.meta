@@ -1,15 +1,12 @@
 {
-  "committed_baseline_hash": "b683c4881c58d864e89998fb9db681ccf25048b9ab76efdb0afa208a262a5021",
-  "timestamp": "2025-12-01T21:12:56.806067+00:00",
-  "merkle_root": "a2749bd81f149b986d6189c54490f52e540ab2bed2e41cb22002851e3ce9e505",
-  "total_files": 226,
+  "committed_baseline_hash": "0af10270ef727980ea530dccdd65a7b19d473607d94eb2a078245729e7b7603a",
+  "timestamp": "2025-12-07T22:39:34.136771+00:00",
+  "merkle_root": "c42b56a68aceb4c5fa21ccb9e8e24e2668cb775b112d5ea44aca585d84712f3c",
+  "total_files": 268,
   "last_commit": {
-    "hash": "ab4442a5c5becb1993a44d1a67e125937401f1db",
-    "time": "2025-12-01T22:12:56+01:00",
+    "hash": "3aa0f25b915688fef4bda8d054d1dd98c96dc4a9",
+    "time": "2025-12-07T23:39:34+01:00",
     "author": "zack",
-    "subject": "chore(integrity): autonomous full integrity commit with triple anchoring (OTS+TSA+Sigstore)"
-  },
-  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251201_211259.tsr",
-  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.committed.sigstore.bundle.json",
-  "sigstore_signed_target": "/home/zack/GROK_CLI/grok-cli/secure_integrity_manifest_full.json.committed"
+    "subject": "chore(integrity): update baseline after legitimate fixes (GPT-5, tests, forensics)"
+  }
 }
