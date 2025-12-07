@@ -8,5 +8,8 @@
     "time": "2025-12-07T23:39:34+01:00",
     "author": "zack",
     "subject": "chore(integrity): update baseline after legitimate fixes (GPT-5, tests, forensics)"
-  }
+  },
+  "tsa_receipt": "logs/anchors/tsa/merkle_root_20251207_223938.tsr",
+  "sigstore_bundle": "logs/anchors/sigstore/secure_integrity_manifest_full.json.committed.sigstore.bundle.json",
+  "sigstore_signed_target": "/home/zack/GROK_CLI/grok-cli/secure_integrity_manifest_full.json.committed"
 }
