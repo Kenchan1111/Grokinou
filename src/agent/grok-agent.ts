@@ -380,12 +380,13 @@ Current working directory: ${process.cwd()}`,
               toolCalls = undefined;
             }
           }
-          // Only include tool_calls if it's a non-empty array
+          // Include tool_calls if it's an array (even if empty)
+          // Empty array has semantic meaning: "I'm done using tools"
           const message: any = {
             role: "assistant",
             content: entry.content,
           };
-          if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+          if (Array.isArray(toolCalls)) {
             message.tool_calls = toolCalls;
           }
           this.messages.push(message);
