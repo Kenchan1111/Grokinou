@@ -18,5 +18,5 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
     }
   }, [content]);
 
-  return <Text>{rendered}</Text>;
+  return <Text wrap="wrap">{rendered}</Text>;
 });

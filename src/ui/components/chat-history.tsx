@@ -40,7 +40,7 @@ const MemoizedChatEntry = React.memo(
       return lines.map((line, index) => {
         const displayContent = line.substring(baseIndentation);
         return (
-          <Text key={index} color="gray">
+          <Text key={index} color="gray" wrap="wrap">
             {displayContent}
           </Text>
         );
@@ -52,7 +52,7 @@ const MemoizedChatEntry = React.memo(
         return (
           <Box key={index} flexDirection="column">
             <Box>
-              <Text color="gray">
+              <Text color="gray" wrap="wrap">
                 {">"} {entry.content}
               </Text>
             </Box>
@@ -189,31 +189,31 @@ const MemoizedChatEntry = React.memo(
           <Box key={index} flexDirection="column" marginTop={1}>
             <Box>
               <Text color="magenta">⏺</Text>
-              <Text color="white">
+              <Text color="white" wrap="wrap">
                 {" "}
                 {filePath ? `${actionName}(${filePath})` : actionName}
               </Text>
             </Box>
             <Box marginLeft={2} flexDirection="column">
               {isExecuting ? (
-                <Text color="cyan">⎿ Executing...</Text>
+                <Text color="cyan" wrap="wrap">⎿ Executing...</Text>
               ) : shouldShowFileContent ? (
                 // Show compact summary by default, full content if GROK_VERBOSE_TOOLS=true
                 verboseToolOutput ? (
                   <Box flexDirection="column">
-                    <Text color="gray">⎿ File contents:</Text>
+                    <Text color="gray" wrap="wrap">⎿ File contents:</Text>
                     <Box marginLeft={2} flexDirection="column">
                       {renderFileContent(entry.content)}
                     </Box>
                   </Box>
                 ) : (
-                  <Text color="gray">⎿ {createCompactSummary(entry.content, toolName)}</Text>
+                  <Text color="gray" wrap="wrap">⎿ {createCompactSummary(entry.content, toolName)}</Text>
                 )
               ) : shouldShowDiff ? (
                 // For diff results, show only the summary line, not the raw content
-                <Text color="gray">⎿ {entry.content.split("\n")[0]}</Text>
+                <Text color="gray" wrap="wrap">⎿ {entry.content.split("\n")[0]}</Text>
               ) : (
-                <Text color="gray">⎿ {createCompactSummary(entry.content, toolName)}</Text>
+                <Text color="gray" wrap="wrap">⎿ {createCompactSummary(entry.content, toolName)}</Text>
               )}
             </Box>
             {shouldShowDiff && !isExecuting && (
