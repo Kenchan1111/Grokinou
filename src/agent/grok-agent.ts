@@ -380,6 +380,24 @@ Current working directory: ${process.cwd()}`,
               toolCalls = undefined;
             }
           }
+
+          // Validate tool_calls structure (must have valid type field)
+          if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+            toolCalls = toolCalls.filter((tc: any) => {
+              // Each tool call must have: id, type="function", function.name, function.arguments
+              return tc &&
+                     tc.id &&
+                     tc.type === 'function' &&
+                     tc.function &&
+                     tc.function.name &&
+                     typeof tc.function.arguments === 'string';
+            });
+            // If all tool_calls were invalid, treat as empty array
+            if (toolCalls.length === 0) {
+              toolCalls = [];
+            }
+          }
+
           // Include tool_calls if it's an array (even if empty)
           // Empty array has semantic meaning: "I'm done using tools"
           const message: any = {
