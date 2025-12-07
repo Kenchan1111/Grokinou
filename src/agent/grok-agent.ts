@@ -830,14 +830,20 @@ Current working directory: ${process.cwd()}`,
       }
 
       const contentTrimmed = finalAssistantContent.trim();
+
+      // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
+      if (contentTrimmed === "Using tools to help you...") {
+        debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
+        return newEntries;
+      }
+
       // Générer synthèse si :
-      // - Réponse vide/placeholder
+      // - Réponse vide
       // - Réponse trop courte (< 150 caractères)
       const needsSummary =
         !contentTrimmed ||
-        contentTrimmed === "Using tools to help you..." ||
         contentTrimmed.length < 150;
-      
+
       if (needsSummary) {
         debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
         const summaryEntry = await this.generateAndAppendSummary(message);
@@ -1151,14 +1157,21 @@ Current working directory: ${process.cwd()}`,
       }
 
       const contentTrimmed = finalAssistantContent.trim();
+
+      // Skip synthèse pour le placeholder par défaut (GPT-5/o1)
+      if (contentTrimmed === "Using tools to help you...") {
+        debugLog.log("⏭️  Skipping summary (placeholder message, waiting for streaming completion)");
+        yield { type: "done" };
+        return;
+      }
+
       // Générer synthèse si :
-      // - Réponse vide/placeholder
+      // - Réponse vide
       // - Réponse trop courte (< 150 caractères)
       const needsSummary =
         !contentTrimmed ||
-        contentTrimmed === "Using tools to help you..." ||
         contentTrimmed.length < 150;
-      
+
       if (needsSummary) {
         debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
         // Inform the user that a reasoning summary is being generated
