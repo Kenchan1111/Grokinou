@@ -581,7 +581,8 @@ export class GrokClient {
     };
     
     // Add tools if provided (formatted for provider)
-    if (tools && tools.length > 0) {
+    // ⚠️ Reasoning models (o1, o3, gpt-5) do NOT support tools
+    if (tools && tools.length > 0 && !isReasoning) {
       const formattedTools = this.formatToolsForProvider(tools);
       
       if (provider === 'claude') {

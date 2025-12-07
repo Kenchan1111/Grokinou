@@ -645,6 +645,7 @@ Current working directory: ${process.cwd()}`,
     // 🕐 Timeline: Capture user message
     try {
       const session = sessionManager.getCurrentSession();
+      debugLog.log(`📊 [LLM Timeline] User message capture - Session: ${session?.id ?? 'NULL'}, Message length: ${message.length}`);
       if (session) {
         await this.llmHook.captureUserMessage(
           message,
@@ -652,6 +653,9 @@ Current working directory: ${process.cwd()}`,
           this.grokClient.getCurrentModel(),
           providerManager.detectProvider(this.grokClient.getCurrentModel())
         );
+        debugLog.log(`✅ [LLM Timeline] User message captured successfully - Session: ${session.id}`);
+      } else {
+        debugLog.log('⚠️  [LLM Timeline] SKIPPED: No current session');
       }
     } catch (error) {
       // Don't fail the request if timeline logging fails
@@ -801,6 +805,8 @@ Current working directory: ${process.cwd()}`,
           // 🕐 Timeline: Capture assistant message
           try {
             const session = sessionManager.getCurrentSession();
+            const contentLength = (assistantMessage.content || "").length;
+            debugLog.log(`📊 [LLM Timeline] Assistant message capture - Session: ${session?.id ?? 'NULL'}, Content length: ${contentLength}`);
             if (session) {
               await this.llmHook.captureAssistantMessage(
                 assistantMessage.content || "",
@@ -808,6 +814,9 @@ Current working directory: ${process.cwd()}`,
                 this.grokClient.getCurrentModel(),
                 providerManager.detectProvider(this.grokClient.getCurrentModel())
               );
+              debugLog.log(`✅ [LLM Timeline] Assistant message captured successfully - Session: ${session.id}`);
+            } else {
+              debugLog.log('⚠️  [LLM Timeline] SKIPPED: No current session');
             }
           } catch (error) {
             debugLog.log('⚠️  Timeline logging failed for assistant message:', error);

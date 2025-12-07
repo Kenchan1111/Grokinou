@@ -95,7 +95,8 @@ export class EventBus {
         logResult = await this.logger.log(input);
 
         if (!logResult.success) {
-          // Silent fail - don't pollute console with timeline errors
+          // Log timeline errors for debugging
+          console.error('[EventBus] Timeline logging FAILED:', input.event_type, logResult.error);
           return logResult;
         }
       }
