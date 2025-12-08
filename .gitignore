@@ -42,34 +42,9 @@ Thumbs.db
 logs/
 *.log
 
-# Documentation (sauf README.md et guides essentiels)
-*.md
-!README.md
-!REWIND_FEATURES.md
-!NEW_SESSION_FEATURES.md
-!LLM_TOOL_CLARIFICATION_GUIDE.md
-!LLM_TOOLS_OPTIONS_REFERENCE.md
-!test/README_COMPREHENSIVE_TESTS.md
-!MANUAL_TESTING_GUIDE.md
-!HELP.md
-!TESTING_COMMANDS_GUIDE.md
-!TESTING_CHECKLIST.md
-!DOCUMENTATION_SUMMARY.md
-
-# Analysis and audit reports (local only)
-SECURITY_AUDIT_*.md
-ARCHITECTURE_TIME_MACHINE_ANALYSIS.md
-IMPLEMENTATION_TIMELINE_*.md
-TIMELINE_BLOCKCHAIN_ANALYSIS.md
-BRUTAL_HONEST_REVIEW_*.md
-CONCEPTS_*.md
-EXECUTION_VIEWER_*.md
-STDERR_*.md
-LAYOUT_*.md
-FINAL_*.md
-INTEGRITY_*.md
-SYNC_*.md
-MODULE_*.md
+# Documentation - TOUS les .md sont maintenant trackés pour intégrité cryptographique
+# Exclusions spécifiques si nécessaire (aucune pour l'instant)
+# Tous les rapports forensiques, analyses, guides sont signés cryptographiquement
 
 # Runtime data
 pids/

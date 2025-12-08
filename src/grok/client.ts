@@ -363,7 +363,7 @@ export class GrokClient {
       return cleaned;
     }
     
-    // For OpenAI, Grok, DeepSeek: Ensure tool_calls have 'type' field + convert orphaned tool messages
+    // For OpenAI, Grok, DeepSeek: Ensure tool_calls are clean + convert orphaned tool messages
     if (provider === 'openai' || provider === 'grok' || provider === 'deepseek') {
       const cleaned: GrokMessage[] = [];
       
@@ -381,9 +381,18 @@ export class GrokClient {
             }
           }
           
-          // If tool has valid parent: keep as-is
+          // If tool has valid parent: keep but truncate tool_call_id to 40 chars max
           if (prevAssistant && (prevAssistant as any).tool_calls) {
-            cleaned.push(msg);
+            const toolMsg = msg as any;
+            // ✅ Truncate tool_call_id to 40 chars (OpenAI API requirement)
+            if (toolMsg.tool_call_id && toolMsg.tool_call_id.length > 40) {
+              cleaned.push({
+                ...msg,
+                tool_call_id: toolMsg.tool_call_id.substring(0, 40),
+              } as GrokMessage);
+            } else {
+              cleaned.push(msg);
+            }
           } else {
             // Orphaned tool: convert to user to preserve content
             // Better than losing valuable context!
@@ -395,13 +404,24 @@ export class GrokClient {
           continue;
         }
         
-        // Fix assistant messages with tool_calls (add missing 'type' field)
+        // Fix assistant messages with tool_calls
+        // - Force tool_call.type to exactly "function"
+        // - Drop any malformed tool_calls objects to avoid 400 errors like:
+        //   "Invalid value: 'functionfunctionfunction'"
         if (msg.role === 'assistant' && (msg as any).tool_calls) {
-          const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
-            id: tc.id,
-            type: tc.type || 'function', // ✅ Add missing 'type' field
-            function: tc.function,
-          }));
+          const rawToolCalls = Array.isArray((msg as any).tool_calls)
+            ? (msg as any).tool_calls
+            : [];
+          
+          const toolCalls = rawToolCalls
+            .filter((tc: any) => tc && tc.id && tc.function && tc.function.name)
+            .map((tc: any) => ({
+              id: tc.id,
+              // ✅ Always use the canonical value "function"
+              //    (prevents corrupted values like "functionfunctionfunction")
+              type: "function",
+              function: tc.function,
+            }));
           
           cleaned.push({
             ...msg,

@@ -489,9 +489,12 @@ async function processPromptHeadless(
 
         case "tool_result":
           if (entry.toolCall) {
+            // ✅ Truncate tool_call_id to 40 chars max (OpenAI API requirement)
+            // Prevents error: "string too long. Expected a string with maximum length 40"
+            const truncatedId = entry.toolCall.id.substring(0, 40);
             messages.push({
               role: "tool",
-              tool_call_id: entry.toolCall.id,
+              tool_call_id: truncatedId,
               content: entry.content,
             });
           }
