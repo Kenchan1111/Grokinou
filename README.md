@@ -2,11 +2,12 @@
 
 **Grokinou AKA Grok-CLI rev 1**
 
-> **Enhanced Fork** of [grok-cli](https://github.com/Vibe-House-LLC/grok-cli) with multi-provider AI support, advanced session management, and modern features.
+> **Enhanced Fork** of [grok-cli](https://github.com/Vibe-House-LLC/grok-cli) with multi-provider AI support, advanced session management, forensic integrity system, and modern features.
 
 ![License](https://img.shields.io/badge/license-BSD--3--Clause%20%2B%20GPL--3.0-blue.svg)
 ![Version](https://img.shields.io/badge/version-0.1.0-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![Security](https://img.shields.io/badge/security-cryptographic%20integrity-red.svg)
 
 ---
 
@@ -14,16 +15,43 @@
 
 **Grokinou** is an **enhanced fork** (feature fork) of grok-cli, significantly extending the original with enterprise-grade features:
 
-- ✅ **Multi-Provider AI Support**: Grok, Claude, OpenAI, Mistral, DeepSeek
-- ✅ **Advanced Session Management**: SQLite-based with auto-restoration
-- ✅ **Real-Time Statistics**: Message counts, token usage, session previews
-- ✅ **Auto-Naming**: Sessions automatically named from first message
-- ✅ **Smart Paste Management**: Large paste handling with visual placeholders
-- ✅ **Enhanced Search**: Full conversation history search with split-screen UI
-- ✅ **Image Path Detection**: Automatic image placeholder rendering
-- ✅ **Extended Commands**: `/list_sessions`, `/search`, `/models`, and more
+### 🚀 Core Features
+- ✅ **Multi-Provider AI Support**: Grok, Claude (Anthropic), OpenAI (GPT-4, GPT-5), Mistral, DeepSeek
+- ✅ **Advanced Session Management**: SQLite-based with automatic session restoration by working directory
+- ✅ **Real-Time Statistics**: Live message counts, token usage, session previews in statusline
+- ✅ **Auto-Naming**: Sessions automatically named from first user message
+- ✅ **Smart Paste Management**: Large paste handling with visual placeholders and size warnings
+- ✅ **Enhanced Search**: Full conversation history search with split-screen UI and syntax highlighting
+- ✅ **Image Support**: Automatic image path detection with inline previews
+- ✅ **Extended Commands**: `/help`, `/models`, `/apikey`, `/search`, `/list_sessions`, `/clear`, `/exit`
 
-<img width="980" height="435" alt="Grokinou Screenshot" src="https://github.com/user-attachments/assets/192402e3-30a8-47df-9fc8-a084c5696e78" />
+### 🔒 Security & Integrity
+- ✅ **Cryptographic Integrity System**: SHA-256 based file signatures with Merkle tree verification
+- ✅ **Triple Anchoring**: OpenTimestamps (Bitcoin), TSA (RFC 3161), Sigstore transparency logs
+- ✅ **Forensic Documentation**: Comprehensive attack detection and documentation system
+- ✅ **Malicious Modification Detection**: Automatic detection of code tampering
+- ✅ **Immutable Storage Procedures**: WORM (AWS S3 Glacier) + IPFS backup procedures
+
+### 🎨 User Interface
+- ✅ **Split-View Mode**: Conversation on left, execution viewer on right (Ctrl+E)
+- ✅ **Live Streaming**: Real-time AI response streaming with newline-gated flush
+- ✅ **Tool Execution Viewer**: Real-time display of tool calls (Read, Edit, Bash, etc.)
+- ✅ **Chain of Thought Display**: Reasoning summaries for o1/o3 models
+- ✅ **Color-Coded Output**: Tool calls, errors, and results with distinct colors
+- ✅ **Compact Tool Output**: Smart truncation for long file reads and command outputs
+
+### 🛠️ Developer Features
+- ✅ **Timeline Module**: Event sourcing with complete LLM interaction history
+- ✅ **Database Migrations**: Versioned SQLite schema with automatic migrations
+- ✅ **Comprehensive Testing**: 48+ automated tests + manual test suites
+- ✅ **Provider Abstraction**: Clean provider interface supporting multiple AI APIs
+- ✅ **Token Limit Management**: Adaptive token limits per model with automatic truncation
+- ✅ **Reasoning Model Support**: Special handling for o1/o3 models (no tools, no temperature)
+- ✅ **Tool Call Validation**: Strict validation preventing malformed tool calls
+
+![Grokinou CLI Interface](./docs/grokinou.png)
+
+> **Screenshot**: Grokinou interface showing the ASCII logo, GPT-5 model with split-view mode, execution viewer with chain of thought, and command output panels.
 
 ---
 
@@ -31,20 +59,25 @@
 
 | Feature | grok-cli (original) | Grokinou (enhanced) |
 |---------|---------------------|---------------------|
-| **AI Providers** | Grok only | Grok, Claude, OpenAI, Mistral, DeepSeek |
-| **Session Management** | JSONL files | SQLite database with migrations |
+| **AI Providers** | Grok only | Grok, Claude, OpenAI (GPT-4/5), Mistral, DeepSeek |
+| **Session Management** | JSONL files | SQLite database with schema migrations |
 | **Session Restoration** | Manual | Automatic by working directory |
 | **Session Naming** | Manual | Auto-generated from first message |
 | **Statistics** | None | Real-time message count, tokens, previews |
 | **Provider Switching** | N/A | In-session with `/models` command |
-| **API Key Management** | Single key | Multi-provider with persistence |
-| **Search** | Basic | Split-screen with highlighting |
-| **Paste Handling** | Basic | Smart placeholders for large content |
-| **Image Support** | No | Automatic path detection with previews |
-| **Database** | File-based | SQLite with migrations system |
-| **Commands** | Basic | 15+ commands including `/list_sessions` |
-| **Testing** | None | 48 automated + manual tests |
-| **Documentation** | Basic | 1,665+ lines of docs + test suite |
+| **API Key Management** | Single key | Multi-provider with encrypted persistence |
+| **Search** | Basic | Split-screen with syntax highlighting |
+| **Paste Handling** | Basic | Smart placeholders with size warnings |
+| **Image Support** | No | Automatic path detection with inline previews |
+| **Database** | File-based | SQLite with versioned migrations (v2) |
+| **Commands** | Basic | 7 commands + extensive CLI options |
+| **Split View** | No | Ctrl+E split-view with execution viewer |
+| **Tool Execution** | Hidden | Real-time display with Chain of Thought |
+| **Reasoning Models** | No | Full o1/o3 support (no tools, summaries) |
+| **Security** | None | Cryptographic integrity + forensic system |
+| **Testing** | None | 48+ automated tests + manual suites |
+| **Documentation** | Basic | 2,000+ lines of docs + forensic reports |
+| **Integrity Anchoring** | No | Triple anchoring (OTS, TSA, Sigstore) |
 
 ---
 
