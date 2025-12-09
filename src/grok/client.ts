@@ -382,7 +382,8 @@ export class GrokClient {
           }
           
           // If tool has valid parent: keep but truncate tool_call_id to 40 chars max
-          if (prevAssistant && (prevAssistant as any).tool_calls) {
+          // ✅ Check that tool_calls exists AND is non-empty (avoid empty arrays)
+          if (prevAssistant && (prevAssistant as any).tool_calls && (prevAssistant as any).tool_calls.length > 0) {
             const toolMsg = msg as any;
             // ✅ Truncate tool_call_id to 40 chars (OpenAI API requirement)
             if (toolMsg.tool_call_id && toolMsg.tool_call_id.length > 40) {
@@ -419,10 +420,18 @@ export class GrokClient {
             function: tc.function,
           }));
 
-          cleaned.push({
-            ...msg,
-            tool_calls: toolCalls,
-          });
+          // ✅ Only include tool_calls if array is non-empty
+          //    Empty arrays cause API error: "tool must be a response to a preceeding message with 'tool_calls'"
+          if (toolCalls.length > 0) {
+            cleaned.push({
+              ...msg,
+              tool_calls: toolCalls,
+            });
+          } else {
+            // Remove tool_calls field if empty
+            const { tool_calls, ...msgWithoutToolCalls } = msg as any;
+            cleaned.push(msgWithoutToolCalls);
+          }
           continue;
         }
         
