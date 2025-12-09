@@ -1252,11 +1252,42 @@ Current working directory: ${process.cwd()}`,
   private async executeTool(toolCall: GrokToolCall): Promise<ToolResult> {
     const startTime = Date.now();
     let startEventId: string = '';
-    
+
+    // 🛡️ DEFENSE: Clean corrupted tool names
+    // Attack: "bashbashbashbashbashbashbashview_file" (concatenation attack)
+    // Valid tools: bash, view_file, edit_file, search, etc.
+    const validTools = [
+      'bash', 'view_file', 'edit_file', 'morph_edit', 'search',
+      'apply_patch', 'todo_write', 'confirmation', 'session_switch',
+      'session_new', 'session_rewind', 'timeline_query', 'rewind_to',
+      'list_time_points'
+    ];
+
+    let cleanToolName = toolCall.function.name;
+
+    // Check if tool name is corrupted (contains repeated substrings)
+    for (const validTool of validTools) {
+      // Pattern: validTool repeated multiple times + maybe another tool
+      // Example: "bashbashbashbashbashbashbashview_file"
+      const repeatedPattern = new RegExp(`^(${validTool}){2,}`);
+      if (repeatedPattern.test(cleanToolName)) {
+        // Extract the actual tool name from the end
+        const match = cleanToolName.match(new RegExp(`(${validTools.join('|')})$`));
+        if (match) {
+          const originalName = cleanToolName;
+          cleanToolName = match[1];
+          debugLog.log(`🛡️ [DEFENSE] Cleaned corrupted tool name: "${originalName}" → "${cleanToolName}"`);
+          // Update the toolCall object
+          toolCall.function.name = cleanToolName;
+        }
+        break;
+      }
+    }
+
     // 📺 ExecutionViewer: Create execution stream
     const executionStream = executionManager.createExecution(toolCall.function.name);
     this.currentExecutionStream = executionStream;
-    
+
     // 📺 COT: Initial thinking
     executionStream.emitCOT('thinking', `Executing tool: ${toolCall.function.name}`);
     
