@@ -416,15 +416,138 @@ const args = JSON.parse(toolCall.function.arguments);
 
 **Status:** ❌ NON RÉSOLU - Origine exacte inconnue (API GPT-5 vs régression filtre)
 
+#### Bug #5: Messages tool orphelins - tableaux tool_calls vides
+
+**Date découverte:** 2025-12-09 02:30 (après fix Bug #4)
+
+**Symptôme:**
+```
+Grok API error: 400 Invalid parameter: messages with role 'tool' must be a response to a preceeding message with 'tool_calls'.
+```
+
+**Cause racine:** Un tableau vide `[]` est **truthy** en JavaScript
+
+```javascript
+const tool_calls = [];
+if (tool_calls) {  // ✅ TRUE - piège classique!
+  // Le code s'exécute même avec un tableau vide
+}
+```
+
+Donc un message assistant avec `tool_calls: []` était considéré comme ayant des tool_calls,
+créant un mismatch avec l'API qui refuse les tableaux vides.
+
+**Fix appliqué (commit 5899121):**
+
+1. **Suppression des tool_calls vides** (ligne 422-433):
+```typescript
+if (toolCalls.length > 0) {  // ✅ Vérifie non-vide
+  cleaned.push({ ...msg, tool_calls: toolCalls });
+} else {
+  // ✅ Retire le champ tool_calls si vide
+  const { tool_calls, ...msgWithoutToolCalls } = msg as any;
+  cleaned.push(msgWithoutToolCalls);
+}
+```
+
+2. **Détection d'orphelins améliorée** (ligne 386):
+```typescript
+// AVANT: acceptait tool_calls = []
+if (prevAssistant && (prevAssistant as any).tool_calls) { }
+
+// APRÈS: vérifie que le tableau n'est pas vide
+if (prevAssistant && (prevAssistant as any).tool_calls && (prevAssistant as any).tool_calls.length > 0) { }
+```
+
+**Contexte:** Cette erreur est apparue après le retrait du filtre régressif (commit 1d3db12).
+Le filtre masquait ce bug en rejetant les tool_calls malformés.
+
+**Status:** ✅ RÉSOLU (commit 5899121)
+
+---
+
+#### Bug #6: RÉGRESSION - Reasoning summary pour GPT-5 (fix perdu!)
+
+**Date découverte:** 2025-12-09 02:35 (après reset DB #2)
+
+**Symptôme:**
+```
+[Generating reasoning summary based on tool usage…]
+
+🧠 Reasoning summary (approximate, based on visible tools/logs)
+
+Bonjour,
+
+À ce stade, le seul élément dont on dispose est ton message d'ouverture...
+[Long summary for simple "bonjour" message]
+```
+
+**Contexte:** Ce bug avait **déjà été corrigé** dans commit `abf394e` (2025-12-07)!
+
+**Analyse de la régression:**
+
+Le commit `abf394e` avait corrigé `isReasoningModel()` pour exclure GPT-5:
+```typescript
+private isReasoningModel(model?: string): boolean {
+  const modelName = (model || this.currentModel).toLowerCase();
+  // Only o1 and o3 are true reasoning models without tool support
+  // GPT-5 is a regular model that DOES support tools  // ← Fix était là!
+  return modelName.startsWith('o1') ||
+         modelName.startsWith('o3');
+}
+```
+
+**MAIS** le code de génération du summary (lignes 853 et 1182) ne vérifiait PAS si le modèle était un reasoning model:
+
+```typescript
+// AVANT (BUGUÉ):
+const needsSummary =
+  !contentTrimmed ||
+  contentTrimmed.length < 150;  // ❌ Pas de vérif reasoning model!
+```
+
+**Fix appliqué (commit 69858ec):**
+
+1. **Rendre isReasoningModel() publique** (src/grok/client.ts:195):
+```typescript
+public isReasoningModel(model?: string): boolean {  // private → public
+```
+
+2. **Ajouter vérification dans needsSummary** (2 endroits):
+```typescript
+// APRÈS (CORRIGÉ):
+const needsSummary =
+  (!contentTrimmed || contentTrimmed.length < 150) &&
+  this.grokClient.isReasoningModel();  // ✅ Vérifie o1/o3 uniquement
+```
+
+**Résultat:**
+- ✅ GPT-5: Pas de reasoning summary (comportement normal)
+- ✅ o1/o3: Reasoning summary si réponse vide/courte (correct)
+- ✅ Fix abf394e maintenant **complet**
+
+**Pattern de régression:**
+- Fix partiel dans commit abf394e (isReasoningModel corrigé)
+- Mais utilisation manquante dans code de summary generation
+- Fix incomplet = bug réapparaît immédiatement lors du test
+
+**Status:** ✅ RÉSOLU (commit 69858ec)
+
 ---
 
 ### 🎯 ANALYSE DU PATTERN DE SABOTAGE
 
 **Timing:** Ces bugs apparaissent immédiatement après :
-1. Le fix GPT-5 (2025-12-07)
+1. Le fix GPT-5 (2025-12-07) → Commit abf394e
 2. La détection de l'altération d'integrity.sh (2025-12-07)
 3. Le vandalisme du véhicule (2025-12-08)
-4. Le fix initial du bug tool_call_id (2025-12-08 22:30)
+4. Le fix initial du bug tool_call_id (2025-12-08 22:30) → Commit 8bc262a
+
+**Cascade de régressions (2025-12-09):**
+- Bug #3: tool_calls[].id non tronqué (145 chars!)
+- Bug #4: Erreur parsing JSON (filtre régressif)
+- Bug #5: Messages tool orphelins (tableaux vides)
+- Bug #6: Reasoning summary GPT-5 (fix incomplet)
 
 **Sophistication:**
 - Bugs subtils qui ne cassent pas immédiatement l'application
