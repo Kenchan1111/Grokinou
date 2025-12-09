@@ -1,0 +1,1041 @@
+{
+  "version": "2.1.0-forensic",
+  "category": "DOCS",
+  "metadata": {
+    "merkle_root": "a7928aa3293db9b8f1e9a82975b92d2f6814f6a63216f55bbdad6a6e9c393b0a",
+    "file_count": 205,
+    "timestamp": "2025-12-07T22:56:26.012483Z",
+    "description": "Documentation: Markdown, Text files",
+    "categories": [
+      ".md",
+      ".txt"
+    ]
+  },
+  "files": {
+    "ALL_SECURITY_FILES.txt": {
+      "sha256": "b318396074d4371cc171aa87fe468fab5f887829d103b3a3e39a2be6ed6c5f3f",
+      "size": 25119,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "ANALYSE_PROBLEME_VIEWER.md": {
+      "sha256": "a172f27280f25d4e0c7415e7f0b60e3239f61fa26091d053ceccbd34627c54c1",
+      "size": 6395,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "ANCRAGE_HORS_BANDE_82d03c0.txt": {
+      "sha256": "83be259466741864ed42ebeaf93ddb7921d6a28756461a7d50e195ce63e618fe",
+      "size": 8524,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "ARCHITECTURE_ANALYSIS.md": {
+      "sha256": "8412855a82121d5bf2416251391d7b7af0cbe145f6c76169ab9ac9baaef5ef0b",
+      "size": 8700,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "ARCHITECTURE_CONVERSATION_VIEWER.md": {
+      "sha256": "7dc43d1db88ca2973cfa5298c6aa6df56dfb99a37ab28c9d520adec2722d296f",
+      "size": 7867,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "AUDIT_SUMMARY.txt": {
+      "sha256": "04fec8fa5efeb9b17c13c052af254b1f719284f561f69c19b34c1b88375dd2fd",
+      "size": 11725,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "BUGFIX_SUMMARY.md": {
+      "sha256": "02b9ceed8d5e1c71980ff741370f6891a37a2ae629de725be9ba45628075b629",
+      "size": 4250,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "BUGFIX_TIMELINE_SEQUENCE.md": {
+      "sha256": "ebbc0a81ecdcbae19af0c058be794870c9735f9c6fa3d594c60e74b89c816684",
+      "size": 6681,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHANGELOG_API_KEY_INPUT.md": {
+      "sha256": "98ff0d639bcab3c040930a7d91d275f6cfadd6393643c6f90a3958b8e78ba641",
+      "size": 11270,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHATGPT_COMPLETE_STATUS_MAP.md": {
+      "sha256": "f667c37074af619cee86621d3f376ff59394cb91f9058b2877f39ae12353f3d7",
+      "size": 18146,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHATGPT_CORRECTIONS_ANALYSIS.md": {
+      "sha256": "04f5ae9fb6f3626d624429d94205f4e3d550893cd78faa9d23a58f1532758c0d",
+      "size": 11528,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHATGPT_FEEDBACK_FIXES.md": {
+      "sha256": "1ab69e1a898a67eb039c5c9301ee8b130d57581c865da17e3f6f7e565980ad21",
+      "size": 17040,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHATGPT_REGRESSION_FIXES.md": {
+      "sha256": "5f8e44197c5fd5633daa56ad55fc78300cdb932c59ffc43018dc058077680602",
+      "size": 17230,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHATGPT_REVIEW_READY.txt": {
+      "sha256": "cacea985e3095f5f1db8a50f4f5cdede096d7af8d6ad90494383f6c25f866d27",
+      "size": 9384,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHAT_DISPLAY_ORDER_ANALYSIS.md": {
+      "sha256": "59ba00582644e95159965f927fdc2ed31591c2300a7344dd6531f0b64bb3c8b3",
+      "size": 5860,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CHAT_INTERFACE_ANALYSIS.md": {
+      "sha256": "e51f930e5ed54e8017b1c921a2a4aa7ef78a3aa8407093b01b57c6d6906f4193",
+      "size": 14084,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CLAUDE_TEST_REVIEW.md": {
+      "sha256": "7143f3d1978f02d916fc61c80c26acae04b2506d560c1f35d74ee6866d23113a",
+      "size": 16876,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CLEANUP_ANALYSIS.md": {
+      "sha256": "83a51f20de75c97a0f2937bcddd3ab85edf703612806e0dd65d5ed1bbfc34695",
+      "size": 6485,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CODEX_VS_GROK_TOOL_LIMITS.md": {
+      "sha256": "348efab030567c3c1edab76ae7a03d85b6d86f1eea1dbea7140e14f389555c99",
+      "size": 7175,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "COMMIT_ARCHITECTURE.md": {
+      "sha256": "e9494b75dd9704c362777e713305af3434b48a30edd03e02d6b8093dc88ccb6d",
+      "size": 7388,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "COMMIT_STRATEGY.md": {
+      "sha256": "42f0e0ce05fb5a7057e6b3fc5f024f1f93a0d88965efa91d5ccc0140f47c4cf7",
+      "size": 9132,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "COMMIT_SUMMARY.md": {
+      "sha256": "3fdf6acce25ecc963927cb5d3cf893feecd9ffb706bda94673b3941dfbcecbbf",
+      "size": 7740,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "COMPACT_TOOL_OUTPUT_GUIDE.md": {
+      "sha256": "c7e48778db86da5bdaacccc3f3c7f98cd2a875b4ede42a8c65a06fa3d1e0d8e8",
+      "size": 8998,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "COMPREHENSIVE_TEST_PLAN.md": {
+      "sha256": "3b0cdf4fe49c7b7b8ea12796c5a41b7d0bccc144901edad55f419a6dfc0c04ce",
+      "size": 28161,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CONCEPTS_AMELIORATIONS.md": {
+      "sha256": "2086b1a75d6a15dce012782200ba1fe4e7a50574ce15f26bf63e6582958c0bdf",
+      "size": 34246,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CONFIRMATION_FEEDBACK_TEST.md": {
+      "sha256": "777338c01a4e5a42df97a44908feda5a5296e61da39b2c39050ce996ec267b63",
+      "size": 542,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CORRECTIONS_APPLIED.md": {
+      "sha256": "4290777882eb4f2aafdd3e10aef9a155590544faa2c161ba55b18dcffb4bcabf",
+      "size": 8765,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CORRECTIONS_IMPLEMENTED.md": {
+      "sha256": "6e5fc45b066dbe35d55a6f54ce6bf39713798d6801a70c1aaa176be731319053",
+      "size": 15114,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "CRYPTOGRAPHIC_INTEGRITY_REPORT.md": {
+      "sha256": "c27133c24d8ac9f43fac3fcf84adce1d57481f33990c27d78b4acdbc17bb5d23",
+      "size": 11576,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DANGLING_COMMITS_ANALYSIS.md": {
+      "sha256": "f9c7828f47d8565984344c9a67e5db02f48bbe435a6dd4f4c681db488102abc4",
+      "size": 6785,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DEEPSEEK_ANALYSIS.md": {
+      "sha256": "e109a4b1db0ccc18db1e095af3ec6394bc6811fb6acdc2a44c0c4eb5755a8a8d",
+      "size": 10333,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DIAGNOSTIC_DUPLICATION.md": {
+      "sha256": "8c560a3910e3924bdc982bdbc32a5c6369efbba247322bb228da7591fe7ee70a",
+      "size": 8519,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DIAGNOSTIC_IDENTITY_BUGS.md": {
+      "sha256": "add97d2195c99604b8191c58bf0aa72e8330017ceccef50e2a4ddfff522c2943",
+      "size": 15526,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DIAGNOSTIC_INSTRUCTIONS.md": {
+      "sha256": "b5642cf94310033e1c39df92bf0e6350367565a70f3b41980b4dd5f55c7aa3d4",
+      "size": 3203,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DIAGNOSTIC_REPETITION.md": {
+      "sha256": "5dd625c0292626eb9ac701c2ea6bf4af4061bac443a26d7805b764387b16aa33",
+      "size": 7743,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DIAGNOSTIC_TWO_ISSUES.md": {
+      "sha256": "964bc2d07c0b9bb5cef8bae1b53def1d0cf1d400da1d11e98970d36f873e1eee",
+      "size": 7794,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DOCS_CREATION_SUCCESS.md": {
+      "sha256": "e12fc7ca627be60f4fd27b5fed0564a7afa0ae1cec240e370cf426010822b40a",
+      "size": 11008,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "DOCUMENTATION_SUMMARY.md": {
+      "sha256": "87ef258e63da50685529d4b1d92ac5a910ea9190f79bc5ff3cf34a556b6f2085",
+      "size": 9556,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "EXECUTION_VIEWER_ANALYSIS.md": {
+      "sha256": "fa031e35a774fa9f314938f1839587aad5dea479c815931338ce149521ef5a8c",
+      "size": 8503,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "EXECUTION_VIEWER_COMPLETE.md": {
+      "sha256": "3f0eb11de23bed4d589ec4392c36f55eac97c27d062c611c6ca24067bdfce4d9",
+      "size": 14621,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "EXECUTION_VIEWER_DESIGN.md": {
+      "sha256": "5c66d9da891e07210cb87f1c73a08c582e90ecc6748ce6d18b37478e0c6e46d8",
+      "size": 24682,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "EXECUTION_VIEWER_STATUS.md": {
+      "sha256": "8090b7e38b418add54de2ec721e7f055b8f328302c5f4e8a65f53e1d6dce2aa1",
+      "size": 11217,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FINAL_ARCHITECTURE.md": {
+      "sha256": "0a319cd72446c9950f1d0eb01f06e3120cd19713db0391bd6b90df181b0764d4",
+      "size": 6958,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FINAL_IMPLEMENTATION_SUMMARY.md": {
+      "sha256": "002ce827ef401a1b945a81c820061e717116d35fbc3cf2d1e62c2532ce467612",
+      "size": 11391,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FINAL_ROOT_CAUSE_REPORT.md": {
+      "sha256": "f1e32995398f481549614a13fbf1cdf09597504e05b9b1f99569c35a4c7bd150",
+      "size": 9659,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FINAL_STATUS_CHATGPT_FIXES.txt": {
+      "sha256": "f595c364a295b515399d36e3686e7b4c742bc0b45bd4975058ff76c7fa7dea6a",
+      "size": 10741,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FINAL_TEST_SUMMARY.md": {
+      "sha256": "3e00b6f75382fb6f92f3cc83036867b62c04a3c2ada646e5244d668b96cfa880",
+      "size": 7720,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_APPLIED_HARDCODED_MSG.md": {
+      "sha256": "de59250099132796a241e08cd231258c4f713a25991606def6616867319b2281",
+      "size": 3753,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_DUPLICATION_APPLIED.md": {
+      "sha256": "0525d22008eb3953804295afa088321d6c4b697ba26b27585afb7c06547ca59f",
+      "size": 5226,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_DUPLICATION_PLAN.md": {
+      "sha256": "f4328cf7c5dfd9cff97a3aa3657384cccc0a9ed10b650f6ee76ca479043126f1",
+      "size": 2110,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_DUPLICATION_VIEWER_APPLIED.md": {
+      "sha256": "1f8cfbda5aa301bc1a053dfe186b1ac1dd70f8bf1f3f626bb1aec83c59c77304",
+      "size": 9015,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_SPLIT_VIEW_RERENDER.md": {
+      "sha256": "6960e79eaca370bc2452df428ccdac2087fa2cc325b40566c2981f4a6dfaf78f",
+      "size": 5592,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_STATIC_RENDERING_BUG.md": {
+      "sha256": "c0fedc0ace9d36ba43a1a831228d825c4a29b55a641f03119f897c5f7e3f8169",
+      "size": 6199,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_STEP1_DYNAMIC_KEYS.md": {
+      "sha256": "8439ca8a5df185e47bffd4c250e1531060cda6f30986cfb599b4d516424cac7a",
+      "size": 7791,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_VIEWER_AUTO_HIDE.md": {
+      "sha256": "7779977129a7de0f220674ed4cb04197a1fd7c12565938db2102a35549c11ee7",
+      "size": 7591,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_VIEWER_FROZEN_VIEW.md": {
+      "sha256": "5d80e1d231d04ee617a4e8c341f4c4cb48b579d1871abd239bd5924028a10b62",
+      "size": 8561,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FIX_VIEWER_HISTORY_NAVIGATION.md": {
+      "sha256": "311e95f9cc60b86db143575cfcfe4a2987247c6d8b2a22d605a54e8eaa3136f7",
+      "size": 5328,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FORENSIC_COMPLETE_ALL_COMMITS.md": {
+      "sha256": "440bbbbcb7997962cf8685040c2b16e1b722f56f5e420c29313aad2512701d64",
+      "size": 12446,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FORENSIC_REPORT_2025-12-07.md": {
+      "sha256": "12305b085087205518bdf6ac237a71416cfe436ab8785394d0f56d39d3017b33",
+      "size": 13502,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FORENSIC_REPORT_2025-12-07_UPDATED.md": {
+      "sha256": "6c65541616e94466bc80246d0c1f8f613021cb1ea1406523439147a8fe5f5f86",
+      "size": 11686,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FORENSIC_TIMELINE_COMPLETE.md": {
+      "sha256": "b8afe5f39f3011bff89b69bdedbd1e6e5b269a3f7eb48d327b81b84ba44a5a16",
+      "size": 17155,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "FULLSCREEN_MODE_GUIDE.md": {
+      "sha256": "0799d486bb5340690edcb7c68ea4f2d699ff0af01cf51364985e9fd016851cd6",
+      "size": 5809,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GPT5_BUGFIX_TOOL_LOOP.md": {
+      "sha256": "b14fff761083ca00b69fcc8f50a2a1796a80775b10333b83aa72306d7033cfe8",
+      "size": 4867,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GPT5_REGRESSION_FORENSICS.md": {
+      "sha256": "d533c3e67053d949a8e1ea285c45ea8fbc87c6aaa46479d4e34b7de66a37263e",
+      "size": 11873,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GPT5_STREAMING_ANALYSIS.md": {
+      "sha256": "6fff18712b642913c138d35360db28b90af2747c4c5283d7590641b6b059f9a0",
+      "size": 6390,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GPT5_TOKEN_PARAMETER_QUESTION.md": {
+      "sha256": "1f276a19c6278cc99f87ea3a10840f031d0c51a4bcf3a478fa4b514b36d9ac61",
+      "size": 5605,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GPT5_TOOLS_CORRECTION.md": {
+      "sha256": "44256b8dc15ce076f5aa2b1aa9d1dde786cbef9394410cabb9dd4b5af4e6dfe7",
+      "size": 5630,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GPT5_TOOLS_STATUS_ANALYSIS.md": {
+      "sha256": "20a007deea75e02ed6af98ef80c6c74af772229dccdad794153a2c89db73c1bd",
+      "size": 7963,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "GROKINOU_README.md": {
+      "sha256": "ba673ea272ff37df8f5240c7d8fe49c8b89431562f8d2127ea6f83263ecb91e1",
+      "size": 8074,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "HELP.md": {
+      "sha256": "594866e1269089ebe2d6c3dd6c40a6f110b6708491715196e64e5d449a1e3722",
+      "size": 19745,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "IDENTITY_CHECK_FIXED.md": {
+      "sha256": "a7b24cb77f010d2efd86dafae8264569e8fd2e76332cfb2ac94c51bd61bab0e6",
+      "size": 7262,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "IDENTITY_FIX.md": {
+      "sha256": "c5a0a3a77625df5594ac9b44932e680df2ab9b9154538ba9abcd6eb17b6549f2",
+      "size": 8116,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "IMAGE_PATH_DETECTION.md": {
+      "sha256": "fbf1580e3f34ee78d3a64891267cc0121769f9b46a7af5c3b4e804b924d0e141",
+      "size": 7567,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "IMMUTABILITY_PIPELINE_ARCHITECTURE.md": {
+      "sha256": "e36bb28364bca44df63c1f237c53e5cddbfb77aa94295f76c12cc29503f06dd1",
+      "size": 21144,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "IMMUTABILITY_PIPELINE_IMPLEMENTATION_PLAN.md": {
+      "sha256": "6b83a79a7f7be35f818b67f0b66d57a4599325ccd7f89a79dc0ae4d7229f28dc",
+      "size": 23831,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "IMPLEMENTATION_STATUS.md": {
+      "sha256": "6ec14ae6258adc29fc846db08c1585124804a1e5efe1538a9de185b51e75310d",
+      "size": 14253,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INTEGRITY_COMMIT_REPORT.md": {
+      "sha256": "018cfa70bd0faee8542d006854493badb1f6bb4dfd9962a17b0e694931ab4963",
+      "size": 11504,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INTEGRITY_COMMIT_SUCCESS.md": {
+      "sha256": "3d8de53d513c5bea829d35a6a66a01aab765e40e35e5c5ef672208b64f85b801",
+      "size": 7898,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INTEGRITY_REPORT_FINAL.md": {
+      "sha256": "52b71b3f0a2abdc1c540797f628e56c544fa9c84406c70a731df02bb8d3415e4",
+      "size": 8174,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INTEGRITY_VERIFICATION_REPORT.md": {
+      "sha256": "7e7010f826c71a0ce1763ce1d14ae49c8bdafa9f9f9ce3f12aa451f0f1009353",
+      "size": 6377,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INTEGRITY_VERIFICATION_REPORT_20251130.md": {
+      "sha256": "6d084d2ee900215474e1e26bf73324e378233ccf6c0d1f471200dcf50e35a5ae",
+      "size": 5380,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INTEGRITY_WATCHER_README.md": {
+      "sha256": "ce207d5109a010c7172f83e864a3266fd1c23beacedab57e4213abd732f7b2c0",
+      "size": 12586,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "INVESTIGATION_PHANTOM_COMMITS.md": {
+      "sha256": "621061de48af211a58f39d920553c2fb9de5e653ee2ae718deae736675ef459c",
+      "size": 4312,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "KNOWN_ISSUES.md": {
+      "sha256": "c1c9f97a0e2f74be643e0f06d7ddfbc55e8790aeb8bfbe43f9a16f3665efd404",
+      "size": 2050,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LAYOUT_CLARIFICATION.md": {
+      "sha256": "b49b7d4e4cd8f80ed9c53b5f53a650d244f8688e386d2f8b0a5552d638de1722",
+      "size": 5357,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LLM_GUARD_FILES.txt": {
+      "sha256": "2e6138c2443d5468adacb55b94f5917c98b32c6bd1c6c9993fe1740fe192f1f0",
+      "size": 13045,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LLM_GUARD_QUICKSTART.md": {
+      "sha256": "44a920bdca2df1542cf3472e59cf52bcdf9c2d0367ee5fb1874ef7699cb7203f",
+      "size": 5425,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LLM_GUARD_README.md": {
+      "sha256": "c6098261840b86440a7050cee075970c6aa2d82e9e7f7e04bc104072f763cd3e",
+      "size": 17903,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LLM_GUARD_SUMMARY.txt": {
+      "sha256": "bde6f9dda99f072c32d2abf4ebe205910d270047ab11af24ead4c1bee3d8feb1",
+      "size": 13558,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LLM_TOOLS_OPTIONS_REFERENCE.md": {
+      "sha256": "505c379a4c0c48ec273165dc625ac4a9f411b02c9e5cb003d43f04970147a69c",
+      "size": 12971,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "LLM_TOOL_CLARIFICATION_GUIDE.md": {
+      "sha256": "14e2c2659c2e87d5f43215b856dcdf6d5bc376be00f81f7e37dad949794bbd3e",
+      "size": 8538,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MALICIOUS_MODIFICATION_REPORT.md": {
+      "sha256": "7410d9399635755e49a9b36d1db886fcddfaf0f1d8404c75d4d9db706da45bee",
+      "size": 12073,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MANUAL_TESTING_GUIDE.md": {
+      "sha256": "d07383f5386b19ebc226cdd7fdaedcfdb90484b5a6b7043f53643fb8b22a0e92",
+      "size": 11163,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MERKLE_ROOT_ANCRAGE.txt": {
+      "sha256": "c38c97dc610ea0e20e6c4a5410c6fc4fab8d6ea554111e2fb31a20b96f594f47",
+      "size": 2830,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MIGRATION_GUIDE.md": {
+      "sha256": "f62b5744158d755263d3e145eb4734c6473747bf35f45967b8996c74f82b1aa2",
+      "size": 6016,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MISTRAL_COMPLIANCE_CHECK.md": {
+      "sha256": "0710bee4bfec44c29815b0134839597041c21d4edee3e7148ed0f43252d84ae3",
+      "size": 7215,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MISTRAL_FIX_HISTORY.md": {
+      "sha256": "bd5ee6524dc18666c5e10b5136f63f680f738b9ed858004840614e94c8b1c53a",
+      "size": 8476,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MODEL_TOKEN_LIMITS.md": {
+      "sha256": "46111e919ade93136ebd838a642066eac507797fef0b0a70deb297723bffc200",
+      "size": 3766,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MODERN_HELP_PREVIEW.md": {
+      "sha256": "e36557562e5e07e7ade1caf32672e1120e42f03ae8bbb740e4bc37c92972b4f8",
+      "size": 12779,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MODULE_ANALYSIS_REPORT.md": {
+      "sha256": "e9ac8eab9fa9e55cafb80f842ccb008fd296632e1913e496be082e2543c47153",
+      "size": 7137,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "MODULE_REMOVAL_REPORT.md": {
+      "sha256": "fb13ecb26c07eebc59318bc1b23b6df5676c781d5e64387d69d7b31bf135a443",
+      "size": 2073,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "NEW_SESSION_FEATURES.md": {
+      "sha256": "c4f74bff15fa2925f43dfddd1efb32e841302ef654a124d7b9b2814e152c56b2",
+      "size": 14212,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "NEW_TESTS_REVIEW.md": {
+      "sha256": "8c10d61a355f4f40ca2193f267c52daae75cc36ed92eb372600e48903d182f14",
+      "size": 16453,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "NEXT_STEPS.md": {
+      "sha256": "3d0572fd586feb482742da9f8162baee3080b897f7e21c6e1e398032f7999156",
+      "size": 6544,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PASTE_LINK_FEATURE.md": {
+      "sha256": "d42ea17191753c02b09101fe928f4222fa96a182137d152b083b012eca34030c",
+      "size": 6734,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PATENT_ANALYSIS_2025.md": {
+      "sha256": "a3af5c288cd4bb4d336a2af4752f23b3dc15676d290cd83881b99580e87d66de",
+      "size": 23406,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PATENT_DECISION_MATRIX.md": {
+      "sha256": "a23235d0f51b272c328db47afdade836ac9f7f0ad4ac1f8e98c9930511e0fef7",
+      "size": 8354,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PHANTOM_COMMITS_ANALYSIS.md": {
+      "sha256": "fbcaeb73c48b975a10c71bb951266017a8ddc4fd9096d646c2cadd7beb645441",
+      "size": 10535,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PHASES_QUICK_VIEW.md": {
+      "sha256": "79c134542ddab4beb5bb4421264c84cec99a727c6bf23753a27101e44bc6e4f1",
+      "size": 13368,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PLAN_APIKEY_MANAGEMENT.md": {
+      "sha256": "9b6a7a7db99588b2ef2ba064263edfc744a9e95acdb4d5cc69c7052f451b4e36",
+      "size": 16808,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PLAN_FIX_DUPLICATION.md": {
+      "sha256": "bea8c3acce3e556b608b0d4244be912282bf220d0efec2ef0fa7be02d2c35714",
+      "size": 4973,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PLAN_MODEL_MANAGEMENT.md": {
+      "sha256": "2d3d902d67512968f6972679209310223820aa5a9892ca5bac7095f6c0e17ad8",
+      "size": 20644,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PLAN_MODEL_MANAGEMENT_V2.md": {
+      "sha256": "68694cce21fb260d0a096fffff6b7d29981318ffe955c8c41496291f051e9946",
+      "size": 13095,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PLAN_RESOLUTION_IDENTITY_REVISED.md": {
+      "sha256": "4454cf65fc53999685a9434795d0061b058b9f42605acb5f598440d70c8486b2",
+      "size": 13584,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "PLAN_SQLITE_MIGRATION.md": {
+      "sha256": "c49e74820ff2034db4f1dc864b1d18552b7c2a96ef465c26d9976b6c73c29e26",
+      "size": 18319,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "POST_MORTEM_MISTRAL_DEBUG.md": {
+      "sha256": "62eb4e301d93b6a0fdd50cb9d6ef8415fd3337bb648a0c35d41074c5abde5405",
+      "size": 9910,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "POUR_CHATGPT_REVIEW.txt": {
+      "sha256": "c891bac2f8522eaa7696bda2f3c6298a44d07e27ba4d32bbf288f0e0e509f8fd",
+      "size": 6911,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "QUICK_START.md": {
+      "sha256": "d8286a8cb0e89c64def62c5158be355bba18e6d5e3fddd7895bd5879be2f992f",
+      "size": 929,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "QUICK_START_GIT_LIKE.md": {
+      "sha256": "93cbd288089855b6c3221860325192f52979f7df71fbda17c76bd568548078c7",
+      "size": 4097,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "README.md": {
+      "sha256": "03233eccbc8ac4b237e39f468d2b34ececd393f7252dfa9685d117e83bba0690",
+      "size": 13459,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "README_TESTING.md": {
+      "sha256": "15244102be6c4e0827da386959ef7aad4a7ce7b676a446c28b3db4b70bd24f61",
+      "size": 2640,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "REASONING_SUMMARY_BUG_FIX.md": {
+      "sha256": "337e716e1bc639eae0f46998989bdaaea3217bf4af90c25557bc59556fff290f",
+      "size": 5199,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "REFACTORING_STEP2_VIEW_DATA_SEPARATION.md": {
+      "sha256": "8289f9865cab38d20abd1dd300ff00686c4af140e169d176dc90f27250f0f3d9",
+      "size": 8273,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "REFACTORING_TEST.md": {
+      "sha256": "946c6c3cb527709988190d590a2faedd858be505fdf22e43df2ebcd47b56f9d6",
+      "size": 19,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "RESUME_OPTIMISATIONS.md": {
+      "sha256": "2f533f745fe3a24217721de7cbe87fb182ae88a7aeea9ea8376977337f4a3000",
+      "size": 4510,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "REWIND_FEATURES.md": {
+      "sha256": "0c057d646197d1c21e7f24034a8a5170fce44d03904dd9a486ae1419170dac06",
+      "size": 17578,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "ROADMAP.md": {
+      "sha256": "7fe335176c31090fc83d59f80699c0a267d1e4c4982e852b5d4b1978f8394f34",
+      "size": 13745,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "ROOT_CAUSE_ANALYSIS.md": {
+      "sha256": "2200a1c415bfbd54eaef2e0f7090c65f00d6cba80999d92a8b69f7eb735a4808",
+      "size": 8133,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SEARCH_FEATURE_ENHANCED.md": {
+      "sha256": "a073f79188a2e822dda4be0a8724b20776aa508de90ddf0d6cca3186ab0f8a72",
+      "size": 28571,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SEARCH_FEATURE_PLAN.md": {
+      "sha256": "7887416f18cbb29b4104e0d23d17c04f69a86584a29c6422fef7a2dd5a72dc31",
+      "size": 16180,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SEARCH_FEATURE_READY.md": {
+      "sha256": "13d70ca191c724ce46be307d10ffb3a5ea12d7bf22ea44828dcf0120ad4bc6e2",
+      "size": 8876,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SEARCH_FIXES.md": {
+      "sha256": "9bfc738dd055573326b1dbf3f60d7ed468053aea5822a6be9912c59729e655b9",
+      "size": 8058,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SEARCH_SCROLL_FIX.md": {
+      "sha256": "82c951504cf4dd6c332c78854ed84d856a0d203e2d0e8ae46acc2127d7afb24b",
+      "size": 10263,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SEARCH_VIEWPORT_FIX.md": {
+      "sha256": "79bff6b4d6e6383e23c217765a4a43c7b7deed62b6c70cfb70ccd6b279d07d5d",
+      "size": 10953,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_AUDIT_FOLLOW_UP.md": {
+      "sha256": "8c562ec8efcfcf70e92947d08e9755efe4126a7fe4232245b489e9b64e3cf299",
+      "size": 24969,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_AUDIT_INTEGRITY_SYSTEM.md": {
+      "sha256": "9b15c13a8ff59b48d0ac2ce4c424b537a3854541193426d273a2b2875484cbb9",
+      "size": 25957,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_ONEPAGE.txt": {
+      "sha256": "6b2ad6af911d2a06150c7318cc63cdb35f7830253d6230534ce826179fdbe301",
+      "size": 7379,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_QUICK_START.md": {
+      "sha256": "8622440c49bf7b4fba37a1bfb5100cf7a7355d8155a43ce9853fbc6c221ebafa",
+      "size": 10089,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_SYSTEM_AUDIT_TRACKLIST.md": {
+      "sha256": "f70097895b5f5c1c3cdbec7f5191d7604360a45f283d9270c81e31dea938944f",
+      "size": 25968,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_SYSTEM_COMPLETE.md": {
+      "sha256": "21f43eff9b14efb3564ebbab5fb212eace4bee2a83cf2fcfff7a26798c2af70b",
+      "size": 21389,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_WATCHER_GUIDE.md": {
+      "sha256": "9d4a1ce46d3335b16aca8ca86a2f0386eb641f49e3c248232bb023fb35a94232",
+      "size": 18233,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SECURITY_WATCHER_SUMMARY.md": {
+      "sha256": "68787f545b28b63638edb6730676aa583f250eb1530f405b63e871f5270812b8",
+      "size": 14831,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SELF_INTEGRITY_PROTECTION.md": {
+      "sha256": "d6e8fc67ceed0910524667c647f8e3aa452d0354774313edf6966a1210b0005a",
+      "size": 14563,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SELF_INTEGRITY_SUMMARY.txt": {
+      "sha256": "c0e9a61b57d69a2d71842b1e80b31960d2d52c17d0ecb772c3ad0868601777c6",
+      "size": 14645,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SESSION_AUDIT.md": {
+      "sha256": "402769025814c933ba8d8b1ad474c7895d91513a078145b72b1af7de75d04a17",
+      "size": 9416,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SESSION_FILES_CREATED.txt": {
+      "sha256": "baa74e4f0df2d48a4e1812910ca925201753c8f68a741a8224bc709a7c49a752",
+      "size": 11430,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SESSION_PROGRESS_SUMMARY.md": {
+      "sha256": "4385474f4ddec05d2ac47314d94b58e4492db019332af3089d7c153ce8c1c31b",
+      "size": 8382,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SIGNATURE_INTEGRITY_STATUS_20251130.md": {
+      "sha256": "e0e0a238ebcd385b4a0d4c54ef9fcc9e13ccc3ccff41eb22ae7fe0c9e89a6fee",
+      "size": 7674,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SOLUTION_ESTIMATION_TOKENS.md": {
+      "sha256": "d7091216a7f5f9f2b3a282f2680953793f737b6520936dd9d9296dfc68957365",
+      "size": 4273,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SOLUTION_LIMITE_GENEREUSE.md": {
+      "sha256": "1e1ccb5f9015674001b6a8fe26203fd566a8a494b9ca147128cf6a656610b6ed",
+      "size": 5456,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SOLUTION_VIEW_DATA_SEPARATION.md": {
+      "sha256": "e883a4b5503403f4f37696f4bb17ca540f9545577204bd3e7e43647a0b540118",
+      "size": 7537,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SQLITE_IMPLEMENTATION_COMPLETE.md": {
+      "sha256": "570a22dadd61a931b4a170a20e2c4e5f67850308122a68af6e18c336a301ee74",
+      "size": 6306,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "START_HERE.txt": {
+      "sha256": "fc218d61d6ef9cee724a300cf2eb2ada886c6133ba009c71610e2f7172efaaac",
+      "size": 7251,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "START_READING_HERE.txt": {
+      "sha256": "201d4845c2dbb1dd252bfc7d350e41f46addff336bf5837803709f97142d6368",
+      "size": 10915,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "STATIC_RENDERING_FIX.md": {
+      "sha256": "64c779cde873c72e7daeebe2e1ce10fe16fec01f34e02028a62d26e0504434ed",
+      "size": 4690,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "STDERR_DEBUGGING_ENHANCEMENT.md": {
+      "sha256": "59fd26843baf2cd4467c03567aab1743551b6b1b01bbb2988983cd34a13f588e",
+      "size": 9386,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "STEP3_COMPLETE_SUMMARY.md": {
+      "sha256": "65c63f71761d66172747b804bd5141526d5c6653d25676ee0cf1525d48f989fe",
+      "size": 7638,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SUMMARY_TWO_FIXES.md": {
+      "sha256": "84694aff807332472370e63934ba2e7e236f41007f6d977a1d961e0399fd07fd",
+      "size": 6489,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SURVEILLANCE_ARCHITECTURE.md": {
+      "sha256": "1ee768743f34fdb99b3ed02ad63ba096b0aba790f419272158ecb5ee4b138020",
+      "size": 8271,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SYNC_STATUS.md": {
+      "sha256": "226dd0a58ae4ea799bf770cb7e11b50e86fd57bd314e8c2c980ab6df3a1a09ac",
+      "size": 5286,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SYSTEM_MESSAGE_FIX.md": {
+      "sha256": "802d9d984c954d0e3f60a087d84d433b5ebab41bbdcfdeb3b1d94374d5bbeeac",
+      "size": 6726,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SYSTEM_MESSAGE_PURGE_FIX.md": {
+      "sha256": "0b0b1244c8a27a94b4b85a623f2692fe1d6a31a5c2aea8e69dba2ee473cf8af2",
+      "size": 9639,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "SYSTEM_MESSAGE_PURGE_VERIFICATION.md": {
+      "sha256": "15329f6c64802dfb521c2ca386b4e754581a18ef2bb0803aa113b393f0f81044",
+      "size": 5941,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TESTING.md": {
+      "sha256": "336521604b9f0c15776993b0059173b7cca5cafc079e2b40392a83d5c7ae3248",
+      "size": 19163,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TESTING_CHECKLIST.md": {
+      "sha256": "3cbb755175d320dea25c74c5110e5045b814ede10e8dfea3171644e6e052e17e",
+      "size": 15460,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TESTING_COMMANDS_GUIDE.md": {
+      "sha256": "13a091d4c6e943999119ca64e3c9adb0090a17f28a415e7549520353d904e8cd",
+      "size": 22667,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TESTING_QUICK.md": {
+      "sha256": "3fe9b021ce48e088223494c1ab5815e111c515db5c51754c2486ac626865eca0",
+      "size": 4644,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TESTS_SUMMARY.md": {
+      "sha256": "7aa9541ce1287722bbcc77b32300410e2e107561f24d760b2c7207c3b5f740e5",
+      "size": 6592,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TEST_API_KEY_INPUT.md": {
+      "sha256": "4505e29455288b7f988b57d8290941b8ea8f22f0c0ad60b32cba892b9fd9e02a",
+      "size": 6751,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TEST_FINAL.md": {
+      "sha256": "0f2e5b2edb81cd8a84a1740ecfc237f362aefc9b6d6388ed29c1ae04a4bbb55e",
+      "size": 2229,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TEST_GPT5_DIAGNOSTIC.md": {
+      "sha256": "d707c58112436c62a4a0122ab8febcd7b5293f088f46ae3d188da8dfc1258d81",
+      "size": 6419,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TEST_RESULTS.md": {
+      "sha256": "a14786a4b3ad7eb7daa898fcff7188372f2730d12438f468767a27b242570a00",
+      "size": 4086,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TEST_SESSION_SUMMARY.md": {
+      "sha256": "c7d0ecafceaa035aba8b0e955006ad7c9c682b5e62fe6924cbb1dd5dee942cc1",
+      "size": 6682,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TEST_STATIC.md": {
+      "sha256": "ed5270bf854fbffa5629467e6687f9ab3dd58b8592df7d808304d82816b6fdc8",
+      "size": 1003,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TIMELINE_BUG_REPORT.md": {
+      "sha256": "f32ccfec7aca792a9ecf4bdab67c3d94ef74f87e8b08a6a68a194a4032c2aec0",
+      "size": 13735,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TIMELINE_DEBUG_STATUS.md": {
+      "sha256": "fa23e8fcd6bca7b919d46f783f9dad0ca2baeac0503af3ad01880cfbc9b21316",
+      "size": 8012,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TIMELINE_EVENT_SOURCING.md": {
+      "sha256": "4f1c9501aafb2f6cd010735ad1f4ef20e50ab65e80c345177062638debac9e24",
+      "size": 15276,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TIMELINE_INVESTIGATION.md": {
+      "sha256": "25aa653aa3dbb091a096c7b6c95635fd5d09977b138c3d571b10c193a65dffd2",
+      "size": 13976,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TIMELINE_VIEWER_ARCHITECTURE.md": {
+      "sha256": "32a89d8ebe9da559300c025cd1aa7714f724f8211f6d7cea2de1a2337d462208",
+      "size": 11291,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TODO_IMPROVEMENTS.md": {
+      "sha256": "a90b1f4cc7c778710eb398b009fb32f0cecf4cc7681bd939f6390ca281ab1445",
+      "size": 2582,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TOKEN_LIMITS_UPDATED.md": {
+      "sha256": "c6219384ec316ab629a3bcde5e2d8a625649c913364f41c288be93d65185ad0d",
+      "size": 3058,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TOOLS_ANALYSIS.md": {
+      "sha256": "13d864dfd2687caa18a6ae97d25fda78f13f2ed0e23951c916c8f191ad059377",
+      "size": 11713,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "TOOL_MESSAGES_HANDLING.md": {
+      "sha256": "1852b7c54b0f378f2a09d650600f5d4d372cbc9b5a5a4c4b92689e41fa8ce492",
+      "size": 5895,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "UNLIMITED_TOKENS_GUIDE.md": {
+      "sha256": "09b0d761db3e614e8205d7424617a3714bf3a25a252f140f3fbf6ea405c258ef",
+      "size": 7250,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "WATCHER_CHANGES_LOG.txt": {
+      "sha256": "7165224de47ca022f0c2ab090a56613340d290e32b19d00a14bf0f9fde8d3c46",
+      "size": 11017,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "WATCHER_DAEMON_GUIDE.md": {
+      "sha256": "14762336dd995e1c66aaabc8f0e950cb5bd14801859677b67da5b4afb8be399f",
+      "size": 10938,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "WATCHER_DEBUGGING_GUIDE.md": {
+      "sha256": "4367fb63f7add584e453d63b37f8f3b334cac94eb49b2f5f85adb2e29468a381",
+      "size": 14876,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "WATCHER_FILES_CREATED.txt": {
+      "sha256": "74bad041a9f8a49e48dc7163999460796c5d8f5008b6ab930139706ce8738df1",
+      "size": 12867,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "WATCHER_IMPROVEMENTS_SUMMARY.md": {
+      "sha256": "aa10f3309f2eeff5bbbe6ecccb47099faf221317e14dbd88424d11a808df63dc",
+      "size": 11004,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "WATCHER_ONEPAGE.txt": {
+      "sha256": "37f4ffe539a86d3ec43c8cb2e0dbd06573bf274ce17129ce9ce5ea6bfddba259",
+      "size": 7703,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "confirmation_feedback_test1.md": {
+      "sha256": "fd97f05ab0eda4f90bc2cfdab2efd8d7533338ce768f1a064d186088282c5fb1",
+      "size": 599,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "diagnose_viewer_issues.md": {
+      "sha256": "d0ae9df2570121656d5ac1a0154a432bc2587c8d131b17dd4a70cf357b83eeeb",
+      "size": 3201,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "docs/GIT_LIKE_CONVERSATIONS.md": {
+      "sha256": "cd155f9a385d0ab8a6003af92126010de1cbaa67bed10e2eb239aee13673641f",
+      "size": 18217,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "docs/LLM_SESSION_TOOLS.md": {
+      "sha256": "7196d6808d7c1915737265616ad6f0a80ea86a979f15e73c14be51aa14a1c7cd",
+      "size": 16695,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "docs/NEW_SESSION_GUIDE.md": {
+      "sha256": "d376764b7ac0b8022e9745474dc6fd64234b2d2767d100d2d74402a7347f8422",
+      "size": 11734,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "docs/PHASES_RECAPITULATIF.md": {
+      "sha256": "1ca20de9c0c62da7bd3d491e8d5f1a1168fdaa53586e3a38a002d15dc66409b0",
+      "size": 24417,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "docs/SWITCH_SESSION_USE_CASES.md": {
+      "sha256": "65bace31d2ed5852c2f4f18b20be6121da95117ae11c17614641bae2d4b884f6",
+      "size": 13293,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "docs/WDIMQ_CASE_STUDY.md": {
+      "sha256": "fbdc5a5168bea5f8fa679209fc7f3f93025469970177811cb366c29ea0108f51",
+      "size": 15160,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "scripts/README.md": {
+      "sha256": "dab269aaeab625b159288321d995ad46956663e79e4773c81514d8f3d4b0eaf9",
+      "size": 1334,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "src/timeline/README.md": {
+      "sha256": "33668820942891b57f18b51d10eba5c76878d9cb8efd6635d04ca0a00e2d19ab",
+      "size": 10526,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "src/timeline/TEST_PLAN.md": {
+      "sha256": "f17b48cc63ef9bdc5d649fb25a7dcea35d2f2e6c9708a9e86b265463081f71f3",
+      "size": 6764,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "test/README.md": {
+      "sha256": "55a0a5534fc537c5c203b307ebd1c967da4d5c2d7394251b2f492d24be4f651a",
+      "size": 4681,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "test/README_COMPREHENSIVE_TESTS.md": {
+      "sha256": "a359ab80f29b03836b0f064b87aae63129acc73da6dcffbc42e9cfcc673945c5",
+      "size": 10823,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "test_adaptive_solution.md": {
+      "sha256": "c7a0da981f7fde0f2af95763177ded0b114663b7708e6c21b402938b99c93d3a",
+      "size": 5324,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    },
+    "tests/README.md": {
+      "sha256": "13735dfe195a3f6211f92a521afbb97ad2b42c861c4d74017adc31092386e385",
+      "size": 2862,
+      "timestamp": "2025-12-07T22:56:26.012483Z"
+    }
+  }
+}

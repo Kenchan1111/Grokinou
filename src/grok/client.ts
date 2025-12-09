@@ -416,7 +416,8 @@ export class GrokClient {
           const toolCalls = rawToolCalls
             .filter((tc: any) => tc && tc.id && tc.function && tc.function.name)
             .map((tc: any) => ({
-              id: tc.id,
+              // ✅ Truncate tool_call id to 40 chars max (OpenAI API requirement)
+              id: tc.id.substring(0, 40),
               // ✅ Always use the canonical value "function"
               //    (prevents corrupted values like "functionfunctionfunction")
               type: "function",
