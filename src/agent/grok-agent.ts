@@ -1274,8 +1274,15 @@ Current working directory: ${process.cwd()}`,
     }
     
     try {
-      const args = JSON.parse(toolCall.function.arguments);
-      
+      // 🐛 DEBUG: Log raw arguments BEFORE parsing to diagnose JSON errors
+      const rawArgs = toolCall.function.arguments;
+      debugLog.log(`🔍 [DEBUG] Tool: ${toolCall.function.name}`);
+      debugLog.log(`🔍 [DEBUG] Raw arguments (length ${rawArgs.length}):`, rawArgs);
+      debugLog.log(`🔍 [DEBUG] First 100 chars:`, rawArgs.substring(0, 100));
+      debugLog.log(`🔍 [DEBUG] Last 100 chars:`, rawArgs.substring(Math.max(0, rawArgs.length - 100)));
+
+      const args = JSON.parse(rawArgs);
+
       // 📺 COT: Action with arguments
       const argsPreview = JSON.stringify(args, null, 2).substring(0, 200);
       executionStream.emitCOT('action', `Arguments: ${argsPreview}${argsPreview.length >= 200 ? '...' : ''}`);
@@ -1769,11 +1776,20 @@ Current working directory: ${process.cwd()}`,
       return result;
     } catch (error: any) {
       const duration = Date.now() - startTime;
+
+      // 🐛 DEBUG: Log error details for JSON parsing issues
+      debugLog.log(`❌ [ERROR] Tool execution failed: ${toolCall.function.name}`);
+      debugLog.log(`❌ [ERROR] Error message:`, error.message);
+      debugLog.log(`❌ [ERROR] Error stack:`, error.stack);
+      if (error.message.includes('JSON')) {
+        debugLog.log(`❌ [ERROR] JSON parsing failed for arguments:`, toolCall.function.arguments);
+      }
+
       const errorResult: ToolResult = {
         success: false,
         error: `Tool execution error: ${error.message}`,
       };
-      
+
       // 📺 ExecutionViewer: Fail the execution
       if (executionStream) {
         executionStream.emitCOT('decision', `❌ Exception: ${error.message}`);

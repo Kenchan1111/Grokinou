@@ -405,25 +405,20 @@ export class GrokClient {
         }
         
         // Fix assistant messages with tool_calls
+        // - Truncate tool_call.id to 40 chars max (OpenAI API requirement)
         // - Force tool_call.type to exactly "function"
-        // - Drop any malformed tool_calls objects to avoid 400 errors like:
-        //   "Invalid value: 'functionfunctionfunction'"
+        // NOTE: Removed .filter() - it was causing regressions during streaming
+        //       Version originale (751e5a2) didn't filter, was more robust
         if (msg.role === 'assistant' && (msg as any).tool_calls) {
-          const rawToolCalls = Array.isArray((msg as any).tool_calls)
-            ? (msg as any).tool_calls
-            : [];
-          
-          const toolCalls = rawToolCalls
-            .filter((tc: any) => tc && tc.id && tc.function && tc.function.name)
-            .map((tc: any) => ({
-              // ✅ Truncate tool_call id to 40 chars max (OpenAI API requirement)
-              id: tc.id.substring(0, 40),
-              // ✅ Always use the canonical value "function"
-              //    (prevents corrupted values like "functionfunctionfunction")
-              type: "function",
-              function: tc.function,
-            }));
-          
+          const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
+            // ✅ Truncate tool_call id to 40 chars max (OpenAI API requirement)
+            id: tc.id ? tc.id.substring(0, 40) : tc.id,
+            // ✅ Always use the canonical value "function"
+            //    (prevents corrupted values like "functionfunctionfunction")
+            type: "function",
+            function: tc.function,
+          }));
+
           cleaned.push({
             ...msg,
             tool_calls: toolCalls,
