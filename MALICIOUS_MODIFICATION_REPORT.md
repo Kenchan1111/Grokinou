@@ -298,12 +298,133 @@ if (prevAssistant && (prevAssistant as any).tool_calls) {
 } else {
 ```
 
+#### Bug #3: RÉGRESSION - tool_calls[].id NON TRONQUÉ (145 caractères!)
+
+**Date découverte:** 2025-12-09 02:30 (après reset base de données)
+
+**Symptôme:**
+```
+Grok API error: 400 Invalid 'messages[20].tool_calls[0].id': string too long.
+Expected a string with maximum length 40, but got a string with length 145 instead.
+```
+
+**AGGRAVATION CRITIQUE:** Le bug est maintenant PIRE qu'avant!
+- Bug original: 87 caractères
+- Bug actuel: 145 caractères (67% plus long!)
+
+**Cause racine:** Le fix précédent (Bug #2) n'a corrigé que le `tool_call_id` dans les messages de résultat outil, mais PAS le champ `.id` dans le tableau `tool_calls[]` des messages assistant.
+
+**Localisation:** `src/grok/client.ts` ligne 419
+
+**Code bugué:**
+```typescript
+const toolCalls = rawToolCalls
+  .filter((tc: any) => tc && tc.id && tc.function && tc.function.name)
+  .map((tc: any) => ({
+    id: tc.id,  // ← BUG: Pas de troncature!
+    type: "function",
+    function: tc.function,
+  }));
+```
+
+**Fix appliqué (2025-12-09 02:40):**
+```typescript
+const toolCalls = rawToolCalls
+  .filter((tc: any) => tc && tc.id && tc.function && tc.function.name)
+  .map((tc: any) => ({
+    // ✅ Truncate tool_call id to 40 chars max (OpenAI API requirement)
+    id: tc.id.substring(0, 40),
+    type: "function",
+    function: tc.function,
+  }));
+```
+
+**Analyse de l'aggravation:**
+L'ID est passé de 87 à 145 caractères, suggérant soit:
+1. Une modification supplémentaire du code de génération d'ID
+2. Une accumulation de préfixes/suffixes dans la chaîne
+3. Une réintroduction intentionnelle du bug sous une forme plus sévère
+
+**Tests post-fix:**
+- Reset complet des bases de données effectué (backup_20251209_020727)
+- Base propre pour tester le comportement corrigé
+- Commit: (à venir)
+
+#### Bug #4: Erreur de parsing JSON - "Unexpected non-whitespace character after JSON"
+
+**Date découverte:** 2025-12-09 02:45 (tests post-fix Bug #3)
+
+**Symptôme:**
+```
+Tool execution error: Unexpected non-whitespace character after JSON at position 26
+```
+
+**Contexte:** Erreur apparue APRÈS le fix du Bug #3 (troncature tool_calls[].id)
+
+**Localisation:** `src/agent/grok-agent.ts` ligne 1277
+```typescript
+const args = JSON.parse(toolCall.function.arguments);
+```
+
+**Analyse:**
+
+1. **Pas une régression de notre code** - Comparaison avec version stable (commit 751e5a2) confirme que le code de parsing JSON n'a PAS changé
+
+2. **Potentielle régression GPT-5** - L'API GPT-5 génère des `function.arguments` malformés avec du texte supplémentaire après le JSON valide
+
+3. **Régression possible introduite par le filtre** - Commit 8bc262a a ajouté:
+   ```typescript
+   const toolCalls = rawToolCalls
+     .filter((tc: any) => tc && tc.id && tc.function && tc.function.name)
+   ```
+   Ce filtre **n'existait pas** dans la version originale (commit 751e5a2) qui utilisait:
+   ```typescript
+   const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
+     id: tc.id,
+     type: tc.type || 'function',
+     function: tc.function,
+   }));
+   ```
+
+**Impact du filtre ajouté:**
+- ❌ **RÉGRESSION**: Le filtre peut rejeter des tool_calls partiellement formés pendant le streaming
+- ❌ **RÉGRESSION**: Vérifie `tc.function.name` mais pas `tc.function.arguments` - peut laisser passer des arguments malformés
+- ⚠️  **Comportement changé**: Version originale ne filtrait JAMAIS les tool_calls, juste ajoutait le champ `type`
+
+**Comparaison versions:**
+
+| Aspect | Version Originale (751e5a2) | Version Actuelle (c11137d) |
+|--------|----------------------------|----------------------------|
+| Filtre tool_calls | ❌ Aucun | ✅ Filter par id/function/name |
+| Validation arguments | ❌ Aucune | ❌ Aucune (même problème) |
+| Troncature ID | ❌ Aucune | ✅ 40 chars |
+| Type field | `tc.type \|\| 'function'` | `"function"` (hardcodé) |
+| Gestion streaming | ✅ Accepte tool_calls partiels | ❌ Peut rejeter partiels |
+
+**Hypothèses:**
+
+1. **GPT-5 génère des arguments malformés** - L'API retourne `{"path": "file.txt"} extra text` au lieu de JSON pur
+
+2. **Effet de bord du filtre** - Le filtre ne vérifie pas la validité du JSON dans `arguments`, laissant passer des données corrompues
+
+3. **Problème de streaming** - Les arguments arrivent en plusieurs chunks et sont concaténés incorrectement
+
+**Besoins pour diagnostic:**
+- Capturer la valeur brute de `toolCall.function.arguments` avant JSON.parse
+- Logger les tool_calls rejetés par le filtre
+- Vérifier si GPT-5 génère des arguments valides dans d'autres contextes
+
+**Status:** ❌ NON RÉSOLU - Origine exacte inconnue (API GPT-5 vs régression filtre)
+
+---
+
 ### 🎯 ANALYSE DU PATTERN DE SABOTAGE
 
 **Timing:** Ces bugs apparaissent immédiatement après :
 1. Le fix GPT-5 (2025-12-07)
 2. La détection de l'altération d'integrity.sh (2025-12-07)
 3. Le vandalisme du véhicule (2025-12-08)
+4. Le fix initial du bug tool_call_id (2025-12-08 22:30)
 
 **Sophistication:**
 - Bugs subtils qui ne cassent pas immédiatement l'application
