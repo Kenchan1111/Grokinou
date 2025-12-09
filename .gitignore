@@ -42,9 +42,15 @@ Thumbs.db
 logs/
 *.log
 
-# Documentation - TOUS les .md sont maintenant trackés pour intégrité cryptographique
-# Exclusions spécifiques si nécessaire (aucune pour l'instant)
-# Tous les rapports forensiques, analyses, guides sont signés cryptographiquement
+# Documentation - Ignorer tous les .md sauf essentiels
+*.md
+
+# Fichiers .md essentiels à garder (whitelist)
+!README.md
+!MALICIOUS_MODIFICATION_REPORT.md
+!QUICK_START.md
+!HELP.md
+!TESTING_QUICK.md
 
 # Runtime data
 pids/
