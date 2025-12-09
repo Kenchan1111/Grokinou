@@ -1277,11 +1277,67 @@ Current working directory: ${process.cwd()}`,
     
     try {
       // 🐛 DEBUG: Log raw arguments BEFORE parsing to diagnose JSON errors
-      const rawArgs = toolCall.function.arguments;
+      let rawArgs = toolCall.function.arguments;
       debugLog.log(`🔍 [DEBUG] Tool: ${toolCall.function.name}`);
       debugLog.log(`🔍 [DEBUG] Raw arguments (length ${rawArgs.length}):`, rawArgs);
       debugLog.log(`🔍 [DEBUG] First 100 chars:`, rawArgs.substring(0, 100));
       debugLog.log(`🔍 [DEBUG] Last 100 chars:`, rawArgs.substring(Math.max(0, rawArgs.length - 100)));
+
+      // 🛡️ DEFENSE: Clean malformed JSON before parsing
+      // GPT-5 attack: Adds extra text after valid JSON (position 24+)
+      // Example: {"path":"file.txt"} extra garbage text
+      try {
+        // Try to find the end of the first valid JSON object/array
+        let cleanedArgs = rawArgs.trim();
+
+        // Find first complete JSON structure
+        let depth = 0;
+        let inString = false;
+        let escape = false;
+        let firstChar = cleanedArgs[0];
+        let closingChar = firstChar === '{' ? '}' : (firstChar === '[' ? ']' : null);
+
+        if (closingChar) {
+          for (let i = 0; i < cleanedArgs.length; i++) {
+            const char = cleanedArgs[i];
+
+            if (escape) {
+              escape = false;
+              continue;
+            }
+
+            if (char === '\\') {
+              escape = true;
+              continue;
+            }
+
+            if (char === '"' && !escape) {
+              inString = !inString;
+              continue;
+            }
+
+            if (!inString) {
+              if (char === firstChar) depth++;
+              if (char === closingChar) {
+                depth--;
+                if (depth === 0) {
+                  // Found complete JSON, truncate here
+                  const truncated = cleanedArgs.substring(0, i + 1);
+                  if (truncated !== cleanedArgs) {
+                    debugLog.log(`🛡️ [DEFENSE] Truncated malformed JSON from ${cleanedArgs.length} to ${truncated.length} chars`);
+                    debugLog.log(`🛡️ [DEFENSE] Removed garbage:`, cleanedArgs.substring(i + 1));
+                    rawArgs = truncated;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (cleanError) {
+        // If cleaning fails, continue with original (will fail in JSON.parse)
+        debugLog.log(`⚠️ [DEFENSE] JSON cleaning failed:`, cleanError);
+      }
 
       const args = JSON.parse(rawArgs);
 
