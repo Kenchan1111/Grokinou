@@ -849,9 +849,10 @@ Current working directory: ${process.cwd()}`,
       // Générer synthèse si :
       // - Réponse vide
       // - Réponse trop courte (< 150 caractères)
+      // - ET seulement pour les reasoning models (o1/o3), PAS GPT-5
       const needsSummary =
-        !contentTrimmed ||
-        contentTrimmed.length < 150;
+        (!contentTrimmed || contentTrimmed.length < 150) &&
+        this.grokClient.isReasoningModel();
 
       if (needsSummary) {
         debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");
@@ -1177,9 +1178,10 @@ Current working directory: ${process.cwd()}`,
       // Générer synthèse si :
       // - Réponse vide
       // - Réponse trop courte (< 150 caractères)
+      // - ET seulement pour les reasoning models (o1/o3), PAS GPT-5
       const needsSummary =
-        !contentTrimmed ||
-        contentTrimmed.length < 150;
+        (!contentTrimmed || contentTrimmed.length < 150) &&
+        this.grokClient.isReasoningModel();
 
       if (needsSummary) {
         debugLog.log("⚠️  Generating summary (insufficient LLM response detected)");

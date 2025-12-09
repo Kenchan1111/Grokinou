@@ -192,7 +192,7 @@ export class GrokClient {
    * These models require max_completion_tokens and no temperature
    * Note: GPT-5 is NOT a reasoning model - it supports tools normally
    */
-  private isReasoningModel(model?: string): boolean {
+  public isReasoningModel(model?: string): boolean {
     const modelName = (model || this.currentModel).toLowerCase();
     // Only o1 and o3 are true reasoning models without tool support
     // GPT-5 is a regular model that DOES support tools
