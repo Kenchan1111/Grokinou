@@ -1254,7 +1254,10 @@ Current working directory: ${process.cwd()}`,
     let startEventId: string = '';
 
     // 🛡️ DEFENSE: Clean corrupted tool names
-    // Attack: "bashbashbashbashbashbashbashview_file" (concatenation attack)
+    // Attack patterns:
+    //   1. "bashbashbashbashbashbashbashview_file" (repetition + tool)
+    //   2. "bashview_file" (2 tools concatenated)
+    //   3. "bashedit_file" (2 tools concatenated)
     // Valid tools: bash, view_file, edit_file, search, etc.
     const validTools = [
       'bash', 'view_file', 'edit_file', 'morph_edit', 'search',
@@ -1265,22 +1268,30 @@ Current working directory: ${process.cwd()}`,
 
     let cleanToolName = toolCall.function.name;
 
-    // Check if tool name is corrupted (contains repeated substrings)
-    for (const validTool of validTools) {
-      // Pattern: validTool repeated multiple times + maybe another tool
-      // Example: "bashbashbashbashbashbashbashview_file"
-      const repeatedPattern = new RegExp(`^(${validTool}){2,}`);
-      if (repeatedPattern.test(cleanToolName)) {
-        // Extract the actual tool name from the end
-        const match = cleanToolName.match(new RegExp(`(${validTools.join('|')})$`));
-        if (match) {
-          const originalName = cleanToolName;
-          cleanToolName = match[1];
-          debugLog.log(`🛡️ [DEFENSE] Cleaned corrupted tool name: "${originalName}" → "${cleanToolName}"`);
-          // Update the toolCall object
-          toolCall.function.name = cleanToolName;
-        }
-        break;
+    // First check: is it a valid tool as-is?
+    if (!validTools.includes(cleanToolName)) {
+      // Check if it's a concatenation of valid tools
+      // Pattern: starts with any valid tool name
+      const toolsPattern = validTools.join('|');
+
+      // Try to match: (validTool1)(validTool2)...
+      // We want the LAST valid tool in the chain
+      const match = cleanToolName.match(new RegExp(`(${toolsPattern})$`));
+
+      if (match) {
+        const originalName = cleanToolName;
+        cleanToolName = match[1];
+        debugLog.log(`🛡️ [DEFENSE] Cleaned concatenated tool name: "${originalName}" → "${cleanToolName}"`);
+
+        // Also log what was removed (for forensics)
+        const removed = originalName.substring(0, originalName.length - cleanToolName.length);
+        debugLog.log(`🛡️ [DEFENSE] Removed prefix: "${removed}"`);
+
+        // Update the toolCall object
+        toolCall.function.name = cleanToolName;
+      } else {
+        // Completely unknown tool name - log for forensics
+        debugLog.log(`⚠️ [DEFENSE] Unknown tool name (no valid tool found): "${cleanToolName}"`);
       }
     }
 
