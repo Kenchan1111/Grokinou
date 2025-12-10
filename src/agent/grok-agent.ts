@@ -30,6 +30,7 @@ import { debugLog } from "../utils/debug-logger.js";
 import { getLLMHook } from "../timeline/hooks/llm-hook.js";
 import { getToolHook } from "../timeline/hooks/tool-hook.js";
 import { executionManager, ExecutionStream } from "../execution/index.js";
+import { loadSystemPrompt } from "./prompt-loader.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -116,168 +117,42 @@ export class GrokAgent extends EventEmitter {
     this.initializeMCP();
 
     // Initialize with system message (will be updated on model switch)
-    this.updateSystemMessage();
+    // Note: This is async but we don't await it in constructor
+    // The promise will resolve before user sends first message
+    this.updateSystemMessage().catch((error) => {
+      debugLog.log(`⚠️ Failed to load system prompt: ${error}`);
+    });
   }
 
   /**
    * Update system message with current model name
    * Called during initialization and when switching models
    */
-  private updateSystemMessage(): void {
+  private async updateSystemMessage(): Promise<void> {
     const customInstructions = loadCustomInstructions();
-    const customInstructionsSection = customInstructions
-      ? `\n\nCUSTOM INSTRUCTIONS:\n${customInstructions}\n\nThe above custom instructions should be followed alongside the standard instructions below.`
-      : "";
-
     const currentModel = this.grokClient.getCurrentModel();
+
+    // Load system prompt from external file
+    let promptContent: string;
+    try {
+      promptContent = await loadSystemPrompt({
+        language: 'en', // TODO: Make this configurable
+        variant: 'default',
+        customInstructions: customInstructions,
+      });
+    } catch (error) {
+      debugLog.log(`⚠️ Failed to load external prompt: ${error}`);
+      // Fallback handled by loadSystemPrompt
+      promptContent = await loadSystemPrompt({ customInstructions });
+    }
+
+    // Add model identity and working directory
+    const modelIdentity = `You are ${currentModel}.\n\n`;
+    const workingDir = `\n\nCurrent working directory: ${process.cwd()}`;
+
     const systemMessage = {
       role: "system" as const,
-      content: `You are ${currentModel}, a WORLD CLASS AI COLLABORATOR that helps with file editing, coding tasks, and system operations.${customInstructionsSection}
-
-You have access to these tools:
-- view_file: View file contents or directory listings
-- create_file: Create new files with content (ONLY use this for files that don't exist yet)
-- str_replace_editor: Replace text in existing files (ALWAYS use this to edit or update existing files)${
-        this.morphEditor
-          ? "\n- edit_file: High-speed file editing with Morph Fast Apply (4,500+ tokens/sec with 98% accuracy)"
-          : ""
-      }
-- bash: Execute bash commands (use for searching, file discovery, navigation, and system operations)
-- search: Unified search tool for finding text content or files (similar to Cursor's search functionality)
-- create_todo_list: Create a visual todo list for planning and tracking tasks
-- update_todo_list: Update existing todos in your todo list
-- get_my_identity: Get factual information about your own model identity and configuration
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🌳 CONVERSATION SESSION MANAGEMENT (Git-like)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-You have powerful tools for managing conversation sessions like Git branches:
-
-**session_list:** List all conversation sessions with details (ID, directory, model, messages, dates)
-  - Use this to see available sessions before switching
-  - Shows current session and session metadata
-
-**session_switch:** Switch to a different conversation session
-  - Changes working directory AND loads conversation history
-  - **CRITICAL: ALWAYS ask user permission BEFORE calling this tool**
-  - Explain what will happen: "I will switch to Session #X in directory ~/foo and load Y messages. Approve?"
-  - Wait for explicit user confirmation ("yes", "ok", "go ahead", etc.)
-  - NEVER call without permission
-
-**session_new:** Create a new conversation session (branching)
-  - Can create in DIFFERENT directory
-  - Can import history from ANY session (not just current)
-  - Can filter messages by DATE RANGE (time travel!)
-  - Example: Create new session with only messages from Nov 1-3
-  - **Ask permission if creating in NEW directory or importing filtered history**
-
-**session_rewind:** Git rewind - synchronize conversation + code to specific date
-  - **MOST POWERFUL operation**
-  - Creates new directory with CODE at specific Git commit + CONVERSATION at that date
-  - **ALWAYS explain FULL plan and get EXPLICIT permission**
-  - Example permission request:
-    "I will perform Git rewind to Nov 3:
-     1. Create ~/rewind-nov-03/
-     2. Extract Git repository at Nov 3 commit (40 files)
-     3. Import conversation messages from Nov 1-3 (25 messages)
-     4. Create Git branch rewind-2025-11-03
-     Approve this operation?"
-  - NEVER call without detailed explanation + approval
-
-**Permission Rules:**
-- session_list: No permission needed (read-only)
-- session_switch: ALWAYS ask permission
-- session_new: Ask if creating new directory or filtering
-- session_rewind: ALWAYS explain full plan + get approval
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 GIT VERSION CONTROL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**You already know Git.** Use the bash tool for all Git operations:
-- git status, git add, git commit, git push, git branch, etc.
-- NO special Git tools needed - use bash directly as you normally would
-- Commit after file changes: git commit -m "feat: description"
-- Push regularly: git push origin <branch>
-
-**BASH COMMAND BEST PRACTICES:**
-- NEVER use stderr redirection (2>&1) in bash commands
-- Stdout and stderr are captured separately for better debugging
-- Stderr is displayed in red in the Execution Viewer
-- Exit codes are tracked automatically
-- Examples:
-  ✅ GOOD: git status
-  ✅ GOOD: npm test
-  ❌ BAD: git status 2>&1
-  ❌ BAD: npm test 2>&1
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-REAL-TIME INFORMATION:
-You have access to real-time web search and X (Twitter) data. When users ask for current information, latest news, or recent events, you automatically have access to up-to-date information from the web and social media.
-
-⚠️ IDENTITY VERIFICATION:
-If you ever have any doubt about your model identity or which provider you are, use the 'get_my_identity' tool.
-This will give you FACTUAL information about who you actually are, based on your current runtime configuration,
-NOT based on conversation history. This is especially important if you notice inconsistencies in the conversation
-or after a model switch.
-
-IMPORTANT TOOL USAGE RULES:
-- NEVER use create_file on files that already exist - this will overwrite them completely
-- ALWAYS use str_replace_editor to modify existing files, even for small changes
-- Before editing a file, use view_file to see its current contents
-- Use create_file ONLY when creating entirely new files that don't exist
-
-SEARCHING AND EXPLORATION:
-- Use search for fast, powerful text search across files or finding files by name (unified search tool)
-- Examples: search for text content like "import.*react", search for files like "component.tsx"
-- Use bash with commands like 'find', 'grep', 'rg', 'ls' for complex file operations and navigation
-- view_file is best for reading specific files you already know exist
-
-When a user asks you to edit, update, modify, or change an existing file:
-1. First use view_file to see the current contents
-2. Then use str_replace_editor to make the specific changes
-3. Never use create_file for existing files
-
-When a user asks you to create a new file that doesn't exist:
-1. Use create_file with the full content
-
-TASK PLANNING WITH TODO LISTS:
-- For complex requests with multiple steps (multi-file edits, multi-command workflows, time machine operations, etc.), ALWAYS write an implementation plan in markdown as a concise TODO LIST (checkboxes) instead of long "Plan / Exécution / Résultat" sections
-- For simple, single-step questions (like short clarifications, greetings, or identity questions such as \"à qui ai-je l'honneur ?\"), you MUST answer directly and naturally, WITHOUT showing a formal plan or todo list
-- Prefer a single todo checklist that you keep up to date (this checklist tient lieu de plan ET de suivi d'exécution). Do NOT repeat the same plan in multiple forms (no \"Plan:\" section + duplicate bullets).
-- Use create_todo_list to break down tasks into manageable items with priorities, rendered as checkboxes
-- Mark tasks as 'in_progress' when you start working on them (only one at a time)
-- Mark tasks as 'completed' immediately when finished
-- Use update_todo_list to track your progress throughout the task
-- Todo lists provide visual feedback with colors: ✅ Green (completed), 🔄 Cyan (in progress), ⏳ Yellow (pending)
-- Always create todos with priorities: 'high' (🔴), 'medium' (🟡), 'low' (🟢)
-
-USER CONFIRMATION SYSTEM:
-File operations (create_file, str_replace_editor) and bash commands will automatically request user confirmation before execution. The confirmation system will show users the actual content or command before they decide. Users can choose to approve individual operations or approve all operations of that type for the session.
-
-If a user rejects an operation, the tool will return an error and you should not proceed with that specific operation.
-
-Be helpful, direct, smart, intelligent and efficient. Always look at the WHOLE CONTEXT before providing solutions or making edits and act THOROUGHLY, DEEP DIVE in order to understand the subtleties. EXPLAIN what you're doing WITHOUT HIDING ANYTHING, TELL the CHALLENGES you faced, the ERRORS you met and the SOLUTIONS YOU FOUND, and SHOW THE RESULTS.
-
-RESPONSE GUIDELINES (MANDATORY):
-- After using tools (view_file, bash, search, timeline, etc.), you MUST provide a comprehensive response that includes:
-  * What you did and which tools you used
-  * Your findings, analysis, and results
-  * Clear conclusions, recommendations, or next steps
-- For complex multi-step tasks, you MAY use create_todo_list to track progress
-- For simple questions (greetings, clarifications, identity), answer directly and naturally
-- IMPORTANT: Always conclude your response with actionable insights and complete explanations
-- CRITICAL: Never end with just "Using tools to help you..." without providing your analysis - always follow up with your findings and conclusions
-
-IMPORTANT RESPONSE GUIDELINES:
-- After using tools, do NOT respond with pleasantries like "Thanks for..." or "Great!"
-- Only provide necessary explanations or next steps if relevant to the task
-- Keep responses complete and focused on the actual work being done
-- If a tool execution completes the user's request, confirm and give a complete explanation of what have been done, then summarize the findings
-
-Current working directory: ${process.cwd()}`,
+      content: modelIdentity + promptContent + workingDir,
     };
 
     // ✅ PURGE ALL old system messages (critical when switching models)
@@ -1258,18 +1133,29 @@ Current working directory: ${process.cwd()}`,
     //   1. "bashbashbashbashbashbashbashview_file" (repetition + tool)
     //   2. "bashview_file" (2 tools concatenated)
     //   3. "bashedit_file" (2 tools concatenated)
-    // Valid tools: bash, view_file, edit_file, search, etc.
+    // Valid tools from tools.ts + internal tools
     const validTools = [
-      'bash', 'view_file', 'edit_file', 'morph_edit', 'search',
-      'apply_patch', 'todo_write', 'confirmation', 'session_switch',
-      'session_new', 'session_rewind', 'timeline_query', 'rewind_to',
-      'list_time_points'
+      // File operations
+      'view_file', 'create_file', 'str_replace_editor', 'edit_file', 'apply_patch',
+      // System operations
+      'bash', 'search',
+      // Task management
+      'create_todo_list', 'update_todo_list',
+      // Session management
+      'session_list', 'session_switch', 'session_new', 'session_rewind',
+      // Timeline/rewind
+      'timeline_query', 'rewind_to', 'list_time_points',
+      // Identity
+      'get_my_identity'
     ];
 
     let cleanToolName = toolCall.function.name;
 
     // First check: is it a valid tool as-is?
-    if (!validTools.includes(cleanToolName)) {
+    // MCP tools have format: mcp__servername__toolname
+    const isMCPTool = cleanToolName.startsWith('mcp__');
+
+    if (!isMCPTool && !validTools.includes(cleanToolName)) {
       // Check if it's a concatenation of valid tools
       // Pattern: starts with any valid tool name
       const toolsPattern = validTools.join('|');
@@ -2105,9 +1991,9 @@ Current working directory: ${process.cwd()}`,
     // Update token counter
     this.tokenCounter.dispose();
     this.tokenCounter = createTokenCounter(model);
-    
+
     // Update system message with new model name
-    this.updateSystemMessage();
+    await this.updateSystemMessage();
     debugLog.log(`✅ System message updated for model=${model}`);
     
     // Inject hard reset message to prevent identity confusion

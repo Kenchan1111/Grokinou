@@ -32,12 +32,16 @@ const DEFAULT_PROVIDERS: Record<string, Omit<ProviderConfig, 'name' | 'apiKey'>>
   grok: {
     baseURL: 'https://api.x.ai/v1',
     models: [
-      'grok-4-latest',
-      'grok-code-fast-1',
-      'grok-3-latest',
-      'grok-3-fast',
-      'grok-3-mini-fast',
-      'grok2-vision-beta',
+      // Grok 4 (Latest)
+      'grok-4-latest',      // Returns: grok-4-0709
+      'grok-code-fast-1',   // Fast coding model
+      // Grok 3
+      'grok-3-latest',      // Returns: grok-3
+      'grok-3-fast',        // Returns: grok-3
+      'grok-3-mini-fast',   // Returns: grok-3-mini
+      // Grok 2
+      'grok-2-latest',      // Returns: grok-2-1212
+      'grok-2-1212',        // Specific version
     ],
   },
   claude: {

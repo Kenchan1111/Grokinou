@@ -51,6 +51,9 @@ logs/
 !QUICK_START.md
 !HELP.md
 !TESTING_QUICK.md
+!FORENSIC_TIMELINE_EVIDENCE.md
+!PROMPT_ANALYSIS.md
+!src/prompts/*.md
 
 # Runtime data
 pids/

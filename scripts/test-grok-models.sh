@@ -13,9 +13,22 @@ NC='\033[0m' # No Color
 
 # Vérifier la clé API
 if [ -z "$XAI_API_KEY" ]; then
-    echo -e "${RED}❌ XAI_API_KEY non définie${NC}"
-    echo "Définissez-la avec: export XAI_API_KEY=your-key"
-    exit 1
+    # Essayer de charger depuis ~/.grok/user-settings.json
+    if [ -f "$HOME/.grok/user-settings.json" ] && command -v jq &> /dev/null; then
+        XAI_API_KEY=$(jq -r '.apiKeys.grok // empty' "$HOME/.grok/user-settings.json" 2>/dev/null)
+        if [ -n "$XAI_API_KEY" ] && [ "$XAI_API_KEY" != "null" ]; then
+            echo -e "${GREEN}✓ API key loaded from ~/.grok/user-settings.json${NC}"
+        else
+            echo -e "${RED}❌ XAI_API_KEY non définie${NC}"
+            echo "Définissez-la avec: export XAI_API_KEY=your-key"
+            echo "Ou ajoutez-la dans ~/.grok/user-settings.json"
+            exit 1
+        fi
+    else
+        echo -e "${RED}❌ XAI_API_KEY non définie${NC}"
+        echo "Définissez-la avec: export XAI_API_KEY=your-key"
+        exit 1
+    fi
 fi
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
