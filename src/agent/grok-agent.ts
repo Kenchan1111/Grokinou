@@ -284,7 +284,22 @@ export class GrokAgent extends EventEmitter {
           }
           this.messages.push(message);
         } else if (entry.type === "tool_result" && entry.toolCall) {
-          // ✅ For Mistral: include "name" field (required by their API)
+          // ✅ STRICT VALIDATION: Tool message MUST have assistant with tool_calls immediately before
+          // This prevents loading corrupted data from database
+          const lastMessage = this.messages[this.messages.length - 1];
+
+          if (!lastMessage ||
+              lastMessage.role !== 'assistant' ||
+              !(lastMessage as any).tool_calls ||
+              (lastMessage as any).tool_calls.length === 0) {
+            // ❌ Orphaned tool message - skip it to prevent API errors
+            console.warn(`⚠️  [Restore] Skipping orphaned tool message (tool_call_id: ${entry.toolCall.id})`);
+            console.warn(`   Last message was: ${lastMessage ? lastMessage.role : 'none'}`);
+            continue; // Skip this tool message
+          }
+
+          // ✅ Valid: previous message is assistant with tool_calls
+          // For Mistral: include "name" field (required by their API)
           const toolMessage: any = {
             role: "tool",
             content: entry.content,

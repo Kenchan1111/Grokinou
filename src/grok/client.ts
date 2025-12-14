@@ -370,20 +370,18 @@ export class GrokClient {
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
         
-        // If it's a tool message, check if previous message has tool_calls
+        // If it's a tool message, check if IMMEDIATELY previous CLEANED message has tool_calls
         if (msg.role === 'tool') {
-          // Find previous non-tool message
-          let prevAssistant: GrokMessage | null = null;
-          for (let j = i - 1; j >= 0; j--) {
-            if (messages[j].role === 'assistant') {
-              prevAssistant = messages[j];
-              break;
-            }
-          }
-          
-          // If tool has valid parent: keep but truncate tool_call_id to 40 chars max
-          // ✅ Check that tool_calls exists AND is non-empty (avoid empty arrays)
-          if (prevAssistant && (prevAssistant as any).tool_calls && (prevAssistant as any).tool_calls.length > 0) {
+          // ✅ STRICT ADJACENCY: Check the LAST cleaned message (not original array)
+          // This prevents orphaned tool messages when assistant messages are filtered out
+          const lastCleaned = cleaned[cleaned.length - 1];
+
+          // ✅ MUST be assistant with non-empty tool_calls (strict validation)
+          if (lastCleaned &&
+              lastCleaned.role === 'assistant' &&
+              (lastCleaned as any).tool_calls &&
+              (lastCleaned as any).tool_calls.length > 0) {
+            // ✅ Valid: keep tool message
             const toolMsg = msg as any;
             // ✅ Truncate tool_call_id to 40 chars (OpenAI API requirement)
             if (toolMsg.tool_call_id && toolMsg.tool_call_id.length > 40) {
@@ -395,8 +393,13 @@ export class GrokClient {
               cleaned.push(msg);
             }
           } else {
-            // Orphaned tool: convert to user to preserve content
-            // Better than losing valuable context!
+            // ❌ Orphaned tool: convert to user to preserve content
+            // This happens when:
+            // - No previous message at all
+            // - Previous message is not assistant
+            // - Previous assistant has no tool_calls
+            // - Previous assistant has empty tool_calls array
+            debugLog.log(`⚠️  Orphaned tool message detected at index ${i}, converting to user message`);
             cleaned.push({
               role: 'user',
               content: `[Tool Result - Previous Context]\n${msg.content}`,
