@@ -797,7 +797,16 @@ export class GrokAgent extends EventEmitter {
             }
           }
         } else if (typeof acc[key] === "string" && typeof value === "string") {
-          (acc[key] as string) += value;
+          // ✅ CRITICAL FIX: Never concatenate IDs (tool_call IDs must be immutable)
+          // This prevents the concatenation attack where streaming deltas concat IDs
+          // Example: "call_ABC" + "call_DEF" = "call_ABCcall_DEF" (WRONG!)
+          if (key === "id") {
+            // ID already set - keep the first one, don't concatenate
+            // First ID wins (immutability principle)
+          } else {
+            // Concatenate other strings (like content, which should accumulate)
+            (acc[key] as string) += value;
+          }
         } else if (Array.isArray(acc[key]) && Array.isArray(value)) {
           const accArray = acc[key] as any[];
           for (let i = 0; i < value.length; i++) {
