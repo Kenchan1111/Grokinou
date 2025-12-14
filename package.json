@@ -15,9 +15,9 @@
     "grokinou": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js",
+    "build": "tsc && mkdir -p dist/prompts && cp -r src/prompts/*.md dist/prompts/ && chmod +x dist/index.js",
     "rebuild": "npm run build && npm link",
-    "build:bun": "bun run tsc && chmod +x dist/index.js",
+    "build:bun": "bun run tsc && mkdir -p dist/prompts && cp -r src/prompts/*.md dist/prompts/ && chmod +x dist/index.js",
     "dev": "bun run src/index.ts",
     "dev:node": "tsx src/index.ts",
     "start": "node dist/index.js",
