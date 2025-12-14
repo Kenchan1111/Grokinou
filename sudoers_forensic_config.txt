@@ -1,0 +1,50 @@
+# Configuration sudoers pour investigation forensique Claude CLI
+# À ajouter avec: sudo visudo -f /etc/sudoers.d/claude-forensic
+# IMPORTANT: Supprimer ce fichier après investigation
+
+# Commandes forensiques sans mot de passe pour user zack
+zack ALL=(ALL) NOPASSWD: /usr/bin/journalctl
+zack ALL=(ALL) NOPASSWD: /usr/bin/dmesg
+zack ALL=(ALL) NOPASSWD: /usr/sbin/ethtool
+zack ALL=(ALL) NOPASSWD: /usr/bin/ss
+zack ALL=(ALL) NOPASSWD: /usr/bin/netstat
+zack ALL=(ALL) NOPASSWD: /usr/sbin/arp
+zack ALL=(ALL) NOPASSWD: /usr/sbin/ip
+zack ALL=(ALL) NOPASSWD: /usr/bin/tcpdump
+zack ALL=(ALL) NOPASSWD: /usr/sbin/iwconfig
+zack ALL=(ALL) NOPASSWD: /usr/sbin/ifconfig
+zack ALL=(ALL) NOPASSWD: /usr/bin/cat /var/log/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/ntopng/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/cat /proc/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/cat /sys/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/ls /var/log/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/ls /etc/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *
+zack ALL=(ALL) NOPASSWD: /usr/bin/systemctl list-unit-files
+zack ALL=(ALL) NOPASSWD: /usr/bin/systemctl show *
+zack ALL=(ALL) NOPASSWD: /usr/bin/last
+zack ALL=(ALL) NOPASSWD: /usr/bin/lastlog
+zack ALL=(ALL) NOPASSWD: /usr/bin/who
+zack ALL=(ALL) NOPASSWD: /usr/bin/w
+zack ALL=(ALL) NOPASSWD: /usr/bin/vnstat
+zack ALL=(ALL) NOPASSWD: /usr/bin/rkhunter
+zack ALL=(ALL) NOPASSWD: /usr/sbin/chkrootkit
+zack ALL=(ALL) NOPASSWD: /usr/bin/find /var/log/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/find /etc/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/grep * /var/log/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/tail /var/log/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/head /var/log/*
+zack ALL=(ALL) NOPASSWD: /usr/bin/dpkg -l
+zack ALL=(ALL) NOPASSWD: /usr/bin/apt-cache policy *
+zack ALL=(ALL) NOPASSWD: /usr/bin/lsof
+zack ALL=(ALL) NOPASSWD: /usr/bin/ps aux
+zack ALL=(ALL) NOPASSWD: /usr/sbin/iptables -L *
+zack ALL=(ALL) NOPASSWD: /usr/sbin/iptables -S *
+zack ALL=(ALL) NOPASSWD: /usr/bin/ausearch
+zack ALL=(ALL) NOPASSWD: /usr/sbin/aureport
+
+# Wildcards pour flexibilité
+zack ALL=(ALL) NOPASSWD: /bin/cat
+zack ALL=(ALL) NOPASSWD: /bin/ls
+zack ALL=(ALL) NOPASSWD: /bin/grep
+zack ALL=(ALL) NOPASSWD: /usr/bin/find
