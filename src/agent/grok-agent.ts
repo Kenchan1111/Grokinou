@@ -27,6 +27,7 @@ import {
 } from "../utils/session-manager-sqlite.js";
 import { providerManager } from "../utils/provider-manager.js";
 import { debugLog } from "../utils/debug-logger.js";
+import { cleanToolCalls } from "../utils/tool-call-cleaner.js";
 import { getLLMHook } from "../timeline/hooks/llm-hook.js";
 import { getToolHook } from "../timeline/hooks/tool-hook.js";
 import { executionManager, ExecutionStream } from "../execution/index.js";
@@ -522,6 +523,36 @@ export class GrokAgent extends EventEmitter {
   }
 
   async processUserMessage(message: string): Promise<ChatEntry[]> {
+    // ✅ FIX: Check if there are pending tool_calls from previous assistant message
+    // If user sends a new message before tools finish, we need to add dummy tool results
+    // to prevent API 400 error: "tool_calls must be followed by tool messages"
+    const lastMessage = this.messages[this.messages.length - 1];
+    if (lastMessage &&
+        lastMessage.role === 'assistant' &&
+        (lastMessage as any).tool_calls &&
+        (lastMessage as any).tool_calls.length > 0) {
+      console.warn(`⚠️  User interrupted ${(lastMessage as any).tool_calls.length} pending tool call(s)`);
+      console.warn(`   Adding cancelled tool results to prevent API error`);
+
+      // Add a tool result for each pending tool_call
+      for (const toolCall of (lastMessage as any).tool_calls) {
+        const cancelledToolMessage: any = {
+          role: "tool",
+          content: "[Tool execution cancelled - user sent new message]",
+          tool_call_id: toolCall.id,
+        };
+
+        // Add "name" field for Mistral compatibility
+        const currentProvider = providerManager.detectProvider(this.grokClient.getCurrentModel());
+        if (currentProvider === 'mistral') {
+          cancelledToolMessage.name = toolCall.function?.name || 'unknown';
+        }
+
+        this.messages.push(cancelledToolMessage);
+        console.warn(`   ✅ Added cancelled result for tool_call: ${toolCall.id.substring(0, 20)}...`);
+      }
+    }
+
     // Add user message to conversation
     const userEntry: ChatEntry = {
       type: "user",
@@ -797,12 +828,15 @@ export class GrokAgent extends EventEmitter {
             }
           }
         } else if (typeof acc[key] === "string" && typeof value === "string") {
-          // ✅ CRITICAL FIX: Never concatenate IDs (tool_call IDs must be immutable)
-          // This prevents the concatenation attack where streaming deltas concat IDs
-          // Example: "call_ABC" + "call_DEF" = "call_ABCcall_DEF" (WRONG!)
-          if (key === "id") {
-            // ID already set - keep the first one, don't concatenate
-            // First ID wins (immutability principle)
+          // ✅ CRITICAL FIX: Never concatenate immutable fields
+          // This prevents the concatenation attack where streaming deltas concat fields
+          // Examples:
+          // - "call_ABC" + "call_DEF" = "call_ABCcall_DEF" (WRONG!)
+          // - "function" + "function" = "functionfunction" (WRONG!)
+          // - "view_file" + "bash" = "view_filebash" (WRONG!)
+          if (key === "id" || key === "type" || key === "name") {
+            // These fields are immutable - keep the first value, don't concatenate
+            // First value wins (immutability principle)
           } else {
             // Concatenate other strings (like content, which should accumulate)
             (acc[key] as string) += value;
@@ -966,7 +1000,9 @@ export class GrokAgent extends EventEmitter {
           type: "assistant",
           content: accumulatedMessage.content || "",  // ✅ Empty string instead of placeholder
           timestamp: new Date(),
-          toolCalls: accumulatedMessage.tool_calls || undefined,
+          // ✅ Clean tool_calls before persisting to prevent DB corruption
+          //    (truncate IDs, force type="function", remove index)
+          toolCalls: cleanToolCalls(accumulatedMessage.tool_calls) as any,
         };
         finalAssistantContent = accumulatedMessage.content || "";
         this.chatHistory.push(assistantEntry);
@@ -976,7 +1012,8 @@ export class GrokAgent extends EventEmitter {
         this.messages.push({
           role: "assistant",
           content: accumulatedMessage.content || "",
-          tool_calls: accumulatedMessage.tool_calls,
+          // ✅ Use cleaned tool_calls for consistency
+          tool_calls: assistantEntry.toolCalls,
         } as any);
 
         // Handle tool calls if present
@@ -1485,6 +1522,7 @@ export class GrokAgent extends EventEmitter {
 
           result = await this.search.search(args.query, {
             searchType: args.search_type,
+            searchContext: args.search_context,
             includePattern: args.include_pattern,
             excludePattern: args.exclude_pattern,
             caseSensitive: args.case_sensitive,

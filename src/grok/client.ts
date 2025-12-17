@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat";
 import { debugLog } from "../utils/debug-logger.js";
+import { cleanToolCalls } from "../utils/tool-call-cleaner.js";
 
 export type GrokMessage = ChatCompletionMessageParam;
 
@@ -414,21 +415,18 @@ export class GrokClient {
         // NOTE: Removed .filter() - it was causing regressions during streaming
         //       Version originale (751e5a2) didn't filter, was more robust
         if (msg.role === 'assistant' && (msg as any).tool_calls) {
-          const toolCalls = (msg as any).tool_calls.map((tc: any) => ({
-            // ✅ Truncate tool_call id to 40 chars max (OpenAI API requirement)
-            id: tc.id ? tc.id.substring(0, 40) : tc.id,
-            // ✅ Always use the canonical value "function"
-            //    (prevents corrupted values like "functionfunctionfunction")
-            type: "function",
-            function: tc.function,
-          }));
+          // ✅ Use shared cleanToolCalls utility
+          //    - Truncates IDs to 40 chars (OpenAI API requirement)
+          //    - Forces type to "function" (prevents "functionfunctionfunction")
+          //    - Returns undefined for empty arrays
+          const cleanedToolCalls = cleanToolCalls((msg as any).tool_calls);
 
           // ✅ Only include tool_calls if array is non-empty
           //    Empty arrays cause API error: "tool must be a response to a preceeding message with 'tool_calls'"
-          if (toolCalls.length > 0) {
+          if (cleanedToolCalls) {
             cleaned.push({
               ...msg,
-              tool_calls: toolCalls,
+              tool_calls: cleanedToolCalls,
             });
           } else {
             // Remove tool_calls field if empty

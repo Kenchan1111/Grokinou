@@ -12,7 +12,10 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content }
   const rendered = useMemo(() => {
     try {
       const result = marked.parse(content);
-      return typeof result === 'string' ? result : content;
+      const resultString = typeof result === 'string' ? result : content;
+      // ✅ Reduce spacing: replace double newlines with single newlines
+      //    Makes paragraphs more compact (one blank line instead of two)
+      return resultString.replace(/\n\n+/g, '\n');
     } catch {
       return content;
     }

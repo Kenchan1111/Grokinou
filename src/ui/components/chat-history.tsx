@@ -50,10 +50,10 @@ const MemoizedChatEntry = React.memo(
     switch (entry.type) {
       case "user":
         return (
-          <Box key={index} flexDirection="column">
-            <Box>
-              <Text color="gray" wrap="wrap">
-                {">"} {entry.content}
+          <Box key={index} flexDirection="column" marginBottom={1}>
+            <Box paddingX={1} paddingY={0}>
+              <Text inverse wrap="wrap">
+                {"▸ "}{entry.content}
               </Text>
             </Box>
           </Box>
@@ -68,10 +68,10 @@ const MemoizedChatEntry = React.memo(
         return (
           <Box key={index} flexDirection="column">
             <Box flexDirection="row" alignItems="flex-start">
-              <Text color="white">⏺ </Text>
+              <Text color="white" dimColor>◉ </Text>
               <Box flexDirection="column" flexGrow={1}>
                 <MarkdownRenderer content={entry.content.trim()} />
-                {entry.isStreaming && <Text color="cyan">█</Text>}
+                {entry.isStreaming && <Text color="cyan" dimColor>▊</Text>}
               </Box>
             </Box>
           </Box>
@@ -188,32 +188,32 @@ const MemoizedChatEntry = React.memo(
         return (
           <Box key={index} flexDirection="column" marginTop={1}>
             <Box>
-              <Text color="magenta">⏺</Text>
-              <Text color="white" wrap="wrap">
+              <Text color="magenta" dimColor>●</Text>
+              <Text color="magenta" dimColor wrap="wrap">
                 {" "}
                 {filePath ? `${actionName}(${filePath})` : actionName}
               </Text>
             </Box>
             <Box marginLeft={2} flexDirection="column">
               {isExecuting ? (
-                <Text color="cyan" wrap="wrap">⎿ Executing...</Text>
+                <Text color="cyan" dimColor wrap="wrap">├─ Executing...</Text>
               ) : shouldShowFileContent ? (
                 // Show compact summary by default, full content if GROK_VERBOSE_TOOLS=true
                 verboseToolOutput ? (
                   <Box flexDirection="column">
-                    <Text color="gray" wrap="wrap">⎿ File contents:</Text>
+                    <Text color="blue" dimColor wrap="wrap">├─ File contents:</Text>
                     <Box marginLeft={2} flexDirection="column">
                       {renderFileContent(entry.content)}
                     </Box>
                   </Box>
                 ) : (
-                  <Text color="gray" wrap="wrap">⎿ {createCompactSummary(entry.content, toolName)}</Text>
+                  <Text color="green" dimColor wrap="wrap">└─ {createCompactSummary(entry.content, toolName)}</Text>
                 )
               ) : shouldShowDiff ? (
                 // For diff results, show only the summary line, not the raw content
-                <Text color="gray" wrap="wrap">⎿ {entry.content.split("\n")[0]}</Text>
+                <Text color="green" dimColor wrap="wrap">└─ {entry.content.split("\n")[0]}</Text>
               ) : (
-                <Text color="gray" wrap="wrap">⎿ {createCompactSummary(entry.content, toolName)}</Text>
+                <Text color="green" dimColor wrap="wrap">└─ {createCompactSummary(entry.content, toolName)}</Text>
               )}
             </Box>
             {shouldShowDiff && !isExecuting && (
