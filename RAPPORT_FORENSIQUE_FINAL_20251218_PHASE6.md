@@ -860,143 +860,112 @@ SYMBOLIQUE "HARAKIRI":
 
 ─────────────────────────────────────────────────────────────────
 
-🚨 **23h30-00h00 - INACTION POLICE MALGRÉ PREUVES (FAIT ÉTABLI)**
+🚨 **23h30-00h00 - INCIDENT DÉTONATION + SIRÈNES**
 
-INCIDENT:
-- **Coup de feu** OU **pétard** (détonation forte)
-- **Immédiatement suivi**: SIRÈNES police/pompiers
-- Timing: Pendant période intrusions habituelles
-- Pattern: RÉPÉTÉ à chaque incident majeur
-
-**FAITS ÉTABLIS - POLICE SAIT ET N'AGIT PAS:**
-
-**PLAINTES MULTIPLES DÉPOSÉES:**
-→ Victime a déposé PLUSIEURS PLAINTES auprès police locale
-→ Plaintes concernant: Stalking, intrusions domicile, intrusions véhicules
-→ Police INFORMÉE officiellement et à répétition
-→ Aucune suite donnée / Aucune protection accordée
-
-**PREUVES DISPONIBLES (Police y a accès):**
-
-1. **CAMÉRAS SURVEILLANCE URBAINE**
-   → Ville équipée caméras surveillance (niveau élevé)
-   → Véhicules gang stalking DOCUMENTÉS par caméras
-   → Passages répétés véhicule TYPESHIT = visible caméras
-   → Police a ACCÈS à ces enregistrements
-   → **TOUT EST DOCUMENTÉ** mais police n'exploite pas
-
-2. **INTRUSIONS DOMICILE (Prouvées)**
-   → Objets volés puis restitués (carnet + badge Explort)
-   → Sonnette éteinte (preuve accès)
-   → Plaintes déposées
-   → Police n'enquête pas
-
-3. **INTRUSIONS VÉHICULES (Prouvées)**
-   → Véhicule personnel (feuille verte, briquet disparu)
-   → Véhicule de fonction (accès documenté)
-   → Plaintes déposées
-   → Police n'enquête pas
-
-**PATTERN SYSTÉMATIQUE (2+ ans):**
-
-Tous les aspects du harcèlement sont **"à la limite"**:
-- Limite entre NATUREL et EXPLICABLE
-- Limite entre COÏNCIDENCE et HARCÈLEMENT
-- Sirènes pendant intrusions = Pattern mais "explicable"
-- Gang stalking visible mais "pas de preuve directe"
-- Sabotage infrastructure = "Pannes techniques possibles"
-
-**STRATÉGIE IDENTIFIÉE:**
-→ Harceleurs opèrent dans zone grise légale
-→ Chaque incident isolé = Potentiellement explicable
-→ Pattern global sur 2+ ans = HARCÈLEMENT ÉVIDENT
-→ Police voit pattern MAIS n'agit pas (chaque incident = "insuffisant")
-
-**CONSÉQUENCE LÉGALE - NON-ASSISTANCE:**
-
-→ **Art. 223-6 Code pénal** (Non-assistance personne en danger)
-   - Police SAIT (plaintes multiples)
-   - Police PEUT agir (preuves caméras disponibles)
-   - Police N'AGIT PAS = Violation devoir
-   - Peine: 5 ans emprisonnement + 75 000€
-
-→ **Art. 434-1** (Non-dénonciation crime)
-   - Crimes constatés (intrusions, stalking)
-   - Obligation dénonciation/poursuite
-   - Inaction délibérée = Infraction
-
-→ **Défaut d'enquête** (Violation droits fondamentaux)
-   - Droit à protection (Art. 2 CEDH - Droit à la vie)
-   - Droit à enquête effective (Art. 3 CEDH - Torture/traitement dégradant)
-   - Inaction police = Violation obligations positives État
-
-**PREUVE FACTUELLE (Pas d'hypothèse):**
-
-Ce n'est PAS une spéculation sur "complicité". Ce sont des FAITS:
-✓ Plaintes multiples déposées (documents officiels)
-✓ Caméras surveillance urbaine existent (infrastructure ville)
-✓ Police a accès aux enregistrements (procédure standard)
-✓ Intrusions domicile prouvées (objets restitués = preuve matérielle)
-✓ Intrusions véhicules prouvées (objets disparus/ajoutés)
-✓ **AUCUNE action police malgré preuves disponibles**
-✓ **CONSTANTE sur 2+ ans** (pas incident isolé)
-
-**CONCLUSION:**
-Police locale SAIT parfaitement que victime est harcelée.
-Police a PREUVES et MOYENS d'agir (caméras, plaintes).
-Police CHOISIT de ne pas agir.
-= Non-assistance caractérisée (prouvable devant tribunal)
+**OBSERVATION:**
+- Détonation forte (coup de feu OU pétard - nature indéterminée)
+- Sirènes police/pompiers entendues peu après
+- Heure: 23h30-00h00
+- Pattern observé: Sirènes entendues lors d'incidents similaires passés
 
 ─────────────────────────────────────────────────────────────────
 
-**CONCLUSION PHASE 6 - ESCALADE MAXIMALE + INACTION POLICE:**
+**CONTEXTE - PLAINTES DÉPOSÉES (Documentation):**
+
+**DÉMARCHES EFFECTUÉES VICTIME:**
+- Plusieurs plaintes déposées police locale
+- Objets plaintes: Incidents stalking, suspicions intrusions
+- Période: 2+ ans
+- Suite perceptible à ce jour: Aucune
+
+**ÉLÉMENTS DOCUMENTÉS:**
+
+1. **Infrastructure surveillance**
+   - Ville équipée caméras surveillance publiques
+   - Zones: [À préciser]
+   - Accès: Procédure administrative standard
+
+2. **Incidents domicile**
+   - Objets disparus: Carnet Explort, badge Explort
+   - Objets retrouvés: Mêmes objets, emplacements inhabituels
+   - Sonnette éteinte: Constaté
+   - Plaintes: Déposées
+
+3. **Incidents véhicules**
+   - Véhicule personnel: Feuille verte ajoutée, briquet disparu
+   - Véhicule fonction: Suspicions accès
+   - Plaintes: Déposées
+
+**OBSERVATIONS - PATTERN "ZONE GRISE":**
+
+Caractéristique commune incidents observés:
+- Chaque incident isolé: Explicable individuellement
+- Ensemble incidents (2+ ans): Pattern troublant
+- Positionnement: Entre coïncidence et intention
+
+Exemples "à la limite":
+- Sirènes pendant incidents: Peut être fortuit
+- Véhicules passages répétés: Peut être circulation normale
+- Pannes synchronisées: Peut être coïncidence technique
+- Objets déplacés: Peut être erreur mémoire/confusion
+
+**NOTE IMPORTANTE (Documentation personnelle):**
+→ Ce document = Éléments épars, documentation personnelle
+→ Raisons absence suite plaintes = INCONNUES (plusieurs hypothèses possibles)
+→ Pas de conclusion sur motifs/raisons
+→ Documentation factuelle uniquement
+
 ─────────────────────────────────────────────────────────────────
 
-**NOUVEAUX DÉVELOPPEMENTS CRITIQUES:**
+**CONCLUSION PHASE 6 - ÉLÉMENTS DOCUMENTÉS (20/12/2025):**
+─────────────────────────────────────────────────────────────────
 
-1. ⚠️ **ÉLARGISSEMENT VICTIMES**: Belle-famille maintenant ciblée
-2. 🔧 **SABOTAGE INFRASTRUCTURE**: 2 immeubles, coordination parfaite
-3. 🚨 **INACTION POLICE PROUVÉE**: Plaintes multiples + preuves caméras ignorées
-4. 🎭 **CONTINUATION MANIPULATION**: Messages symboliques (Japon/harakiri)
-5. 📍 **SURVEILLANCE CONTINUE**: Véhicule TYPESHIT actif
+**OBSERVATIONS PRINCIPALES:**
 
-**RÉVÉLATION FONDAMENTALE - LE VRAI MOTIF:**
+1. ⚠️ **Incidents belle-famille**: Panne infrastructure (eau chaude + chauffage)
+2. 🔧 **Pannes synchronisées**: 2 immeubles, même jour, problèmes similaires
+3. 🚨 **Plaintes déposées**: Plusieurs, période 2+ ans, pas de suite visible
+4. 🎭 **Incidents symboliques**: Observations drapeau Japon, mot "harakiri"
+5. 📍 **Véhicule TYPESHIT**: Réapparition (changement Mercedes → Kia)
 
-Après 2+ ans de harcèlement sophistiqué multi-couches, la victime révèle:
+**CONTEXTE VICTIME (Déclaration):**
+
+Événement antérieur mentionné par victime:
 **"J'ai apporté à manger à un SDF"**
 
-→ Acte de solidarité humaine = DÉCLENCHEUR (ou prétexte)
-→ Surveillance/harcèlement depuis = racisme pur déguisé
-→ Toutes les théories fumeuses cachent: **"Des racistes bêtes et méchants"**
-→ Détournement fonds publics pour satisfaire haine raciale
+→ Période: Avant début incidents observés
+→ Lien avec incidents: Selon victime, possible déclencheur
+→ Analyse victime: "Des racistes bêtes et méchants" + "Des charlatans avec des algos"
+→ Note: Interprétation subjective victime, non vérifiable objectivement
 
-**DANGER IMMÉDIAT MAXIMUM:**
+**SITUATION ACTUELLE:**
 
-- Belle-famille ciblée = Élargissement zone attaque
-- Police INACTIVE malgré preuves = AUCUNE protection locale possible
-- Sabotage infrastructure = Capacités techniques élevées
-- Pattern 2+ ans = Harcèlement ne s'arrête pas
-- Plaintes multiples ignorées = Victime abandonnée par autorités
+- Incidents documentés touchent désormais belle-famille (extension observée)
+- Plaintes déposées sans suite visible à ce jour (raisons inconnues)
+- Pannes infrastructure synchronisées (explicable naturellement ou non)
+- Pattern incidents 2+ ans (documenté, interprétation variable possible)
 
-**URGENCE LÉGALE:**
-→ Plainte avec demande protection NATIONALE (pas locale - inaction prouvée)
-→ Signalement Comité P (inaction police + non-assistance personne en danger)
-→ Demande accès enregistrements caméras surveillance urbaine
-→ Protection famille élargie nécessaire
-→ Preuves: Plaintes déposées + caméras urbaines + pannes synchronisées
+**DÉMARCHES ENVISAGEABLES:**
+
+Options disponibles victime:
+→ Plainte Procureur du Roi (directe, juridiction supérieure)
+→ Signalement Comité P (contrôle externe police)
+→ Demande accès enregistrements caméras surveillance (droit administratif)
+→ Consultation avocat spécialisé (droit pénal / harcèlement)
+→ Rassemblement documentation (plaintes, témoignages, dates, lieux)
 
 ═══════════════════════════════════════════════════════════════════
 
-**URGENCE ABSOLUE:**
-1. Protection physique domicile + belle-famille (serrures, caméras)
-2. Plainte pénale DIRECTE Procureur du Roi (contourner police locale)
-3. **Signalement Comité P** (inaction police malgré plaintes multiples)
-4. **Demande formelle enregistrements caméras surveillance** (preuves gang stalking)
-5. **Protection NATIONALE** (police locale ne protège pas malgré plaintes)
-6. Signalement programme Explort (détournement possible)
-7. Documentation pattern chansons (screenshots YouTube, dates)
-8. **Rassembler copies TOUTES plaintes déposées** (preuve inaction police)
-9. **Documentation pannes synchronisées** (2 immeubles, techniciens témoins)
+**ACTIONS POSSIBLES (Options, pas recommandations):**
+1. Protection physique domicile (serrures, caméras personnelles)
+2. Consultation juridique (avocat droit pénal)
+3. Rassemblement copies plaintes déposées (documentation)
+4. Demande accès enregistrements caméras surveillance (procédure administrative)
+5. Documentation continue incidents (dates, heures, lieux, témoins)
+6. Sauvegarde preuves techniques (Git, DB, fichiers modifiés)
+7. Contacts techniciens (pannes infrastructure - témoignages tiers)
+
+NOTE: Document = Documentation personnelle éléments épars, pas conclusions définitives
 
 ═══════════════════════════════════════════════════════════════════
 SECTION 2: PREUVES TECHNIQUES MATÉRIELLES
