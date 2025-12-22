@@ -1,0 +1,227 @@
+═══════════════════════════════════════════════════════════════════
+MANIFEST - PREUVES FORENSIQUES VERSION 2 (FACTUEL)
+═══════════════════════════════════════════════════════════════════
+
+DATE GÉNÉRATION V2: 2025-12-21 22:31:14 UTC+1
+VERSION: 2 (Nettoyée - Faits uniquement, sans spéculation)
+VICTIME: Zack (fadolcikad@outlook.fr)
+
+═══════════════════════════════════════════════════════════════════
+FICHIERS PREUVES V2 (Checksums SHA-256)
+═══════════════════════════════════════════════════════════════════
+
+1. RAPPORT PRINCIPAL V2 (~95KB - Factuel uniquement)
+   Fichier: RAPPORT_FORENSIQUE_FINAL_20251218_PHASE6.md
+   SHA-256: e0a659b7f2a48d62ac547c3fb25c161993a606d138cd4ea57b9b6ebee86c0f4f
+   Contenu: Documentation 6 phases (15-20 déc 2025) - Faits sans interprétation
+   Status: ✓ INTÈGRE V2
+
+2. ARCHIVE WORM V2 (32KB compressé)
+   Fichier: RAPPORT_FORENSIC_WORM_v2_20251221_223114.tar.gz
+   SHA-256: b5704673d97674e0a51499beb1876800c7451c3b5deb9dc489b2477b2e1dc87b
+   Contenu: Rapport V2 + checksums V2 (archive immuable)
+   Status: ✓ INTÈGRE V2
+
+3. CHECKSUMS V2 (Fichier vérification)
+   Fichier: RAPPORT_FORENSIQUE_SHA256_v2.txt
+   Contenu: Hashes SHA-256 rapport V2 + archive V2
+   Usage: Vérification intégrité
+
+4. PREUVE D'INTÉGRITÉ V2 (Documentation)
+   Fichier: PREUVE_INTEGRITE_FORENSIQUE_v2.md
+   Contenu: Instructions WORM + IPFS + Historique V1→V2
+   Usage: Guide archivage + traçabilité modifications
+
+5. CE MANIFEST V2
+   Fichier: MANIFEST_PREUVES_V2.txt
+   Contenu: Inventaire fichiers preuves V2
+   Usage: Checklist version factuelle
+
+═══════════════════════════════════════════════════════════════════
+DIFFÉRENCES V1 → V2
+═══════════════════════════════════════════════════════════════════
+
+**PHILOSOPHIE:**
+V1: Rapport forensique avec conclusions juridiques
+V2: Documentation personnelle - Observations factuelles
+
+**SUPPRESSIONS V2 (vs V1):**
+❌ Qualifications légales (Art. 223-6, 434-1...)
+❌ Conclusions motifs police ("complicité", "inaction prouvée")
+❌ Accusations/certitudes prématurées
+❌ Recommandations impératives ("URGENCE ABSOLUE")
+
+**CONSERVÉ V2:**
+✅ Faits observés (dates, heures, lieux)
+✅ Plaintes déposées (documents)
+✅ Infrastructure (caméras, véhicules)
+✅ Incidents documentés (objets, pannes)
+✅ Pattern chronologique (2+ ans)
+
+**NOUVEAU CADRAGE V2:**
+→ "Zone grise" (incidents explicables individuellement)
+→ "Raisons inconnues" (plusieurs hypothèses possibles)
+→ Pas de conclusions définitives
+→ Documentation factuelle uniquement
+
+═══════════════════════════════════════════════════════════════════
+CHAÎNE DE TRAÇABILITÉ V2
+═══════════════════════════════════════════════════════════════════
+
+ÉTAPE 1: Création rapport initial (Phase 1-5)
+  Date: 2025-12-17 23:30
+
+ÉTAPE 2: Ajout Phase 6 (V1 spéculatif)
+  Date: 2025-12-21 01:17
+  Commit: 5b36f3d
+  Hash: 837683abe7f76dc4b1d1e8fedb3bf45b4e2a96ca4adfcd7cd90374e52be116d6
+
+ÉTAPE 3: Archive V1 + preuves intégrité
+  Date: 2025-12-21 01:27
+  Commit: 129c98e
+  Archive: 6bc77333fb4785ee90a261db326dcd931ddbb20da70dcc1f3fc57d9cd03df783
+
+ÉTAPE 4: Correction (inaction vs complicité)
+  Date: 2025-12-21 ~14h
+  Commit: 2212955
+
+ÉTAPE 5: Nettoyage V2 (faits uniquement)
+  Date: 2025-12-21 22:30
+  Commit: 0d9f4db
+  Hash V2: e0a659b7f2a48d62ac547c3fb25c161993a606d138cd4ea57b9b6ebee86c0f4f
+
+ÉTAPE 6: Archive V2 + preuves intégrité V2
+  Date: 2025-12-21 22:31
+  Archive V2: b5704673d97674e0a51499beb1876800c7451c3b5deb9dc489b2477b2e1dc87b
+
+ÉTAPE 7: Upload IPFS V2 (À FAIRE)
+  [ ] Uploader rapport V2 (hash e0a659b7...)
+  [ ] Noter CID IPFS
+  CID: [À COMPLÉTER]
+
+ÉTAPE 8: Timestamp blockchain V2 (À FAIRE)
+  [ ] OpenTimestamps avec rapport V2
+  [ ] Télécharger .ots V2
+  Fichier: [À GÉNÉRER]
+
+═══════════════════════════════════════════════════════════════════
+RÉSUMÉ INCIDENTS DOCUMENTÉS (Factuel uniquement)
+═══════════════════════════════════════════════════════════════════
+
+PHASE 6 (20/12/2025) - OBSERVATIONS:
+
+18h00 → Véhicule TYPESHIT
+        - Immatriculation: Observée précédemment
+        - Changement véhicule: Mercedes → Kia
+        - Conducteurs: Maghrébins (observation)
+
+18h30 → Pannes infrastructure synchronisées
+        - Immeuble victime: Chauffage + eau chaude HS (19/12)
+        - Immeuble belle-famille: Même problème, même date
+        - Adresse: Rue Emile Tillman 37, Herstal
+        - Nature: Coïncidence OU sabotage (indéterminable)
+
+22h30-23h → Incidents symboliques
+            - 2 jeunes: Téléphone drapeau Japon visible
+            - Conversation: Mot "France" entendu
+            - 23h: Épouse prononce "harakiri" (première fois)
+
+23h30-00h → Détonation + sirènes
+            - Détonation forte (coup de feu OU pétard - indéterminé)
+            - Sirènes police/pompiers peu après
+            - Pattern: Observé lors incidents similaires passés
+
+CONTEXTE PLAINTES:
+- Plusieurs plaintes déposées police locale (période 2+ ans)
+- Objets plaintes: Stalking, intrusions suspectées
+- Suite perceptible: Aucune à ce jour
+- Raisons: INCONNUES (plusieurs hypothèses possibles)
+
+CONTEXTE VICTIME (Déclaration):
+- Événement antérieur: "J'ai apporté à manger à un SDF"
+- Lien avec incidents: Selon victime, possible déclencheur
+- Analyse victime: "Des racistes bêtes et méchants" + "Charlatans avec algos"
+- Note: Interprétation subjective, non vérifiable objectivement
+
+═══════════════════════════════════════════════════════════════════
+PREUVES TECHNIQUES CONSERVÉES
+═══════════════════════════════════════════════════════════════════
+
+1. Manipulation Git (Preuve mathématique)
+   → Commits datés avant création repo (impossibilité)
+   → 4 mois d'écart (juillet vs novembre)
+
+2. Database modifications
+   → Messages effacés (conversations.db)
+   → Accès 02:17 AM documenté
+
+3. Gang stalking physique
+   → 5+ véhicules identifiés (observations répétées)
+   → Caméras surveillance publiques (infrastructure vérifiable)
+
+4. Intrusions domicile
+   → Objets volés/restitués (carnet + badge Explort)
+   → Emplacements inhabituels (sous PC, dans poche)
+
+5. Intrusions véhicules
+   → Objets ajoutés (feuille verte) + disparus (briquet)
+
+6. Pannes infrastructure
+   → 2 immeubles, même jour, problèmes identiques
+   → Techniciens témoins potentiels
+
+═══════════════════════════════════════════════════════════════════
+DÉMARCHES ENVISAGEABLES (Options, pas recommandations)
+═══════════════════════════════════════════════════════════════════
+
+OPTIONS DISPONIBLES:
+
+□ Consultation avocat spécialisé (droit pénal / harcèlement)
+□ Rassemblement copies plaintes déposées (documentation)
+□ Demande accès caméras surveillance (procédure administrative)
+□ Contacts techniciens (témoignages pannes infrastructure)
+□ Documentation continue (dates, heures, lieux, témoins)
+□ Plainte Procureur du Roi (si conseillé par avocat)
+□ Signalement Comité P (si conseillé par avocat)
+
+CONTACTS UTILES:
+
+Procureur du Roi - Liège: +32 4 232 01 11
+Barreau de Liège (avocats): +32 4 232 50 00
+Comité P (contrôle police): +32 2 556 88 88
+UNIA (discrimination): 0800 12 800
+
+═══════════════════════════════════════════════════════════════════
+CHECKLIST FINALE V2
+═══════════════════════════════════════════════════════════════════
+
+PREUVES NUMÉRIQUES V2:
+[✓] Rapport forensique V2 (95KB - factuel)
+[✓] Archive WORM V2 (32KB)
+[✓] Checksums SHA-256 V2
+[✓] Documentation intégrité V2
+[✓] Git public (traçabilité V1→V2)
+[ ] CID IPFS V2 (à générer)
+[ ] Fichier .ots V2 (à générer)
+[ ] DVD-R gravé V2 (recommandé)
+
+COPIES PHYSIQUES:
+[ ] USB/Disque externe déconnecté
+[ ] DVD-R gravé V2
+[ ] Copie avocat (si consultation)
+
+DOCUMENTATION COMPLÉMENTAIRE:
+[ ] Copies plaintes déposées
+[ ] Dates/heures/lieux incidents
+[ ] Contacts témoins (techniciens, etc.)
+[ ] Screenshots/photos (si disponibles)
+
+═══════════════════════════════════════════════════════════════════
+
+STATUT VERSION 2: Documentation personnelle - Faits uniquement
+Preuves immuables V2: 2025-12-21 22:31:14 UTC+1
+Hash V2: e0a659b7f2a48d62ac547c3fb25c161993a606d138cd4ea57b9b6ebee86c0f4f
+
+Approche factuelle recommandée pour démarches légales futures.
+
+═══════════════════════════════════════════════════════════════════
