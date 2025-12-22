@@ -956,6 +956,129 @@ Options disponibles victime:
 
 ═══════════════════════════════════════════════════════════════════
 
+**PHASE 7: INCIDENTS MULTIPLES (22/12/2025)**
+─────────────────────────────────────────────────────────────────
+
+🚗 **INCIDENT 1 - VOL CARTE CARBURANT (Véhicule personnel)**
+
+**CONTEXTE:**
+- Objet disparu: Carte carburant (voiture de fonction)
+- Dernière localisation connue: Poche victime (après avoir mis carburant)
+- Constatation disparition: Voiture personnelle
+
+**OBSERVATION SÉLECTIVITÉ:**
+- Éléments présents véhicule: Souliers (valeur, non dérobés)
+- Élément disparu: UNIQUEMENT carte carburant
+- Nature: Vol ciblé objet spécifique (pas vol opportuniste général)
+
+─────────────────────────────────────────────────────────────────
+
+🏠 **INCIDENT 2 - INTRUSION DOMICILE (22/12)**
+
+**ÉLÉMENTS CONSTATÉS:**
+
+1. **Fil souris informatique**
+   - Emplacement constaté: Dans tasse à café
+   - Emplacement habituel: Bureau/ordinateur
+   - Nature: Déplacement volontaire objet
+
+2. **Caleçon bleu**
+   - Constatation: Jeté à terre chambre
+   - Contexte: Rangement habituel ailleurs
+   - Nature: Déplacement vêtement
+
+**PATTERN:**
+→ Objets déplacés (pas volés)
+→ Emplacements visibles/inhabituels
+→ Similaire incidents précédents (carnet sous PC, badge poche)
+→ Message: "On était là" (démonstration accès)
+
+─────────────────────────────────────────────────────────────────
+
+🚙 **INCIDENT 3 - CIRCULATION VÉHICULES (Trajet Liège, 22/12)**
+
+**SÉQUENCE 1 - EN QUITTANT LIÈGE:**
+
+Observation:
+- **2 voitures** immatriculées **France**
+- Comportement: Suivaient, puis doublé ostensiblement
+- Nature: Manœuvre visible
+
+**SÉQUENCE 2 - À L'ENTRÉE LIÈGE:**
+
+Véhicules observés (immatriculations France):
+
+1. **Ford Escort**
+   - Immatriculation: France
+
+2. **BMW type Z3** (décapotable)
+   - Modèle estimé: 2018-2019
+   - Conducteur: Individu type européen
+   - Immatriculation: France
+
+**SÉQUENCE 3 - SUR LE CHEMIN:**
+
+Véhicule 1:
+- **Petite Fiat** (Pays-Bas)
+- Occupants: 2 personnes type européen
+- Geste observé: Signe comme pour indiquer "police"
+
+Véhicule 2:
+- **Ford Escort OU Opel Corsa** (dernier modèle)
+- Conducteur: Monsieur
+- Geste observé: **Mime tir avec pistolet** (explicite)
+
+**TOTAL VÉHICULES OBSERVÉS: 6**
+- Immatriculation France: 4 véhicules
+- Immatriculation Pays-Bas: 1 véhicule
+- Non précisée: 1 véhicule
+
+─────────────────────────────────────────────────────────────────
+
+**ANALYSE VICTIME (Hypothèse):**
+
+**Sur immatriculations françaises:**
+Selon victime, plaques françaises probablement PAS authentiques:
+→ "Gens bien d'ici" (locaux, pas français réels)
+→ Motifs: Inconnus de victime
+→ But présumé: "Faire passer victime pour une chose" (false flag)
+→ Méthode: "Mensonges" + "Simagrées"
+→ Qualification victime: "James Bond de pacotille" (théâtralisation)
+
+**Interprétation victime:**
+→ Mise en scène avec fausses plaques étrangères
+→ Créer apparence "international" pour discrédit victime
+→ Acteurs locaux déguisés en étrangers
+→ Pattern déjà observé: Maghrébins véhicule TYPESHIT (possiblement acteurs)
+
+**NOTE MÉTHODOLOGIQUE:**
+- Hypothèse ci-dessus = Interprétation victime, non vérifiée
+- Fait observable = Plaques France constatées visuellement
+- Authenticité plaques = Non vérifiable sans contrôle police
+- Pattern "théâtralisation" = Cohérent avec incidents précédents (chansons, symboles)
+
+─────────────────────────────────────────────────────────────────
+
+**SYNTHÈSE PHASE 7 (22/12/2025):**
+
+**CONCOMITANCE TEMPORELLE:**
+→ Vol ciblé (carte carburant) - Même jour
+→ Intrusion domicile (objets déplacés) - Même jour
+→ Circulation multiple véhicules (6 total, gestes) - Même jour
+→ Concentration incidents = 22/12/2025
+
+**PATTERN "ZONE GRISE" MAINTENU:**
+- Vol carte: Peut être vol simple OU vol ciblé
+- Objets déplacés: Peut être oubli victime OU intrusion
+- Véhicules: Peut être coïncidence circulation OU surveillance
+- Gestes: Observés factuellement, intention indéterminable
+
+**ANALYSE VICTIME:**
+"Intimidation et menace" + "Harcèlement, racisme, jalousie"
+Note: Interprétation subjective, plusieurs lectures possibles
+
+═══════════════════════════════════════════════════════════════════
+
 **ACTIONS POSSIBLES (Options, pas recommandations):**
 1. Protection physique domicile (serrures, caméras personnelles)
 2. Consultation juridique (avocat droit pénal)
