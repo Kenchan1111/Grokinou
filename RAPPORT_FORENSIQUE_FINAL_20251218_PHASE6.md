@@ -1077,6 +1077,77 @@ Selon victime, plaques françaises probablement PAS authentiques:
 "Intimidation et menace" + "Harcèlement, racisme, jalousie"
 Note: Interprétation subjective, plusieurs lectures possibles
 
+─────────────────────────────────────────────────────────────────
+
+📱 **OBSERVATION COMPLÉMENTAIRE - SURVEILLANCE CROISÉE (Pattern continu)**
+
+**CONSTATATION PLAYLIST YOUTUBE (Téléphone):**
+
+Observation victime:
+→ Playlist YouTube sur **téléphone** réagit à activités **ordinateur**
+→ Réactivité: **Quasi-instantanée**
+→ Caractère: **Intrusif**
+
+**DEUX TYPES SURVEILLANCE OBSERVÉS:**
+
+1. **Audio (téléphone écoute paroles) - NORMAL/CONNU**
+   → Microphone téléphone capte conversations
+   → Recommandations YouTube basées sur mots prononcés
+   → Technologie connue/documentée (assistants vocaux, pub ciblée)
+   → Explication: Surveillance commerciale standard
+
+2. **Activité ordinateur (frappe clavier) - ÉTRANGE**
+   → Playlist YouTube téléphone réagit à ce qui est **TAPÉ sur ordinateur**
+   → Pas seulement ce qui est DIT, mais ce qui est ÉCRIT
+   → Synchronisation croisée ordinateur→téléphone
+   → **"Extrêmement étrange"** selon victime
+
+**INTERROGATIONS TECHNIQUES:**
+
+Comment playlist téléphone connaît frappe clavier ordinateur?
+
+Hypothèses possibles:
+a) **Compte Google synchronisé** (ordinateur + téléphone)
+   → Historique recherches partagé
+   → Tracking cross-device légitime
+   → Explication technique standard
+
+b) **Surveillance réseau local**
+   → Monitoring WiFi domestique
+   → Capture trafic ordinateur
+   → Corrélation avec téléphone
+   → Nécessite accès réseau
+
+c) **Malware ordinateur + téléphone**
+   → Keylogger sur PC
+   → Communication vers serveur
+   → Injection recommandations YouTube
+   → Nécessite compromission 2 appareils
+
+d) **Coïncidence + biais confirmation**
+   → Recherches similaires naturelles
+   → Algorithme YouTube prédictif
+   → Victime remarque coïncidences, oublie non-coïncidences
+   → Explication psychologique
+
+**NOTE MÉTHODOLOGIQUE:**
+- Observation = Subjective (perception victime)
+- Causalité = Non établie (corrélation ≠ causation)
+- Test scientifique requis: Documentation précise (heure frappe PC, heure apparition YouTube, contenu exact)
+- Plusieurs explications possibles (légitime à malveillant)
+
+**CONTEXTE PATTERN 2+ ANS:**
+→ Observation s'inscrit dans pattern plus large
+→ Chansons thématiques YouTube (depuis 2023)
+→ Corrélations multiples observées (victime→événements)
+→ Possiblement: Surveillance + Algorithme OU Biais perceptif
+
+**PRÉCISION QUANTITÉ VÉHICULES (Phase 7):**
+Correction victime: **"Au moins 6 véhicules, voir plus"**
+→ 6 = Minimum documenté avec certitude
+→ Possiblement d'autres véhicules non notés/reconnus
+→ Surveillance potentiellement plus extensive que documenté
+
 ═══════════════════════════════════════════════════════════════════
 
 **ACTIONS POSSIBLES (Options, pas recommandations):**
