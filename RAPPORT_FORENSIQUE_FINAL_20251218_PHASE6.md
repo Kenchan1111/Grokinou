@@ -1148,6 +1148,105 @@ Correction victime: **"Au moins 6 véhicules, voir plus"**
 → Possiblement d'autres véhicules non notés/reconnus
 → Surveillance potentiellement plus extensive que documenté
 
+─────────────────────────────────────────────────────────────────
+
+🔫 **INCIDENT 4 - COUP DE FEU NOCTURNE (Réveil brutal, 22-23/12)**
+
+**FAITS OBSERVÉS:**
+
+Heure: Nuit 22/12→23/12 (heure exacte: pendant sommeil victime)
+Nature: **Coup de feu** entendu
+Intensité: **Assez fort pour réveiller** victime endormie
+Perception: **Distincte** (son clair, identifiable)
+Localisation: Proximité domicile (audible depuis chambre)
+
+**CONTEXTE TEMPOREL:**
+→ Même période que Phase 7 (incidents 22/12)
+→ Pattern sirènes/détonations observé précédemment (Phase 6: 20/12 23h30)
+→ Répétition pattern "détonation nocturne"
+
+**IMPACT VICTIME:**
+→ Réveil brutal sommeil
+→ Perturbation repos
+→ Stress/anxiété environnement
+
+─────────────────────────────────────────────────────────────────
+
+**CONTEXTE ACCUSATIONS - DÉCLARATION VICTIME (Pattern 2+ ans):**
+
+Selon victime, **multiples accusations infondées** portées contre elle au fil du temps:
+
+**ACCUSATIONS DOCUMENTÉES PAR VICTIME:**
+
+1. **Pédophilie**
+   → Accusation: Selon victime, fausse accusation portée
+   → Preuves présentées: Aucune (selon victime)
+   → Statut: Non vérifiée/infondée (selon victime)
+
+2. **Espionnage**
+   → Accusation: Agent étranger (pays non précisé)
+   → Contexte: Opinions Ukraine/Palestine mentionnées
+   → Statut: Non fondée (selon victime)
+
+3. **Sabotage travail PC**
+   → Fait documenté: Modifications Git, DB, code source (Phases 1-3)
+   → Interprétation victime: Tentative sabotage professionnel
+   → But présumé: Créer "preuves" contre victime
+
+4. **Ésotérisme** (Nouveau - en cours)
+   → Accusation présumée: Pratiques ésotériques
+   → Éléments utilisés: Incidents symboliques (Japon/harakiri, chansons thématiques)
+   → Analyse victime: **"Forger des motifs d'accusation"**
+   → Pattern: Créer faux narrative pour discrédit
+
+**ANALYSE VICTIME - STRATÉGIE GLOBALE:**
+
+Selon victime, pattern clair sur 2+ ans:
+→ **Accusations successives changeantes** (pédophilie → espionnage → ésotérisme)
+→ **Aucune preuve** fournie pour accusations
+→ **But**: Créer narratives multiples pour discrédit/justification harcèlement
+→ **Méthode**: False flags + théâtralisation + sabotage pour "créer preuves"
+
+**Citation victime:**
+> "Ces gens après m'avoir accusé de pédophilie, d'espionnage pour je ne sais
+> quel pays et après avoir essayé de saboter mon travail sur mon PC sont à
+> présent en train de forger des motifs d'accusation probablement lié à de
+> l'ésotérisme."
+
+**MOTIVATION SELON VICTIME:**
+> "C'est du racisme et de la haine pure"
+
+**CONCLUSION VICTIME:**
+> "Il faut que ces gens aillent en prison pour ce qu'ils font"
+
+─────────────────────────────────────────────────────────────────
+
+**NOTE MÉTHODOLOGIQUE IMPORTANTE:**
+
+**Accusations mentionnées ci-dessus:**
+- Source = Déclarations victime
+- Vérification = Non effectuée (accusations prétendument portées CONTRE victime)
+- Statut = Allégations selon victime (pas confirmées indépendamment)
+- Contexte = Victime affirme être CIBLE d'accusations infondées
+
+**Distinction cruciale:**
+→ Victime N'EST PAS accusée ici de ces actes
+→ Victime DIT ÊTRE accusée faussement par harceleurs
+→ Rapport documente ce que victime dit subir (accusations contre elle)
+→ Pas de jugement sur véracité accusations originelles
+
+**Pattern "accusations tournantes":**
+Si déclarations victime exactes, pattern troublant:
+- Accusations changent selon période (pas cohérence)
+- Multiples narratives contradictoires
+- Aucune poursuite formelle (suggère absence preuves)
+- Pourrait indiquer: Fabrication prétextes a posteriori
+
+**Éléments vérifiables:**
+✓ Sabotage PC: Preuves techniques (Git, DB - documenté Phases 1-3)
+✓ Incidents symboliques: Observés/documentés (chansons, Japon/harakiri)
+✗ Accusations pédophilie/espionnage: Non vérifiables dans ce rapport
+
 ═══════════════════════════════════════════════════════════════════
 
 **ACTIONS POSSIBLES (Options, pas recommandations):**
