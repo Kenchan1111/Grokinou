@@ -23,7 +23,7 @@ import type { ToolCallPayload } from '../event-types.js';
 export interface ToolHookConfig {
   enabled?: boolean;              // Enable/disable hook
   capturePermissions?: boolean;   // Capture permission requests (default: true)
-  maxResultLength?: number;       // Max result length to log (default: 10000)
+  maxResultLength?: number;       // Max result length to log (default: 0 = unlimited)
 }
 
 /**
@@ -42,7 +42,7 @@ export class ToolHook {
     this.config = {
       enabled: config.enabled !== false,
       capturePermissions: config.capturePermissions !== false,
-      maxResultLength: config.maxResultLength || 10000,
+      maxResultLength: config.maxResultLength ?? 0, // 0 = unlimited by default
     };
   }
   
