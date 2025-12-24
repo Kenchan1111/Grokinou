@@ -16,6 +16,8 @@ import { HelpFormatter } from "../utils/help-formatter.js";
 import { imagePathManager } from "../utils/image-path-detector.js";
 import { insertText } from "../utils/text-utils.js";
 import { debugLog } from "../utils/debug-logger.js";
+import { getSettingsManager } from "../utils/settings-manager.js";
+import { getSharedSearchTool } from "../tools/shared-search.js";
 
 /**
  * Parse date from various formats:
@@ -113,6 +115,7 @@ export function useInputHandler({
     const sessionFlags = confirmationService.getSessionFlags();
     return sessionFlags.allOperations;
   });
+  const codeSearchTool = useMemo(() => getSharedSearchTool(), []);
 
   const handleSpecialKey = (key: Key): boolean => {
     // Don't handle input if confirmation dialog is active
@@ -440,7 +443,11 @@ export function useInputHandler({
   const commandSuggestions: CommandSuggestion[] = [
     { command: "/help", description: "Show help information" },
     { command: "/status", description: "Show current model and provider info" },
-    { command: "/search", description: "Search in conversation history" },
+    { command: "/user", description: "Set display name for the user" },
+    { command: "/name", description: "Set display name for the assistant" },
+    { command: "/search-conversation", description: "Search in conversation history" },
+    { command: "/search-code", description: "Search code (rg-based with ranking/cutoff)" },
+    { command: "/search-code-advanced", description: "Advanced code search placeholder (same as search-code for now)" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
     { command: "/switch-session", description: "Switch to a different session by ID" },
     { command: "/rename_session", description: "Rename the current session" },
@@ -468,22 +475,69 @@ export function useInputHandler({
   const handleDirectCommand = async (input: string): Promise<boolean> => {
     const trimmedInput = input.trim();
 
-    // Handle /search command
-    if (trimmedInput.startsWith("/search")) {
+    // Handle conversation search (/search-conversation) and legacy /search
+    if (trimmedInput.startsWith("/search-conversation") || trimmedInput.startsWith("/search")) {
       if (onSearchCommand) {
-        const handled = onSearchCommand(trimmedInput);
+        const handled = onSearchCommand(trimmedInput.replace("/search-conversation", "/search"));
         if (handled) {
           clearInput();
           return true;
         }
       }
-      // If not handled, show error
       const errorEntry: ChatEntry = {
         type: "assistant",
-        content: "❌ Search feature is not available. Usage: /search <query>",
+        content: "❌ Conversation search is not available here. Usage: /search-conversation <query>",
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, errorEntry]);
+      clearInput();
+      return true;
+    }
+
+    // Handle code search (/search-code)
+    if (trimmedInput.startsWith("/search-code")) {
+      const query = trimmedInput.replace("/search-code", "").trim();
+      if (!query) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "Usage: /search-code <query>\nExample: /search-code auth middleware",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      const res = await codeSearchTool.search(query, {});
+      const entry: ChatEntry = {
+        type: "assistant",
+        content: res.success ? res.output || "No results" : `❌ ${res.error}`,
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, entry]);
+      clearInput();
+      return true;
+    }
+
+    // Handle advanced code search (/search-code-advanced)
+    if (trimmedInput.startsWith("/search-code-advanced")) {
+      const query = trimmedInput.replace("/search-code-advanced", "").trim();
+      if (!query) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "Usage: /search-code-advanced <query>\nExample: /search-code-advanced auth middleware",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      const res = await codeSearchTool.searchAdvanced(query, {});
+      const entry: ChatEntry = {
+        type: "assistant",
+        content: res.success ? res.output || "No results" : `❌ ${res.error}`,
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, entry]);
       clearInput();
       return true;
     }
@@ -522,6 +576,73 @@ export function useInputHandler({
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, helpEntry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /name <assistant> - Set display name for the assistant
+    // ============================================
+    if (trimmedInput === "/name") {
+      const infoEntry: ChatEntry = {
+        type: "assistant",
+        content:
+          "Usage: /name <assistant-name>\n\n" +
+          "Sets the display name used in the chat header for assistant responses.\n" +
+          "Example:\n" +
+          "  /name grok\n" +
+          "  /name claude",
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, infoEntry]);
+      clearInput();
+      return true;
+    }
+
+    if (trimmedInput.startsWith("/name ")) {
+      const parts = trimmedInput.split(/\s+/);
+      const nameArg = parts.slice(1).join(" ").trim();
+
+      if (!nameArg) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            "❌ Invalid syntax.\n\n" +
+            "Usage:\n" +
+            "  /name <assistant-name>\n\n" +
+            "Examples:\n" +
+            "  /name grok\n" +
+            "  /name claude",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+
+      try {
+        const settingsManager = getSettingsManager();
+        settingsManager.updateProjectSetting("assistantName", nameArg);
+
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            `✅ Assistant name set to: ${nameArg}\n` +
+            `📝 Saved to: .grok/settings.json`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, confirmEntry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            "❌ Failed to set assistant name: " +
+            (error instanceof Error ? error.message : "Unknown error"),
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
       clearInput();
       return true;
     }
@@ -2187,6 +2308,63 @@ export function useInputHandler({
         setChatHistory((prev) => [...prev, errorEntry]);
       }
       
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /user <name> - Set display name for UI
+    // ============================================
+    if (trimmedInput === "/user") {
+      const infoEntry: ChatEntry = {
+        type: "assistant",
+        content:
+          "Usage: /user <name>\n\n" +
+          "Sets the display name shown beside user messages.\n" +
+          "Example:\n" +
+          "  /user zack\n\n" +
+          "Saved to ~/.grok/user-settings.json",
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, infoEntry]);
+      clearInput();
+      return true;
+    }
+
+    if (trimmedInput.startsWith("/user ")) {
+      const name = trimmedInput.slice(6).trim();
+      if (!name) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "❌ Please provide a name: /user <name>",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+
+      try {
+        const settingsManager = getSettingsManager();
+        settingsManager.updateUserSetting("displayName", name);
+
+        const confirmEntry: ChatEntry = {
+          type: "assistant",
+          content: `✅ User name set to "${name}"\n📝 Saved to ~/.grok/user-settings.json`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, confirmEntry]);
+      } catch (error) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to set user name: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
       clearInput();
       return true;
     }

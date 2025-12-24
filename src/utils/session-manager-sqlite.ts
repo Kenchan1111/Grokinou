@@ -323,6 +323,18 @@ export class SessionManagerSQLite {
   }
 
   /**
+   * Search messages within the current session (simple LIKE match).
+   */
+  searchMessages(query: string, limit: number = 20): ChatEntry[] {
+    if (!this.currentSession) return [];
+    const q = query.trim();
+    if (!q) return [];
+
+    const rows = this.messageRepo.searchByContent(this.currentSession.id, q, limit);
+    return (rows as any[]).reverse().map((msg) => this.messageToEntry(msg));
+  }
+
+  /**
    * Find last session by working directory (for session restoration)
    */
   findLastSessionByWorkdir(workdir: string): Session | null {
@@ -558,6 +570,7 @@ export class SessionManagerSQLite {
       toolCalls: message.tool_calls ? JSON.parse(message.tool_calls) : undefined,
       toolCall: message.tool_call_id ? { id: message.tool_call_id } as any : undefined,
       isStreaming: false,
+      model: message.model, // ✅ Restore model field for assistant messages
     };
   }
 

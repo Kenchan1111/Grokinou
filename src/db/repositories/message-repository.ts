@@ -115,6 +115,20 @@ export class MessageRepository {
   }
 
   /**
+   * Search messages by content (case-insensitive) for a session.
+   */
+  searchByContent(sessionId: number, query: string, limit: number = 20): Message[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM messages
+      WHERE session_id = ?
+        AND LOWER(content) LIKE LOWER(?)
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `);
+    return stmt.all(sessionId, `%${query}%`, limit) as Message[];
+  }
+
+  /**
    * Get messages by provider (for analytics)
    */
   getByProvider(provider: string, limit?: number): Message[] {

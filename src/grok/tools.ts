@@ -126,13 +126,17 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     function: {
       name: "search",
       description:
-        "Unified search tool for finding text content or files (similar to Cursor's search)",
+        "Intelligent code search with context-aware ranking and adaptive cutoff (caches all results to avoid flooding). Searches text content (ripgrep) and/or files. BEST PRACTICES: provide search_context, narrow with file_types/include_pattern, regex for precise patterns. Results are cached and only top matches are shown; you can request more by referencing the search id.",
       parameters: {
         type: "object",
         properties: {
           query: {
             type: "string",
-            description: "Text to search for or file name/path pattern",
+            description: "Text to search for (content) or file name/path pattern (files). Use specific keywords for better results.",
+          },
+          search_context: {
+            type: "string",
+            description: "IMPORTANT: Describe WHAT you're looking for (e.g. 'database connection logic', 'error handling for API calls', 'authentication middleware'). This significantly improves result ranking by boosting contextually relevant matches.",
           },
           search_type: {
             type: "string",
@@ -165,7 +169,7 @@ const BASE_GROK_TOOLS: GrokTool[] = [
           },
           max_results: {
             type: "number",
-            description: "Maximum number of results to return (default: 50)",
+            description: "Optional hard cap for results (not recommended; the tool uses an adaptive cutoff and caching by default).",
           },
           file_types: {
             type: "array",
@@ -176,6 +180,92 @@ const BASE_GROK_TOOLS: GrokTool[] = [
             type: "boolean",
             description: "Whether to include hidden files (default: false)",
           },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_conversation",
+      description:
+        "Search the current conversation history (persisted session) by keyword. Returns matching turns with timestamps.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Keyword or phrase to look for in conversation messages.",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of messages to return (default: 20).",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_more",
+      description:
+        "Fetch additional cached search results by search id. Use this after a search returned a cutoff message.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_id: {
+            type: "number",
+            description: "Search id returned by the previous search invocation.",
+          },
+          limit: {
+            type: "number",
+            description: "How many additional results to show (default: 20).",
+          },
+        },
+        required: ["search_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_advanced",
+      description:
+        "Advanced code search (reserved for future FTS/semantic mode). Currently behaves like search but kept separate to allow evolution without breaking basic search.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Text to search for or file pattern.",
+          },
+          search_context: {
+            type: "string",
+            description: "Context to improve ranking (e.g. 'JWT auth middleware').",
+          },
+          search_type: {
+            type: "string",
+            enum: ["text", "files", "both"],
+            description: "Type of search (default: both).",
+          },
+          include_pattern: { type: "string" },
+          exclude_pattern: { type: "string" },
+          case_sensitive: { type: "boolean" },
+          whole_word: { type: "boolean" },
+          regex: { type: "boolean" },
+          max_results: { type: "number" },
+          file_types: {
+            type: "array",
+            items: { type: "string" },
+          },
+          exclude_files: {
+            type: "array",
+            items: { type: "string" },
+          },
+          include_hidden: { type: "boolean" },
         },
         required: ["query"],
       },

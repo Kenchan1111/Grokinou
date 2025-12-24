@@ -13,8 +13,9 @@ import {
   BashTool,
   TodoTool,
   ConfirmationTool,
-  SearchTool,
 } from "../tools/index.js";
+import type { SearchTool } from "../tools/search.js";
+import { getSharedSearchTool } from "../tools/shared-search.js";
 import { ToolResult } from "../types/index.js";
 import { EventEmitter } from "events";
 import { createTokenCounter, TokenCounter } from "../utils/token-counter.js";
@@ -41,6 +42,7 @@ export interface ChatEntry {
   toolCall?: GrokToolCall;
   toolResult?: { success: boolean; output?: string; error?: string };
   isStreaming?: boolean;
+  model?: string; // LLM model name for assistant messages
 }
 
 export interface StreamingChunk {
@@ -90,7 +92,7 @@ export class GrokAgent extends EventEmitter {
     this.bash = new BashTool();
     this.todoTool = new TodoTool();
     this.confirmationTool = new ConfirmationTool();
-    this.search = new SearchTool();
+    this.search = getSharedSearchTool();
     this.tokenCounter = createTokenCounter(modelToUse);
     // applyPatch tool will be lazily imported on first use
 
@@ -215,6 +217,10 @@ export class GrokAgent extends EventEmitter {
       }
 
       default: {
+        // Identity: keep full text (structured banner)
+        if (toolCall.function.name === "get_my_identity") {
+          return raw;
+        }
         // For errors (including user rejection feedback), show the full message
         // For success, use only first non-empty line to avoid flooding the chat
         if (!result.success) {
@@ -641,6 +647,7 @@ export class GrokAgent extends EventEmitter {
             content: assistantMessage.content || "",  // ✅ Empty string instead of placeholder
             timestamp: new Date(),
             toolCalls: assistantMessage.tool_calls,
+            model: this.grokClient.getCurrentModel(), // Add model info for UI display
           };
           this.chatHistory.push(assistantEntry);
           await this.persist(assistantEntry);
@@ -1003,6 +1010,7 @@ export class GrokAgent extends EventEmitter {
           // ✅ Clean tool_calls before persisting to prevent DB corruption
           //    (truncate IDs, force type="function", remove index)
           toolCalls: cleanToolCalls(accumulatedMessage.tool_calls) as any,
+          model: this.grokClient.getCurrentModel(), // Add model info for UI display
         };
         finalAssistantContent = accumulatedMessage.content || "";
         this.chatHistory.push(assistantEntry);
@@ -1543,6 +1551,62 @@ export class GrokAgent extends EventEmitter {
             executionStream.emitCOT('decision', `❌ Search failed`);
           }
           break;
+        case "search_conversation":
+          executionStream.emitCOT('thinking', `Searching conversation for: "${args.query}"`);
+          result = await this.searchConversationTool(args.query, args.limit ? Number(args.limit) : undefined);
+          if (result.success) {
+            executionStream.emitCOT('observation', `Conversation search returned results`);
+            executionStream.emitCOT('decision', `✅ Conversation search completed`);
+          } else {
+            executionStream.emitCOT('observation', `Conversation search failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Conversation search failed`);
+          }
+          break;
+        case "search_advanced":
+          executionStream.emitCOT('thinking', `Advanced search for: "${args.query}"`);
+          const advTypeInfo = args.search_type ? ` (${args.search_type})` : '';
+          executionStream.emitCOT('action', `Starting advanced search${advTypeInfo}`);
+
+          result = await this.search.searchAdvanced(args.query, {
+            searchType: args.search_type,
+            searchContext: args.search_context,
+            includePattern: args.include_pattern,
+            excludePattern: args.exclude_pattern,
+            caseSensitive: args.case_sensitive,
+            wholeWord: args.whole_word,
+            regex: args.regex,
+            maxResults: args.max_results,
+            fileTypes: args.file_types,
+            excludeFiles: args.exclude_files,
+            includeHidden: args.include_hidden,
+          });
+
+          if (result.success) {
+            const resultCount = result.output?.split('\n').filter(l => l.trim()).length || 0;
+            executionStream.emitCOT('observation', `Found ${resultCount} results (advanced)`);
+            executionStream.emitCOT('decision', `✅ Advanced search completed successfully`);
+          } else {
+            executionStream.emitCOT('observation', `Advanced search failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Advanced search failed`);
+          }
+          break;
+        case "search_more":
+          executionStream.emitCOT('thinking', `Fetching more results for search #${args.search_id}`);
+          executionStream.emitCOT('action', `Continuing cached search`);
+
+          result = await this.search.searchMore(
+            Number(args.search_id),
+            args.limit ? Number(args.limit) : undefined
+          );
+
+          if (result.success) {
+            executionStream.emitCOT('observation', `Fetched additional results for search #${args.search_id}`);
+            executionStream.emitCOT('decision', `✅ search_more completed successfully`);
+          } else {
+            executionStream.emitCOT('observation', `search_more failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ search_more failed`);
+          }
+          break;
         case "apply_patch":
           // 📺 COT: Applying patch
           const isDryRun = !!args.dry_run;
@@ -1909,8 +1973,44 @@ export class GrokAgent extends EventEmitter {
     return [...this.chatHistory];
   }
 
+  /**
+   * Conversation search for tools (simple keyword search in persisted session).
+   */
+  private async searchConversationTool(query: string, limit: number = 20): Promise<ToolResult> {
+    try {
+      const session = sessionManager.getCurrentSession();
+      if (!session) {
+        return { success: false, error: "No active session to search in conversation." };
+      }
+      const entries = sessionManager.searchMessages(query, limit);
+      if (!entries.length) {
+        return { success: true, output: `No conversation messages found for "${query}".` };
+      }
+      const formatted = entries
+        .map((e) => {
+          const ts = this.formatTimestamp(e.timestamp);
+          const role = e.type === "assistant" ? "assistant" : e.type === "user" ? "user" : e.type;
+          const snippet = (e.content || "").trim().slice(0, 300);
+          return `${ts} [${role}] ${snippet}`;
+        })
+        .join("\n");
+      return { success: true, output: formatted };
+    } catch (error: any) {
+      return { success: false, error: `Conversation search error: ${error.message}` };
+    }
+  }
+
   getCurrentDirectory(): string {
     return this.bash.getCurrentDirectory();
+  }
+
+  private formatTimestamp(date: Date): string {
+    const d = new Date(date);
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `[${day}/${month} ${hours}:${minutes}]`;
   }
 
   async executeBashCommand(command: string): Promise<ToolResult> {

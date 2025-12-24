@@ -3,11 +3,92 @@ import { Box, Text } from "ink";
 import { ChatEntry } from "../../agent/grok-agent.js";
 import { DiffRenderer } from "./diff-renderer.js";
 import { MarkdownRenderer } from "../utils/markdown-renderer.js";
+import { providerManager } from "../../utils/provider-manager.js";
+import { getSettingsManager } from "../../utils/settings-manager.js";
+import wrapAnsi from "wrap-ansi";
 
 interface ChatHistoryProps {
   entries: ChatEntry[];
   isConfirmationActive?: boolean;
 }
+
+// Helper: Format timestamp for headers
+const formatTimestamp = (date: Date): string => {
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `[${day}/${month} ${hours}:${minutes}]`;
+};
+
+// Helper: Get abbreviated model name
+const getModelAbbreviation = (modelName?: string): string => {
+  if (!modelName) return "assistant";
+  const lower = modelName.toLowerCase();
+
+  if (lower.includes("grok")) return "grok";
+  if (lower.includes("claude")) return "claude";
+  if (lower.includes("gpt") || lower.includes("chatgpt")) return "chatgpt";
+  if (lower.includes("deepseek")) return "deepseek";
+  if (lower.includes("mistral")) return "mistral";
+  if (lower.includes("gemini")) return "gemini";
+  if (lower.includes("llama")) return "llama";
+
+  return "assistant";
+};
+
+const getAssistantLabel = (entry: ChatEntry): string => {
+  // 1) Explicit override in project settings
+  try {
+    const mgr = getSettingsManager();
+    const override = mgr.getProjectSetting("assistantName");
+    if (override && typeof override === "string" && override.trim()) {
+      return override.trim();
+    }
+
+    // 2) If no model on entry, fallback to project/user defaults to guess provider
+    if (!entry.model) {
+      const projectModel = mgr.getProjectSetting("model");
+      if (projectModel) {
+        const prov = providerManager.detectProvider(projectModel);
+        if (prov) return getModelAbbreviation(projectModel);
+      }
+      const userDefault = mgr.getUserSetting("defaultModel") as string | undefined;
+      if (userDefault) {
+        const prov = providerManager.detectProvider(userDefault);
+        if (prov) return getModelAbbreviation(userDefault);
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const model = entry.model;
+  if (model) {
+    const provider = providerManager.detectProvider(model);
+    if (provider) {
+      return getModelAbbreviation(model);
+    }
+  }
+  return "assistant";
+};
+
+const getUserLabel = (): string => {
+  try {
+    const mgr = getSettingsManager();
+    const userSetting = mgr.getUserSetting("displayName");
+    if (userSetting && typeof userSetting === "string" && userSetting.trim()) {
+      return userSetting.trim();
+    }
+    const projectUser = mgr.getProjectSetting("userName");
+    if (projectUser && typeof projectUser === "string" && projectUser.trim()) {
+      return projectUser.trim();
+    }
+  } catch {
+    // ignore settings errors
+  }
+  return "user";
+};
 
 // Memoized ChatEntry component to prevent unnecessary re-renders
 const MemoizedChatEntry = React.memo(
@@ -17,7 +98,7 @@ const MemoizedChatEntry = React.memo(
         <DiffRenderer
           diffContent={diffContent}
           filename={filename}
-          terminalWidth={80}
+          terminalWidth={process.stdout.columns || 80}
         />
       );
     };
@@ -49,12 +130,37 @@ const MemoizedChatEntry = React.memo(
 
     switch (entry.type) {
       case "user":
+        const userDisplayName = getUserLabel();
+        const userContent = (entry.content || "").trimEnd();
+        const columns = process.stdout.columns || 80;
+        // Reserve 2 cols for border + 2 for padding so the background fills the inner box
+        const innerWidth = Math.max(10, columns - 4);
+        const wrappedUserContent = wrapAnsi(`▸ ${userContent}`, innerWidth, {
+          hard: false,
+          trim: false,
+        });
+        const paddedLines = wrappedUserContent.split("\n").map((line) => line.padEnd(innerWidth, " "));
+
         return (
-          <Box key={index} flexDirection="column" marginBottom={1}>
-            <Box paddingX={1} paddingY={0}>
-              <Text inverse wrap="wrap">
-                {"▸ "}{entry.content}
+          <Box key={index} width="100%" flexDirection="column" marginBottom={1}>
+            <Box width="100%" paddingX={1}>
+              <Text dimColor wrap="wrap">
+                {formatTimestamp(entry.timestamp)} {userDisplayName}
               </Text>
+            </Box>
+            <Box width="100%" paddingX={1} paddingY={0} borderStyle="single" borderColor="gray">
+              <Box width="100%" flexDirection="column">
+                {paddedLines.map((line, idx) => (
+                  <Text
+                    key={idx}
+                    color="white"
+                    backgroundColor="blackBright"
+                    wrap="truncate"
+                  >
+                    {line}
+                  </Text>
+                ))}
+              </Box>
             </Box>
           </Box>
         );
@@ -65,13 +171,22 @@ const MemoizedChatEntry = React.memo(
           return null;
         }
 
+        const modelName = getAssistantLabel(entry);
+
         return (
-          <Box key={index} flexDirection="column">
-            <Box flexDirection="row" alignItems="flex-start">
+          <Box key={index} width="100%" flexDirection="column" marginBottom={1}>
+            {/* Header: timestamp + model abbreviation */}
+            <Box width="100%" paddingX={1}>
+              <Text dimColor wrap="wrap">
+                {formatTimestamp(entry.timestamp)} {modelName}
+              </Text>
+            </Box>
+            {/* Content: markdown with icon */}
+            <Box width="100%" paddingX={1} flexDirection="row" alignItems="flex-start">
               <Text color="white" dimColor>◉ </Text>
               <Box flexDirection="column" flexGrow={1}>
-                <MarkdownRenderer content={entry.content.trim()} />
-                {entry.isStreaming && <Text color="cyan" dimColor>▊</Text>}
+                <MarkdownRenderer content={entry.content.trimEnd()} />
+                {entry.isStreaming && <Text color="cyan" dimColor wrap="wrap">▊</Text>}
               </Box>
             </Box>
           </Box>
@@ -137,11 +252,8 @@ const MemoizedChatEntry = React.memo(
             try {
               // Try to parse as JSON and format it
               const parsed = JSON.parse(content);
-              if (Array.isArray(parsed)) {
-                // For arrays, show a summary instead of full JSON
-                return `Found ${parsed.length} items`;
-              } else if (typeof parsed === 'object') {
-                // For objects, show a formatted version
+              if (Array.isArray(parsed) || typeof parsed === 'object') {
+                // ✅ RESTAURATION: Afficher le JSON complet, pas juste un résumé
                 return JSON.stringify(parsed, null, 2);
               }
             } catch {
@@ -169,6 +281,9 @@ const MemoizedChatEntry = React.memo(
 
         // Create compact summary for file operations
         const createCompactSummary = (content: string, toolName: string) => {
+          if (toolName === "get_my_identity") {
+            return content; // Show full identity block
+          }
           if (toolName === "view_file" || toolName === "create_file") {
             const lines = content.split("\n").length;
             const chars = content.length;
@@ -186,38 +301,58 @@ const MemoizedChatEntry = React.memo(
         };
 
         return (
-          <Box key={index} flexDirection="column" marginTop={1}>
-            <Box>
-              <Text color="magenta" dimColor>●</Text>
-              <Text color="magenta" dimColor wrap="wrap">
-                {" "}
-                {filePath ? `${actionName}(${filePath})` : actionName}
+          <Box key={index} width="100%" flexDirection="column" marginBottom={1}>
+            {/* Header: timestamp + tool name */}
+            <Box width="100%" paddingX={1}>
+              <Text dimColor wrap="wrap">
+                {formatTimestamp(entry.timestamp)} tool
               </Text>
             </Box>
-            <Box marginLeft={2} flexDirection="column">
+            {/* Tool action line - full width */}
+            <Box width="100%" paddingX={1}>
+              <Text color="magenta" dimColor wrap="wrap">
+                {"● "}{filePath ? `${actionName}(${filePath})` : actionName}
+              </Text>
+            </Box>
+            {/* Tool result - indented but full width */}
+            <Box width="100%" paddingX={1} marginLeft={1}>
               {isExecuting ? (
                 <Text color="cyan" dimColor wrap="wrap">├─ Executing...</Text>
+              ) : toolName === "get_my_identity" ? (
+                <Box flexDirection="column" width="100%">
+                  {entry.content.split("\n").map((line, idx) => (
+                    <Text key={idx} color="green" dimColor wrap="wrap">
+                      {idx === 0 ? "└─ " + line : "   " + line}
+                    </Text>
+                  ))}
+                </Box>
               ) : shouldShowFileContent ? (
                 // Show compact summary by default, full content if GROK_VERBOSE_TOOLS=true
                 verboseToolOutput ? (
-                  <Box flexDirection="column">
+                  <Box width="100%" flexDirection="column">
                     <Text color="blue" dimColor wrap="wrap">├─ File contents:</Text>
-                    <Box marginLeft={2} flexDirection="column">
+                    <Box marginLeft={1} flexDirection="column">
                       {renderFileContent(entry.content)}
                     </Box>
                   </Box>
                 ) : (
-                  <Text color="green" dimColor wrap="wrap">└─ {createCompactSummary(entry.content, toolName)}</Text>
+                  <Text color="green" dimColor wrap="wrap">
+                    {"└─ "}{createCompactSummary(entry.content, toolName).slice(0, 200)}
+                  </Text>
                 )
               ) : shouldShowDiff ? (
                 // For diff results, show only the summary line, not the raw content
-                <Text color="green" dimColor wrap="wrap">└─ {entry.content.split("\n")[0]}</Text>
+                <Text color="green" dimColor wrap="wrap">
+                  {"└─ "}{entry.content.split("\n")[0]}
+                </Text>
               ) : (
-                <Text color="green" dimColor wrap="wrap">└─ {createCompactSummary(entry.content, toolName)}</Text>
+                <Text color="green" dimColor wrap="wrap">
+                  {"└─ "}{createCompactSummary(entry.content, toolName).slice(0, 200)}
+                </Text>
               )}
             </Box>
             {shouldShowDiff && !isExecuting && (
-              <Box marginLeft={4} flexDirection="column">
+              <Box width="100%" paddingX={1} marginLeft={2} flexDirection="column">
                 {renderDiff(entry.content, filePath)}
               </Box>
             )}
@@ -250,7 +385,7 @@ const ChatHistoryComponent = ({
   }, [entries, isConfirmationActive]);
 
   return (
-    <Box flexDirection="column">
+    <Box width="100%" flexDirection="column" paddingX={1}>
       {filteredEntries.map((entry, index) => (
         <MemoizedChatEntry
           key={`${entry.timestamp.getTime()}-${index}`}
