@@ -1,3 +1,4 @@
+import crypto from "crypto";
 /**
  * Tool Hook - Automatic Event Capture for Tool Calls
  * 
@@ -121,10 +122,12 @@ export class ToolHook {
   ): Promise<void> {
     if (!this.config.enabled) return;
     
-    // Truncate result if too long
+    const maxLen = Number(process.env.GROKINOU_TIMELINE_MAX_RESULT_SIZE || this.config.maxResultLength || 0);
     let resultToLog = result;
-    if (typeof result === 'string' && result.length > this.config.maxResultLength!) {
-      resultToLog = result.substring(0, this.config.maxResultLength!) + '... (truncated)';
+    let resultHash: string | undefined;
+    if (typeof result === 'string' && maxLen > 0 && result.length > maxLen) {
+      resultHash = crypto.createHash('sha256').update(result, 'utf8').digest('hex');
+      resultToLog = result.slice(0, maxLen) + `\n\n[... truncated ${result.length - maxLen} bytes, sha256: ${resultHash}]`;
     }
     
     const payload: ToolCallPayload = {
@@ -133,6 +136,7 @@ export class ToolHook {
       result: resultToLog,
       duration_ms: durationMs,
       session_id: sessionId,
+      result_hash: resultHash,
     };
     
     await this.eventBus.emit({

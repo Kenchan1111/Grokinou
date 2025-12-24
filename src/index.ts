@@ -9,10 +9,14 @@ import ChatInterface from "./ui/components/chat-interface.js";
 import { getSettingsManager } from "./utils/settings-manager.js";
 import { ConfirmationService } from "./utils/confirmation-service.js";
 import { createMCPCommand } from "./commands/mcp.js";
+import path from "path";
+import os from "os";
 import type { ChatCompletionMessageParam } from "openai/resources/chat";
 import { loadTomlConfig, applyKeyValue, resolveEffectiveConfig } from "./utils/config.js";
 import { initTimeline } from "./timeline/index.js";
 import { autoStartWatcher } from "./security/watcher-daemon.js";
+import { WalShipper } from "./utils/wal-shipper.js";
+import { JsonlExporter } from "./utils/jsonl-exporter.js";
 
 // Load environment variables
 dotenv.config();
@@ -65,6 +69,8 @@ async function initializeTimeline(): Promise<void> {
       enableFileHook: true, // Watch for file changes
       enableGitHook: true, // Track git operations
     });
+    startWalShippers();
+    startJsonlExporters();
   } catch (error) {
     // Timeline is optional - don't fail app startup if it fails
     console.error('⚠️  Timeline initialization failed (non-critical):', error);
@@ -81,6 +87,45 @@ function loadApiKey(): string | undefined {
 function loadBaseURL(): string {
   const manager = getSettingsManager();
   return manager.getBaseURL();
+}
+
+// Start WAL shippers (best effort, non-blocking)
+function startWalShippers(): void {
+  try {
+    const convDbPath = path.join(os.homedir(), ".grok", "conversations.db");
+    const timelineDbPath = path.join(os.homedir(), ".grok", "timeline.db");
+    const convShipper = new WalShipper({
+      dbPath: convDbPath,
+      externalCommandTemplate:
+        process.env.GROKINOU_WAL_SHIP_CMD_CONV ||
+        process.env.GROKINOU_WAL_SHIP_CMD ||
+        undefined,
+    });
+    const timelineShipper = new WalShipper({
+      dbPath: timelineDbPath,
+      archiveDir: path.join(os.homedir(), ".grok", "wal-archive-timeline"),
+      externalCommandTemplate:
+        process.env.GROKINOU_WAL_SHIP_CMD_TIMELINE ||
+        process.env.GROKINOU_WAL_SHIP_CMD ||
+        undefined,
+    });
+    convShipper.start();
+    timelineShipper.start();
+  } catch (e) {
+    console.error("⚠️ Failed to start WAL shippers:", e);
+  }
+}
+
+// Start JSONL exporters (best effort)
+function startJsonlExporters(): void {
+  try {
+    const convExporter = new JsonlExporter({ db: "conversations" });
+    const timelineExporter = new JsonlExporter({ db: "timeline" });
+    convExporter.start();
+    timelineExporter.start();
+  } catch (e) {
+    console.error("⚠️ Failed to start JSONL exporters:", e);
+  }
 }
 
 // Save command line settings to user settings file

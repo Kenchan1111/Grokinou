@@ -12,7 +12,8 @@ export interface UserSettings {
   defaultModel?: string; // User's preferred default model
   models?: string[]; // Available models list
   persistInputHistory?: boolean; // Persist input history to ~/.grok/input-history.jsonl
-  
+  displayName?: string; // Optional user display name for UI
+
   // NEW: Multi-provider support
   apiKeys?: Record<string, string>; // API keys per provider: { grok: "xai-xxx", claude: "sk-ant-xxx" }
   providers?: Record<string, {
@@ -49,6 +50,8 @@ export interface ProjectSettings {
   persistSession?: boolean; // Persist chat session to .grok/session.jsonl
   autoRestoreSession?: boolean; // Auto-restore session on launch
   executionViewer?: ExecutionViewerSettings; // Execution viewer configuration
+  userName?: string; // Display name for the user in chat headers
+  assistantName?: string; // Display name for the assistant/model in chat headers
 }
 
 /**

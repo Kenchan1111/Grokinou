@@ -173,6 +173,7 @@ export interface ToolCallPayload {
   error?: string;
   duration_ms?: number;
   session_id: number;
+  result_hash?: string;
 }
 
 export interface FileModifiedPayload {

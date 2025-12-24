@@ -17,6 +17,7 @@ import { imagePathManager } from "../utils/image-path-detector.js";
 import { insertText } from "../utils/text-utils.js";
 import { debugLog } from "../utils/debug-logger.js";
 import { getSettingsManager } from "../utils/settings-manager.js";
+import { exec } from "child_process";
 import { getSharedSearchTool } from "../tools/shared-search.js";
 
 /**
@@ -464,6 +465,10 @@ export function useInputHandler({
     { command: "/clear-session", description: "Clear in-memory session only" },
     { command: "/clear-disk-session", description: "Delete persisted session and clear memory" },
     { command: "/commit-and-push", description: "AI commit & push to remote" },
+    { command: "/db-verify", description: "Verify DB integrity (conversations|timeline)" },
+    { command: "/db-restore", description: "Restore DB from snapshot+WAL (conversations|timeline) [--archive <path>]" },
+    { command: "/db-export-jsonl", description: "Export DB to JSONL (conversations|timeline) [sessionId] [--out <path>]" },
+    { command: "/backup-status", description: "Show WAL/archive status for conversations and timeline" },
     { command: "/exit", description: "Exit the application" },
   ];
 
@@ -538,6 +543,127 @@ export function useInputHandler({
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, entry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /db-verify <conversations|timeline>
+    // /db-restore <conversations|timeline>
+    // /db-export-jsonl <conversations|timeline> [sessionId]
+    // /backup-status
+    // ============================================
+    if (trimmedInput.startsWith("/db-verify")) {
+      const parts = trimmedInput.split(/\s+/);
+      const target = parts[1] || "conversations";
+      setChatHistory((prev) => [...prev, {
+        type: "assistant",
+        content: `⏳ Verifying DB integrity for ${target}...`,
+        timestamp: new Date(),
+      }]);
+      try {
+        exec(`node dist/utils/wal-verify.js --db ${target}`, (error, stdout, stderr) => {
+          setChatHistory((prev) => [...prev, {
+            type: "assistant",
+            content: error ? `❌ DB verify failed for ${target}: ${stderr || error.message}` : `✅ ${stdout.trim()}`,
+            timestamp: new Date(),
+          }]);
+        });
+      } catch (e: any) {
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `❌ DB verify failed for ${target}: ${e?.message || e}`,
+          timestamp: new Date(),
+        }]);
+      }
+      clearInput();
+      return true;
+    }
+
+    if (trimmedInput === "/backup-status") {
+      setChatHistory((prev) => [...prev, {
+        type: "assistant",
+        content: "⏳ Checking backup/archive status...",
+        timestamp: new Date(),
+      }]);
+      try {
+        exec(`node dist/utils/wal-status.js`, (error, stdout, stderr) => {
+          setChatHistory((prev) => [...prev, {
+            type: "assistant",
+            content: error ? `❌ Backup status failed: ${stderr || error.message}` : `✅ Backup status:\n${stdout.trim()}`,
+            timestamp: new Date(),
+          }]);
+        });
+      } catch (e: any) {
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `❌ Backup status failed: ${e?.message || e}`,
+          timestamp: new Date(),
+        }]);
+      }
+      clearInput();
+      return true;
+    }
+
+    if (trimmedInput.startsWith("/db-restore")) {
+      const parts = trimmedInput.split(/\s+/);
+      const target = parts[1] || "conversations";
+      const archiveFlagIndex = parts.indexOf("--archive");
+      const archiveArg = archiveFlagIndex >= 0 ? parts[archiveFlagIndex + 1] : undefined;
+      setChatHistory((prev) => [...prev, {
+        type: "assistant",
+        content: `⏳ Restoring ${target}${archiveArg ? ` from ${archiveArg}` : ""}...`,
+        timestamp: new Date(),
+      }]);
+      try {
+        const cmd = `node dist/utils/wal-restore.js --db ${target}${archiveArg ? ` --archive ${archiveArg}` : ""}`;
+        exec(cmd, (error, stdout, stderr) => {
+          setChatHistory((prev) => [...prev, {
+            type: "assistant",
+            content: error ? `❌ Restore failed for ${target}: ${stderr || error.message}` :
+              `✅ Restore completed for ${target}${archiveArg ? ` (archive=${archiveArg})` : ""}. SQLite will recover WAL on next open.`,
+            timestamp: new Date(),
+          }]);
+        });
+      } catch (e: any) {
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `❌ Restore failed for ${target}: ${e?.message || e}`,
+          timestamp: new Date(),
+        }]);
+      }
+      clearInput();
+      return true;
+    }
+
+    if (trimmedInput.startsWith("/db-export-jsonl")) {
+      const parts = trimmedInput.split(/\s+/);
+      const target = parts[1] || "conversations";
+      const sessionPart = parts.find((p) => /^\d+$/.test(p)) ? ` --session ${parts.find((p) => /^\d+$/.test(p))}` : "";
+      const outFlagIndex = parts.indexOf("--out");
+      const outArg = outFlagIndex >= 0 ? parts[outFlagIndex + 1] : undefined;
+      setChatHistory((prev) => [...prev, {
+        type: "assistant",
+        content: `⏳ Exporting ${target} to JSONL${sessionPart ? " (session filter)" : ""}...`,
+        timestamp: new Date(),
+      }]);
+      try {
+        const cmd = `node dist/utils/db-export-jsonl.js --db ${target}${sessionPart}${outArg ? ` --out ${outArg}` : ""}`;
+        exec(cmd, (error, stdout, stderr) => {
+          setChatHistory((prev) => [...prev, {
+            type: "assistant",
+            content: error ? `❌ Export failed for ${target}: ${stderr || error.message}` :
+              `✅ Exported ${target} to JSONL${sessionPart ? " (session filter)" : ""}${outArg ? ` → ${outArg}` : ""}.`,
+            timestamp: new Date(),
+          }]);
+        });
+      } catch (e: any) {
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `❌ Export failed for ${target}: ${e?.message || e}`,
+          timestamp: new Date(),
+        }]);
+      }
       clearInput();
       return true;
     }
