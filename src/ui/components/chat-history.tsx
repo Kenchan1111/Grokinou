@@ -153,8 +153,8 @@ const MemoizedChatEntry = React.memo(
                 {paddedLines.map((line, idx) => (
                   <Text
                     key={idx}
-                    color="white"
-                    backgroundColor="blackBright"
+                    color="whiteBright"
+                    backgroundColor="gray"
                     wrap="truncate"
                   >
                     {line}
