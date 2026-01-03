@@ -54,6 +54,7 @@ interface ChatLayoutSwitcherProps {
    * Input controller to render inside conversation panel
    */
   inputController?: React.ReactNode;
+  onFocusChange?: (focused: 'conversation' | 'viewer') => void;
 }
 
 const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
@@ -65,7 +66,8 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   confirmationOptions,
   onConfirmation,
   onRejection,
-  inputController
+  inputController,
+  onFocusChange
 }) => {
   // Get state from context
   const {
@@ -74,6 +76,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
     searchResults,
     searchFullscreen
   } = useChatState();
+  const allowInputInSearch = process.env.GROKINOU_TEST_ALLOW_INPUT_IN_SEARCH === "1";
 
   // Get execution viewer settings (memoized to prevent re-renders)
   const executionViewerSettings = useMemo(() => {
@@ -149,6 +152,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
               splitRatio: 0.6,
               layout: 'horizontal'
             }}
+            onFocusChange={onFocusChange}
           />
         </Box>
       )}
@@ -176,7 +180,11 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
             // Split layout: conversation left, search right
             <SplitLayout
               key="search-split-layout"
-              left={<ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true} />}
+              left={
+                <ConversationView key="search-conversation" scrollRef={scrollRef} searchMode={true}>
+                  {allowInputInSearch ? inputController : null}
+                </ConversationView>
+              }
               right={
                 <SearchResults
                   query={searchQuery}

@@ -45,6 +45,12 @@ export interface ExecutionState {
   metadata?: Record<string, any>;
 }
 
+export interface ExecutionViewerState {
+  selectedCommandIndex: number;
+  scrollOffset: number;
+  detailsMode: boolean;
+}
+
 // ============================================================================
 // EXECUTION STREAM
 // ============================================================================
@@ -209,6 +215,12 @@ export class ExecutionManager extends EventEmitter {
   private activeExecutions = new Set<string>();
   private executionHistory: ExecutionState[] = [];
   private maxHistorySize = 100;
+  private selectedExecutionId: string | null = null;
+  private viewerState: ExecutionViewerState = {
+    selectedCommandIndex: 0,
+    scrollOffset: 0,
+    detailsMode: false,
+  };
 
   /**
    * Create a new execution stream
@@ -272,6 +284,40 @@ export class ExecutionManager extends EventEmitter {
   getHistory(limit?: number): ExecutionState[] {
     const history = [...this.executionHistory].reverse();
     return limit ? history.slice(0, limit) : history;
+  }
+
+  getSelectedExecutionId(): string | null {
+    return this.selectedExecutionId;
+  }
+
+  setSelectedExecutionId(id: string | null): void {
+    this.selectedExecutionId = id;
+    this.emit('execution:selected', id);
+  }
+
+  getViewerState(): ExecutionViewerState {
+    return { ...this.viewerState };
+  }
+
+  setViewerState(next: Partial<ExecutionViewerState>): void {
+    const updated: ExecutionViewerState = {
+      ...this.viewerState,
+      ...Object.fromEntries(Object.entries(next).filter(([, value]) => value !== undefined)),
+    } as ExecutionViewerState;
+    if (
+      updated.selectedCommandIndex === this.viewerState.selectedCommandIndex &&
+      updated.scrollOffset === this.viewerState.scrollOffset &&
+      updated.detailsMode === this.viewerState.detailsMode
+    ) {
+      return;
+    }
+    this.viewerState = updated;
+    this.emit('execution:viewer', this.viewerState);
+  }
+
+  onViewerState(callback: (state: ExecutionViewerState) => void): () => void {
+    this.on('execution:viewer', callback);
+    return () => this.off('execution:viewer', callback);
   }
 
   /**

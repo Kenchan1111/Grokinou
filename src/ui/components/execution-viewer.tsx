@@ -9,7 +9,7 @@
  * Supports multiple executions, navigation, and detailed/compact modes.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { executionManager } from '../../execution/index.js';
 import type { ExecutionState, COTEntry, CommandExecution, COTType, CommandStatus } from '../../execution/index.js';
@@ -23,13 +23,14 @@ import type { ExecutionViewerSettings } from '../../utils/settings-manager.js';
 export interface ExecutionViewerProps {
   mode?: 'split' | 'fullscreen';
   settings?: Partial<ExecutionViewerSettings>;
+  isFocused?: boolean;
 }
 
 // ============================================================================
 // EXECUTION VIEWER COMPONENT
 // ============================================================================
 
-export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split', settings }) => {
+export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split', settings, isFocused = true }) => {
   const [executions, setExecutions] = useState<ExecutionState[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -37,6 +38,8 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
   const [autoScroll, setAutoScroll] = useState(true);
   const [scrollOffset, setScrollOffset] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const skipCommandResetRef = useRef(false);
+  const skipScrollResetRef = useRef(false);
 
   /**
    * Show temporary feedback message (auto-hide after 3s)
@@ -87,6 +90,44 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
     };
   }, [settings]);
 
+  useEffect(() => {
+    const handler = (id: string | null) => {
+      if (!id) return;
+      const idx = executions.findIndex((e) => e.id === id);
+      if (idx >= 0) {
+        setSelectedIndex(idx);
+      }
+    };
+    executionManager.on("execution:selected", handler);
+    return () => {
+      executionManager.off("execution:selected", handler);
+    };
+  }, [executions]);
+
+  useEffect(() => {
+    const unsubscribe = executionManager.onViewerState((state) => {
+      if (typeof state.selectedCommandIndex === "number") {
+        const current = executions[selectedIndex];
+        const maxIndex = Math.max(0, (current?.commands.length || 1) - 1);
+        const nextIndex = Math.min(Math.max(state.selectedCommandIndex, 0), maxIndex);
+        if (nextIndex !== selectedCommandIndex) {
+          skipCommandResetRef.current = true;
+          setSelectedCommandIndex(nextIndex);
+        }
+      }
+      if (typeof state.scrollOffset === "number") {
+        if (state.scrollOffset !== scrollOffset) {
+          skipScrollResetRef.current = true;
+          setScrollOffset(state.scrollOffset);
+        }
+      }
+      if (typeof state.detailsMode === "boolean" && state.detailsMode !== detailsMode) {
+        setDetailsMode(state.detailsMode);
+      }
+    });
+    return () => unsubscribe();
+  }, [detailsMode, executions, scrollOffset, selectedCommandIndex, selectedIndex]);
+
   /**
    * Clamp selectedIndex when executions list changes
    */
@@ -96,25 +137,49 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
     }
   }, [executions.length, selectedIndex]);
 
+  useEffect(() => {
+    const current = executions[selectedIndex];
+    executionManager.setSelectedExecutionId(current ? current.id : null);
+  }, [executions, selectedIndex]);
+
   /**
    * Reset command index and scroll when changing execution
    */
   useEffect(() => {
-    setSelectedCommandIndex(0);
-    setScrollOffset(0);
+    if (skipCommandResetRef.current) {
+      skipCommandResetRef.current = false;
+    } else {
+      setSelectedCommandIndex(0);
+      setScrollOffset(0);
+    }
   }, [selectedIndex]);
 
   /**
    * Reset scroll when changing command
    */
   useEffect(() => {
-    setScrollOffset(0);
+    if (skipScrollResetRef.current) {
+      skipScrollResetRef.current = false;
+    } else {
+      setScrollOffset(0);
+    }
   }, [selectedCommandIndex]);
+
+  useEffect(() => {
+    executionManager.setViewerState({
+      selectedCommandIndex,
+      scrollOffset,
+      detailsMode,
+    });
+  }, [detailsMode, scrollOffset, selectedCommandIndex]);
 
   /**
    * Keyboard shortcuts
    */
   useInput((input, key) => {
+    if (mode === 'split' && !isFocused) {
+      return;
+    }
     const current = executions[selectedIndex];
     const commandCount = current?.commands.length ?? 0;
 
