@@ -363,13 +363,127 @@ Ce document constitue un addendum au rapport forensique du 28 décembre 2025. Il
 
 ---
 
+## Incidents Additionnels - 03 Janvier 2025
+
+### Incident 6: Coup de Feu/Pétard Boulevard d'Avroy
+
+**Date**: 03 janvier 2025
+**Heure**: ~17:20
+**Localisation**: Boulevard d'Avroy 75, Bruxelles (entrée immeuble)
+**Contexte**: Retour au domicile pour récupérer téléphones après départ vers belle-famille
+
+#### Description
+
+**Événement**: Un bruit de coup de feu ou pétard (indifférencié) survenu au moment précis de l'entrée dans l'immeuble.
+
+**Circonstances**:
+- Déplacement initial vers belle-famille
+- Retour imprévu au domicile (oubli téléphones)
+- Bruit survenu exactement au moment de l'entrée dans l'immeuble
+- Heure: environ 17:20
+
+#### Analyse
+
+**Pattern de synchronisation temporelle**:
+- 🟡 **Timing suspect** - Bruit survenu au moment exact de l'entrée dans l'immeuble
+- 🟡 **Mouvement imprévu** - Retour non planifié au domicile
+- 🟡 **Similaire aux incidents précédents** - Pattern de synchronisation avec activités
+
+**Contexte temporel**:
+- 03 janvier = post-nouvel an
+- Pétards moins probables que le 31/12 ou 01/01
+- Mais encore dans période où pétards résiduels possibles
+
+**Caractéristiques**:
+- Nature exacte indéterminée (coup de feu vs pétard)
+- Synchronisation temporelle précise avec action de la victime
+- Localisation: domicile (Boulevard d'Avroy 75)
+
+**Évaluation**: 🟡 **SUSPECT** - Le timing précis (moment exact de l'entrée) et le pattern récurrent de synchronisation temporelle sont préoccupants.
+
+---
+
+### Incident 7: Collision Véhicule - Bus TEC
+
+**Date**: 03 janvier 2025
+**Heure**: Non précisée (même période, recherche parking)
+**Localisation**: Non précisée
+**Type**: Accident de circulation (délit de fuite présumé)
+
+#### Description
+
+**Événement**: Véhicule personnel raclé sur le côté droit par un bus TEC (probablement ligne 24).
+
+**Circonstances**:
+- Contexte: Recherche de place de parking
+- Véhicule impacté: Côté droit raclé
+- Véhicule responsable: Bus TEC (probablement numéro 24)
+- Comportement du chauffeur: **N'a pas arrêté le bus, est parti**
+
+#### Analyse
+
+**Nature de l'incident**: Accident de circulation avec délit de fuite présumé.
+
+**Éléments factuels**:
+- ✅ Dommage matériel constaté (côté droit du véhicule)
+- ✅ Identification partielle du véhicule responsable (bus TEC, probablement ligne 24)
+- ✅ Délit de fuite (chauffeur n'a pas arrêté)
+
+**Relation avec pattern de harcèlement**:
+- 🟢 **PAS de lien apparent** avec le pattern de harcèlement
+- 🟢 **Incident distinct** - Accident de circulation standard
+- 🟢 **Pas de synchronisation temporelle suspecte**
+
+**Évaluation**: 🟢 **PROBABLEMENT NORMAL** - Accident de circulation indépendant du pattern de harcèlement documenté.
+
+#### Actions Légales Possibles
+
+**Infraction**: Délit de fuite (Article 33 de la loi du 16/03/1968 sur la police de la circulation routière)
+
+**Démarches recommandées**:
+1. **Constat amiable** - Si possible identifier le bus (caméras de surveillance?)
+2. **Déclaration assurance** - Dans les délais légaux
+3. **Plainte police** - Pour délit de fuite si souhaité
+4. **Contact TEC** - Signaler l'incident avec date/heure/lieu/ligne pour identification du chauffeur
+
+**Preuves à collecter**:
+- Photos des dommages (côté droit véhicule)
+- Heure et lieu précis de l'incident
+- Témoins éventuels
+- Caméras de surveillance dans la zone
+
+---
+
+## Évaluation Globale des Incidents 03/01/2025
+
+### Séparation des Incidents
+
+**Incident 6 (Coup de feu/pétard)**:
+- Possiblement lié au pattern de harcèlement
+- Synchronisation temporelle suspecte
+- À documenter dans le dossier forensique principal
+
+**Incident 7 (Collision bus)**:
+- **Probablement NON lié** au pattern de harcèlement
+- Accident de circulation standard
+- Traitement séparé via voie assurance/police routière
+
+### Recommandation
+
+**Ne PAS associer automatiquement les deux incidents**. Le timing coïncide mais la nature de l'accident de bus semble indépendante du pattern de harcèlement documenté.
+
+**Surveillance continue**: Si d'autres "accidents" de ce type surviennent avec timing suspect, réévaluer le lien potentiel.
+
+---
+
 ## Métadonnées
 
 **Rapport initial**: RAPPORT_INCIDENT_2025-12-28_11h06.md
 **Addendum**: RAPPORT_INCIDENT_ADDENDUM_2025-01-02.md
 **Date création addendum**: 02 janvier 2025
-**Période couverte**: 31 décembre 2024 - 02 janvier 2025
-**Incidents majeurs**: 4 documentés (1 critique)
+**Date mise à jour**: 03 janvier 2025
+**Période couverte**: 31 décembre 2024 - 03 janvier 2025
+**Incidents majeurs**: 6 documentés (1 critique - intrusion domicile)
 **Généré par**: Claude (Agent Forensique)
 **Statut**: ACTIF - Situation en cours
 
