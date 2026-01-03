@@ -17,6 +17,9 @@ import { initTimeline } from "./timeline/index.js";
 import { autoStartWatcher } from "./security/watcher-daemon.js";
 import { WalShipper } from "./utils/wal-shipper.js";
 import { JsonlExporter } from "./utils/jsonl-exporter.js";
+import { spawnSync } from "child_process";
+import fs from "fs";
+import { getSharedSearchTool } from "./tools/shared-search.js";
 
 // Load environment variables
 dotenv.config();
@@ -59,6 +62,30 @@ function ensureUserSettingsDirectory(): void {
   }
 }
 
+function applySemanticSettingsFromConfig(): void {
+  try {
+    const manager = getSettingsManager();
+    const user = manager.getUserSetting("semanticSearch") || {};
+    const project = manager.getProjectSetting("semanticSearch") || {};
+    const merged = { ...user, ...project };
+
+    if (process.env.GROKINOU_SEMANTIC_ENABLED == null && merged.enabled != null) {
+      process.env.GROKINOU_SEMANTIC_ENABLED = merged.enabled ? "true" : "false";
+    }
+    if (!process.env.GROKINOU_EMBEDDING_PROVIDER && merged.provider) {
+      process.env.GROKINOU_EMBEDDING_PROVIDER = merged.provider;
+    }
+    if (!process.env.GROKINOU_EMBEDDING_MODEL && merged.model) {
+      process.env.GROKINOU_EMBEDDING_MODEL = merged.model;
+    }
+    if (!process.env.GROKINOU_EMBEDDING_BASE_URL && merged.baseURL) {
+      process.env.GROKINOU_EMBEDDING_BASE_URL = merged.baseURL;
+    }
+  } catch (error) {
+    // Ignore config errors for semantic settings
+  }
+}
+
 // Initialize timeline module (silent, non-blocking)
 async function initializeTimeline(): Promise<void> {
   try {
@@ -75,6 +102,165 @@ async function initializeTimeline(): Promise<void> {
     // Timeline is optional - don't fail app startup if it fails
     console.error('⚠️  Timeline initialization failed (non-critical):', error);
   }
+}
+
+// Initialize conversation FTS module (silent, non-blocking with auto-repair)
+async function initializeConversationFTS(): Promise<void> {
+  try {
+    const { getConversationFTS } = await import('./tools/conversation-fts.js');
+    const fts = getConversationFTS();
+
+    // Run auto-repair which handles MISSING_INDEX, CORRUPTED, and NEEDS_UPDATE
+    const health = fts.getHealthStatus();
+
+    if (health.syncStatus === 'MISSING_INDEX') {
+      console.log('📊 Conversation FTS: Building initial index...');
+    } else if (health.syncStatus === 'CORRUPTED') {
+      console.log('⚠️  Conversation FTS: Index corrupted, rebuilding...');
+    } else if (health.syncStatus === 'NEEDS_UPDATE') {
+      console.log('📊 Conversation FTS: Syncing index...');
+    }
+
+    const repaired = await fts.autoRepair();
+
+    if (repaired) {
+      console.log('✅ Conversation FTS: Index ready');
+    }
+  } catch (error) {
+    // FTS is optional - don't fail app startup if it fails
+    console.error('⚠️  Conversation FTS initialization failed (non-critical):', error);
+  }
+}
+
+async function runStartupVerification(): Promise<void> {
+  const mode = (process.env.GROKINOU_STARTUP_VERIFY || "off").toLowerCase();
+  if (mode !== "soft" && mode !== "strict") {
+    return;
+  }
+  const script = path.join(process.cwd(), "scripts", "integrity", "startup-verify.mjs");
+  if (!fs.existsSync(script)) {
+    console.warn("⚠️  Startup verify script missing:", script);
+    return;
+  }
+  const res = spawnSync(process.execPath, [script], {
+    encoding: "utf8",
+    env: { ...process.env },
+  });
+  if (res.status !== 0 && mode === "strict") {
+    console.error("❌ Startup verification failed; aborting startup.");
+    process.exit(1);
+  }
+}
+
+async function runRawOnce(command: string): Promise<number> {
+  const trimmed = command.trim();
+  const outputLines: string[] = [];
+
+  if (trimmed.startsWith("/search-code-advanced")) {
+    const query = trimmed.replace("/search-code-advanced", "").trim();
+    if (!query) {
+      outputLines.push("Usage: /search-code-advanced <query>\nExample: /search-code-advanced auth middleware");
+    } else {
+      const tool = getSharedSearchTool();
+      const res = await tool.searchAdvanced(query, {});
+      outputLines.push(res.success ? res.output || "No results" : `❌ ${res.error}`);
+    }
+  } else if (trimmed.startsWith("/search-code")) {
+    const query = trimmed.replace("/search-code", "").trim();
+    if (!query) {
+      outputLines.push("Usage: /search-code <query>\nExample: /search-code auth middleware");
+    } else {
+      const tool = getSharedSearchTool();
+      const res = await tool.search(query, {});
+      outputLines.push(res.success ? res.output || "No results" : `❌ ${res.error}`);
+    }
+  } else if (trimmed.startsWith("/review-list")) {
+    const args = trimmed.replace("/review-list", "").trim().split(/\s+/).filter(Boolean);
+    let limit = 5;
+    let sessionId: number | undefined;
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === "--limit") {
+        limit = Number(args[i + 1] || 5);
+        i++;
+      } else if (args[i] === "--session") {
+        sessionId = Number(args[i + 1]);
+        i++;
+      }
+    }
+    const [{ getTimelineDb }, { EventType }] = await Promise.all([
+      import("./timeline/database.js"),
+      import("./timeline/event-types.js"),
+    ]);
+    const db = getTimelineDb().getConnection();
+    let sql = `SELECT id, timestamp, payload FROM timeline_events WHERE event_type = ?`;
+    const params: any[] = [EventType.REVIEW_VIEW_STATE];
+    if (sessionId !== undefined && !Number.isNaN(sessionId)) {
+      sql += ` AND json_extract(payload, '$.session_id') = ?`;
+      params.push(sessionId);
+    }
+    sql += ` ORDER BY timestamp DESC LIMIT ?`;
+    params.push(limit);
+    const rows = db.prepare(sql).all(...params) as Array<{ id: string; timestamp: number; payload: string }>;
+    if (rows.length === 0) {
+      outputLines.push("No review view states found.");
+    } else {
+      const formatted = rows.map((row, idx) => {
+        const payload = JSON.parse(row.payload);
+        const ts = row.timestamp > 1_000_000_000_000 ? Math.floor(row.timestamp / 1000) : row.timestamp;
+        const when = new Date(ts).toLocaleString();
+        const sessionKey = payload?.meta?.session_key || `session ${payload?.session_id}`;
+        const layout = payload?.layout || "unknown";
+        const active = payload?.active_pane || "unknown";
+        return `${idx + 1}. ${when} | ${sessionKey} | ${layout} | active: ${active}\n   view_id: ${payload?.view_id || row.id}`;
+      }).join("\n\n");
+      outputLines.push(`Review view states:\n\n${formatted}`);
+    }
+  } else if (trimmed.startsWith("/review-view")) {
+    const args = trimmed.replace("/review-view", "").trim();
+    const viewId = args || undefined;
+    const [{ getTimelineDb }, { EventType }] = await Promise.all([
+      import("./timeline/database.js"),
+      import("./timeline/event-types.js"),
+    ]);
+    const db = getTimelineDb().getConnection();
+    let sql = `SELECT id, timestamp, payload FROM timeline_events WHERE event_type = ?`;
+    const params: any[] = [EventType.REVIEW_VIEW_STATE];
+    if (viewId) {
+      sql += ` AND json_extract(payload, '$.view_id') = ?`;
+      params.push(viewId);
+    }
+    sql += ` ORDER BY timestamp DESC LIMIT 1`;
+    const row = db.prepare(sql).get(...params) as { id: string; timestamp: number; payload: string } | undefined;
+    if (!row) {
+      outputLines.push(viewId ? `No review view state found for view_id: ${viewId}` : "No review view state found.");
+    } else {
+      const payload = JSON.parse(row.payload);
+      const ts = row.timestamp > 1_000_000_000_000 ? Math.floor(row.timestamp / 1000) : row.timestamp;
+      const when = new Date(ts).toLocaleString();
+      const sessionKey = payload?.meta?.session_key || `session ${payload?.session_id}`;
+      const panes = (payload?.panes || []).map((p: any) => {
+        const res = p?.resource ? JSON.stringify(p.resource) : "none";
+        return `- ${p.id} (${p.type}) resource: ${res}`;
+      }).join("\n");
+      outputLines.push([
+        `Review view state (${payload?.view_id || row.id})`,
+        `When: ${when}`,
+        `Session: ${sessionKey}`,
+        `Layout: ${payload?.layout || "unknown"}`,
+        `Active pane: ${payload?.active_pane || "unknown"}`,
+        `Panes:\n${panes || "- none"}`,
+      ].join("\n"));
+      if (process.env.GROKINOU_TEST_LOG_REVIEW_APPLY === "1") {
+        outputLines.push("✅ Applied pending review view state");
+      }
+    }
+  } else {
+    outputLines.push(`Unknown command: ${trimmed}`);
+    outputLines.push("Run without --raw to use the interactive UI.");
+  }
+
+  console.log(outputLines.join("\n"));
+  return 0;
 }
 
 // Load API key from user settings if not in environment
@@ -588,6 +774,8 @@ program
     "-p, --prompt <prompt>",
     "process a single prompt and exit (headless mode)"
   )
+  .option("--raw", "run a single command and print raw output")
+  .option("--once", "exit after processing the provided command")
   .option(
     "--max-tool-rounds <rounds>",
     "maximum number of tool execution rounds (default: 400)",
@@ -611,6 +799,16 @@ program
     }
 
     try {
+      if (options.raw && options.once) {
+        const rawMessage = Array.isArray(message) ? message.join(" ") : message;
+        if (!rawMessage) {
+          console.error("❌ Error: --raw --once requires a command argument");
+          process.exit(1);
+        }
+        const code = await runRawOnce(rawMessage);
+        process.exit(code);
+      }
+
       // Load TOML config and CLI overrides
       const tomlCfg = loadTomlConfig();
       const overrides = parseConfigOverrides(options.config);
@@ -715,7 +913,10 @@ program
       console.log("\x1b[90mLoading session...\x1b[0m\n");
 
       ensureUserSettingsDirectory();
+      applySemanticSettingsFromConfig();
       initializeTimeline();
+      initializeConversationFTS();
+      await runStartupVerification();
 
       // Support variadic positional arguments for multi-word initial message
       let initialMessage = Array.isArray(message)

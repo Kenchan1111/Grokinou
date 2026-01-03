@@ -6,6 +6,7 @@ import * as path from "path";
 import { SearchCache } from "../utils/search-cache.js";
 import os from "os";
 import { FTSSearch } from "./fts-search.js";
+import { SemanticSearchIndex } from "./semantic-search.js";
 
 export interface SearchResult {
   file: string;
@@ -29,6 +30,7 @@ export interface UnifiedSearchResult {
   text?: string;
   match?: string;
   score?: number;
+  semanticScore?: number;
 }
 
 export class SearchTool {
@@ -36,6 +38,7 @@ export class SearchTool {
   private currentDirectory: string = process.cwd();
   private searchCache: SearchCache;
   private ftsSearch: FTSSearch;
+  private semanticSearch: SemanticSearchIndex;
 
   constructor(dbPath?: string) {
     // Allow overriding DB path for tests; default to ~/.grok/search-cache.db
@@ -44,6 +47,11 @@ export class SearchTool {
         path.join(os.homedir(), ".grok", "search-cache.db")
     );
     this.ftsSearch = new FTSSearch();
+    this.semanticSearch = new SemanticSearchIndex();
+  }
+
+  reloadSemanticConfig(): { enabled: boolean; reason?: string } {
+    return this.semanticSearch.reloadConfig();
   }
 
   /**
@@ -138,6 +146,30 @@ export class SearchTool {
       // Sort by score (descending)
       results.sort((a, b) => (b.score || 0) - (a.score || 0));
 
+      // Optional semantic rerank (phase 1), applied to top-N
+      const semanticEnabled =
+        process.env.GROKINOU_SEMANTIC_ENABLED === "true" && this.semanticSearch.isEnabled();
+      if (semanticEnabled && results.length > 0) {
+        const maxRerank = Number(process.env.GROKINOU_SEMANTIC_RERANK_MAX || 200);
+        const subset = results.slice(0, maxRerank);
+        const texts = subset.map((r) =>
+          r.type === "text"
+            ? `${r.match || ""}\n${r.text || ""}`
+            : r.file
+        );
+        const scores = await this.semanticSearch.rerankTexts(sanitizedQuery, texts);
+        const weight = Number(process.env.GROKINOU_SEMANTIC_WEIGHT || 50);
+        const minSim = Number(process.env.GROKINOU_SEMANTIC_MIN_SIM || 0);
+        subset.forEach((result, idx) => {
+          result.semanticScore = scores[idx];
+          if (scores[idx] >= minSim) {
+            result.score = (result.score || 0) + scores[idx] * weight;
+          }
+        });
+        // Re-sort after semantic adjustment
+        results.sort((a, b) => (b.score || 0) - (a.score || 0));
+      }
+
       // Persist all results to cache for pagination / replay
       const searchId = this.searchCache.createSearch(
         sanitizedQuery,
@@ -217,6 +249,7 @@ export class SearchTool {
       fileTypes?: string[];
       excludeFiles?: string[];
       includeHidden?: boolean;
+      semanticMode?: "heuristic" | "semantic" | "auto";
     } = {}
   ): Promise<ToolResult> {
     try {
@@ -232,17 +265,47 @@ export class SearchTool {
       const limit = options.maxResults && options.maxResults > 0 ? options.maxResults : 50;
       const rows = this.ftsSearch.search(sanitizedQuery, limit);
 
-      if (!rows.length) {
-        return { success: true, output: `No FTS results found for "${sanitizedQuery}"` };
+      const semanticMode = options.semanticMode || "auto";
+      const semanticAvailable =
+        process.env.GROKINOU_SEMANTIC_ENABLED === "true" && this.semanticSearch.isEnabled();
+      if (semanticMode === "semantic" && !semanticAvailable) {
+        return {
+          success: false,
+          error:
+            "Semantic search is not enabled. Run /semantic-config or set GROKINOU_SEMANTIC_ENABLED=true and embedding vars.",
+        };
+      }
+      const semanticEnabled = semanticMode === "semantic"
+        ? semanticAvailable
+        : semanticMode === "heuristic"
+          ? false
+          : semanticAvailable;
+      const semanticRows = semanticEnabled
+        ? await this.semanticSearch.semanticSearch(this.currentDirectory, sanitizedQuery, limit)
+        : [];
+
+      if (!rows.length && !semanticRows.length) {
+        return { success: true, output: `No results found for "${sanitizedQuery}"` };
       }
 
-      const formatted = rows
+      const formattedFts = rows
+        .map((r, idx) => `${idx + 1}. ${r.path}\n   ${r.snippet}`)
+        .join("\n\n");
+      const formattedSemantic = semanticRows
         .map((r, idx) => `${idx + 1}. ${r.path}\n   ${r.snippet}`)
         .join("\n\n");
 
+      const sections: string[] = [];
+      if (rows.length) {
+        sections.push(`FTS results for "${sanitizedQuery}":\n\n${formattedFts}`);
+      }
+      if (semanticRows.length) {
+        sections.push(`Semantic results for "${sanitizedQuery}":\n\n${formattedSemantic}`);
+      }
+
       return {
         success: true,
-        output: `FTS results for "${sanitizedQuery}":\n\n${formatted}`,
+        output: sections.join("\n\n"),
       };
     } catch (error: any) {
       return { success: false, error: `FTS search error: ${error.message}` };
@@ -333,8 +396,8 @@ export class SearchTool {
         "!*.log"
       );
 
-      // Add query and search directory
-      args.push(query, this.currentDirectory);
+      // Add query and search directory (use -- to stop flag parsing)
+      args.push("--", query, this.currentDirectory);
 
       const rg = spawn("rg", args);
       const results: SearchResult[] = [];

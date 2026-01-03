@@ -125,3 +125,27 @@ temp/
 # Coding agents
 .claude/
 .grok/
+# Forensic investigation scripts (personal/sensitive)
+COMPLETE_SECURITY_LOCKDOWN.sh
+SECURE_BOTH_SERVICES.sh
+add_forensic_permissions.sh
+attacker_perspective_analysis.sh
+configure_ufw_strict.sh
+deep_forensic_investigation.sh
+deep_forensic_investigation_v2.sh
+realtime_forensic.sh
+secure_falco_webserver.sh
+
+# Temporary test directories
+search-tool-test-*/
+apply-patch-test-*/
+
+# Debug files
+test-execution-viewer-debug.js
+analyse_gpt5
+
+# Local database
+timeline.db
+
+# Temporary files
+.gitignore-update.txt

@@ -210,6 +210,40 @@ const BASE_GROK_TOOLS: GrokTool[] = [
   {
     type: "function",
     function: {
+      name: "search_conversation_advanced",
+      description:
+        "Advanced full-text search across ALL conversation sessions using FTS5. Supports cross-session search, relevance ranking, temporal filters, and snippets. Use this for semantic/keyword search across entire conversation history.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "FTS5 search query (supports phrases with quotes, AND/OR/NOT operators)",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of results to return (default: 20)",
+          },
+          sessionId: {
+            type: "number",
+            description: "Optional: Filter results to specific session ID",
+          },
+          beforeTimestamp: {
+            type: "number",
+            description: "Optional: Only return messages before this Unix timestamp (ms)",
+          },
+          afterTimestamp: {
+            type: "number",
+            description: "Optional: Only return messages after this Unix timestamp (ms)",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "search_more",
       description:
         "Fetch additional cached search results by search id. Use this after a search returned a cutoff message.",
@@ -234,13 +268,19 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     function: {
       name: "search_advanced",
       description:
-        "Advanced code search (reserved for future FTS/semantic mode). Currently behaves like search but kept separate to allow evolution without breaking basic search.",
+        "Advanced code search. Default uses heuristic/BM25 ranking. If the query is vague or conceptual, ask the user whether to enable semantic rerank via /semantic-config (no restart), then call this tool with semantic_mode=\"semantic\". If declined or not configured, keep semantic_mode=\"heuristic\". Configuration lives in repo .env or via /semantic-config: GROKINOU_SEMANTIC_ENABLED=true, GROKINOU_EMBEDDING_PROVIDER=..., GROKINOU_EMBEDDING_MODEL=..., GROKINOU_EMBEDDING_API_KEY=.... Prefer search for exact identifiers; use search_advanced for fuzzy intent.",
       parameters: {
         type: "object",
         properties: {
           query: {
             type: "string",
             description: "Text to search for or file pattern.",
+          },
+          semantic_mode: {
+            type: "string",
+            enum: ["heuristic", "semantic", "auto"],
+            description:
+              "Search mode: heuristic (BM25 only), semantic (rerank with embeddings, requires /semantic-config), or auto (use semantic if enabled). If semantic is requested but not enabled, ask user to run /semantic-config.",
           },
           search_context: {
             type: "string",

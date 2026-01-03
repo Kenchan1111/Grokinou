@@ -19,6 +19,7 @@ import { debugLog } from "../utils/debug-logger.js";
 import { getSettingsManager } from "../utils/settings-manager.js";
 import { exec } from "child_process";
 import { getSharedSearchTool } from "../tools/shared-search.js";
+import * as path from "path";
 
 /**
  * Parse date from various formats:
@@ -69,6 +70,7 @@ interface UseInputHandlerProps {
   isProcessing: boolean;
   isStreaming: boolean;
   isConfirmationActive?: boolean;
+  inputEnabled?: boolean;
   searchMode?: boolean;
   streamingBus?: import("../ui/streaming-bus.js").StreamingBus;
   onSearchCommand?: (input: string) => boolean;
@@ -102,6 +104,7 @@ export function useInputHandler({
   isProcessing,
   isStreaming,
   isConfirmationActive = false,
+  inputEnabled = true,
   searchMode = false,
   streamingBus,
   onSearchCommand,
@@ -329,7 +332,7 @@ export function useInputHandler({
   } = useEnhancedInput({
     onSubmit: handleInputSubmit,
     onSpecialKey: handleSpecialKey,
-    disabled: isConfirmationActive || showModelSelection,
+    disabled: isConfirmationActive || showModelSelection || !inputEnabled,
   });
 
   // Expose input injection function for external use (e.g., paste from search)
@@ -356,6 +359,9 @@ export function useInputHandler({
   useInput((inputChar: string, key: Key) => {
     // Don't process input in search mode (SearchResults component handles it)
     if (searchMode) {
+      return;
+    }
+    if (!inputEnabled) {
       return;
     }
 
@@ -447,8 +453,15 @@ export function useInputHandler({
     { command: "/user", description: "Set display name for the user" },
     { command: "/name", description: "Set display name for the assistant" },
     { command: "/search-conversation", description: "Search in conversation history" },
+    { command: "/search-conversation-advanced", description: "FTS5 search across all sessions (query, --session, --limit, --before, --after)" },
+    { command: "/conversation-fts-status", description: "Show conversation FTS health and sync status" },
+    { command: "/rebuild-conversation-fts", description: "Rebuild conversation FTS index (--full, --incremental)" },
+    { command: "/review-list", description: "List saved review view states (--limit, --session)" },
+    { command: "/review-view", description: "Show a saved review view state (/review-view <view_id>)" },
     { command: "/search-code", description: "Search code (rg-based with ranking/cutoff)" },
-    { command: "/search-code-advanced", description: "Advanced code search placeholder (same as search-code for now)" },
+    { command: "/search-code-advanced", description: "Advanced code search (BM25 + optional semantic rerank)" },
+    { command: "/semantic-config", description: "Configure semantic search (enable + provider/model/key)" },
+    { command: "/semantic_config", description: "Alias for /semantic-config" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
     { command: "/switch-session", description: "Switch to a different session by ID" },
     { command: "/rename_session", description: "Rename the current session" },
@@ -480,8 +493,111 @@ export function useInputHandler({
   const handleDirectCommand = async (input: string): Promise<boolean> => {
     const trimmedInput = input.trim();
 
+    // ============================================
+    // /search-conversation-advanced <query> [--session N] [--limit N] [--before TS] [--after TS]
+    // IMPORTANT: Must be checked BEFORE /search-conversation to avoid being intercepted
+    // ============================================
+    if (trimmedInput.startsWith("/search-conversation-advanced")) {
+      const args = trimmedInput.replace("/search-conversation-advanced", "").trim();
+      if (!args) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "Usage: /search-conversation-advanced <query> [--session N] [--limit N] [--before TS] [--after TS]\n" +
+            "Example: /search-conversation-advanced \"authentication flow\" --limit 10\n" +
+            "Example: /search-conversation-advanced \"error handling\" --session 5 --limit 15",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+
+      try {
+        const { getConversationFTS } = await import("../tools/conversation-fts.js");
+        const fts = getConversationFTS();
+
+        // Parse arguments
+        const parts = args.split(/\s+/);
+        const flags = new Set(["--session", "--limit", "--before", "--after"]);
+        let query = "";
+        const options: any = { limit: 20 };
+
+        for (let i = 0; i < parts.length; i++) {
+          if (flags.has(parts[i])) {
+            const flag = parts[i];
+            const value = parts[i + 1];
+            if (flag === "--session") options.sessionId = Number(value);
+            else if (flag === "--limit") options.limit = Number(value);
+            else if (flag === "--before") options.beforeTimestamp = Number(value);
+            else if (flag === "--after") options.afterTimestamp = Number(value);
+            i++; // Skip next value
+          } else {
+            query += (query ? " " : "") + parts[i];
+          }
+        }
+
+        if (!query) {
+          const errorEntry: ChatEntry = {
+            type: "assistant",
+            content: "❌ Search query cannot be empty",
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, errorEntry]);
+          clearInput();
+          return true;
+        }
+
+        const results = fts.search(query, options);
+
+        if (results.length === 0) {
+          const entry: ChatEntry = {
+            type: "assistant",
+            content: `No messages found matching "${query}".`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, entry]);
+          clearInput();
+          return true;
+        }
+
+        const formatted = results
+          .map((result, idx) => {
+            const ts = new Date(result.timestamp).toLocaleString();
+            const sessionIdLabel = result.sessionKey || `Session ${result.sessionId}`;
+            const sessionInfo = result.sessionName ? ` [${result.sessionName} | ${sessionIdLabel}]` : ` [${sessionIdLabel}]`;
+            const roleTag = result.role === "assistant" ? "🤖" : "👤";
+            const rankTag = `(rank: ${result.rank.toFixed(2)})`;
+            return `${idx + 1}. ${ts}${sessionInfo} ${roleTag} ${rankTag}\n   ${result.snippet}`;
+          })
+          .join("\n\n");
+
+        const entry: ChatEntry = {
+          type: "assistant",
+          content: `Found ${results.length} results for "${query}":\n\n${formatted}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, entry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Advanced conversation search error: ${error.message}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
+      clearInput();
+      return true;
+    }
+
     // Handle conversation search (/search-conversation) and legacy /search
-    if (trimmedInput.startsWith("/search-conversation") || trimmedInput.startsWith("/search")) {
+    // IMPORTANT: This must come AFTER /search-conversation-advanced check
+    if (
+      trimmedInput === "/search-conversation" ||
+      trimmedInput.startsWith("/search-conversation ") ||
+      trimmedInput === "/search" ||
+      trimmedInput.startsWith("/search ")
+    ) {
       if (onSearchCommand) {
         const handled = onSearchCommand(trimmedInput.replace("/search-conversation", "/search"));
         if (handled) {
@@ -495,6 +611,48 @@ export function useInputHandler({
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, errorEntry]);
+      clearInput();
+      return true;
+    }
+
+    // Handle advanced code search (/search-code-advanced)
+    if (trimmedInput.startsWith("/search-code-advanced")) {
+      const parts = trimmedInput.replace("/search-code-advanced", "").trim().split(/\s+/).filter(Boolean);
+      let semanticMode: "heuristic" | "semantic" | "auto" | undefined;
+      const queryParts: string[] = [];
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if (part === "--semantic") {
+          semanticMode = "semantic";
+        } else if (part === "--heuristic") {
+          semanticMode = "heuristic";
+        } else if (part === "--auto") {
+          semanticMode = "auto";
+        } else {
+          queryParts.push(part);
+        }
+      }
+      const query = queryParts.join(" ").trim();
+      if (!query) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content:
+            "Usage: /search-code-advanced <query> [--semantic|--heuristic|--auto]\n" +
+            "Example: /search-code-advanced auth middleware\n" +
+            "Tip: Enable semantic rerank with /semantic-config or .env (GROKINOU_SEMANTIC_ENABLED=true).",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+      const res = await codeSearchTool.searchAdvanced(query, { semanticMode });
+      const entry: ChatEntry = {
+        type: "assistant",
+        content: res.success ? res.output || "No results" : `❌ ${res.error}`,
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, entry]);
       clearInput();
       return true;
     }
@@ -523,26 +681,432 @@ export function useInputHandler({
       return true;
     }
 
-    // Handle advanced code search (/search-code-advanced)
-    if (trimmedInput.startsWith("/search-code-advanced")) {
-      const query = trimmedInput.replace("/search-code-advanced", "").trim();
-      if (!query) {
+    // ============================================
+    // /semantic-config [--enable true|false] [--provider <name>] [--model <name>]
+    //                  [--api-key <key>] [--base-url <url>] [--persist project|user|none]
+    // ============================================
+    if (trimmedInput.startsWith("/semantic-config") || trimmedInput.startsWith("/semantic_config")) {
+      const args = trimmedInput
+        .replace("/semantic-config", "")
+        .replace("/semantic_config", "")
+        .trim();
+      const envPath = path.join(process.cwd(), ".env");
+      const outputLines: string[] = [];
+      const settingsManager = getSettingsManager();
+
+      const tokens = args.split(/\s+/).filter(Boolean);
+      let showStatus = tokens.length === 0;
+      let enableValue: string | undefined;
+      let providerValue: string | undefined;
+      let modelValue: string | undefined;
+      let apiKeyValue: string | undefined;
+      let baseUrlValue: string | undefined;
+      let persistValue: string | undefined;
+      let parseError: string | undefined;
+
+      for (let i = 0; i < tokens.length; i++) {
+        let token = tokens[i];
+        if (token === "--show" || token === "--status") {
+          showStatus = true;
+          continue;
+        }
+        let value: string | undefined;
+        if (token.includes("=")) {
+          const parts = token.split("=");
+          token = parts[0];
+          value = parts.slice(1).join("=");
+        } else {
+          value = tokens[i + 1];
+          i++;
+        }
+        if (!value) {
+          parseError = `Missing value for ${token}`;
+          break;
+        }
+        if (token === "--enable") {
+          enableValue = value;
+        } else if (token === "--provider") {
+          providerValue = value;
+        } else if (token === "--model") {
+          modelValue = value;
+        } else if (token === "--api-key") {
+          apiKeyValue = value;
+        } else if (token === "--base-url") {
+          baseUrlValue = value;
+        } else if (token === "--persist") {
+          persistValue = value;
+        } else {
+          parseError = `Unknown flag: ${token}`;
+          break;
+        }
+      }
+
+      if (parseError) {
         const errorEntry: ChatEntry = {
           type: "assistant",
-          content: "Usage: /search-code-advanced <query>\nExample: /search-code-advanced auth middleware",
+          content: `❌ ${parseError}\nUsage: /semantic-config --enable true|false --provider <name> --model <name> --api-key <key> --base-url <url> --persist project|user|none`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);
         clearInput();
         return true;
       }
-      const res = await codeSearchTool.searchAdvanced(query, {});
+
+      if (!showStatus) {
+        if (enableValue) {
+          process.env.GROKINOU_SEMANTIC_ENABLED =
+            enableValue.toLowerCase() === "true" ? "true" : "false";
+        }
+        if (providerValue) {
+          process.env.GROKINOU_EMBEDDING_PROVIDER = providerValue;
+        }
+        if (modelValue) {
+          process.env.GROKINOU_EMBEDDING_MODEL = modelValue;
+        }
+        if (baseUrlValue) {
+          process.env.GROKINOU_EMBEDDING_BASE_URL = baseUrlValue;
+        }
+        if (apiKeyValue) {
+          const keyProvider =
+            providerValue ||
+            process.env.GROKINOU_EMBEDDING_PROVIDER ||
+            "openai";
+          providerManager.setApiKey(keyProvider, apiKeyValue);
+        }
+
+        const persist = (persistValue || "project").toLowerCase();
+        if (persist !== "none") {
+          const semanticSettings = {
+            enabled: process.env.GROKINOU_SEMANTIC_ENABLED === "true",
+            provider: process.env.GROKINOU_EMBEDDING_PROVIDER,
+            model: process.env.GROKINOU_EMBEDDING_MODEL,
+            baseURL: process.env.GROKINOU_EMBEDDING_BASE_URL,
+          };
+          if (persist === "user") {
+            settingsManager.updateUserSetting("semanticSearch", semanticSettings);
+          } else {
+            settingsManager.updateProjectSetting("semanticSearch", semanticSettings);
+          }
+        }
+
+        const semanticStatus = getSharedSearchTool().reloadSemanticConfig();
+        outputLines.push(
+          semanticStatus.enabled
+            ? "✅ Semantic search enabled for this session."
+            : `⚠️  Semantic search not enabled: ${semanticStatus.reason || "Unknown reason"}`
+        );
+      }
+
+      const provider = process.env.GROKINOU_EMBEDDING_PROVIDER;
+      const model = process.env.GROKINOU_EMBEDDING_MODEL;
+      const baseURL = process.env.GROKINOU_EMBEDDING_BASE_URL;
+      const enabled = process.env.GROKINOU_SEMANTIC_ENABLED === "true";
+
+      outputLines.push(
+        "",
+        "Semantic search configuration:",
+        `- enabled: ${enabled ? "true" : "false"}`,
+        `- provider: ${provider || "(unset)"}`,
+        `- model: ${model || "(unset)"}`,
+        `- base URL: ${baseURL || "(unset)"}`,
+        `- api key: ${provider ? providerManager.getMaskedApiKey(provider) : "Not configured"}`,
+        `- .env path: ${envPath}`
+      );
+
+      const missing: string[] = [];
+      if (process.env.GROKINOU_SEMANTIC_ENABLED !== "true") {
+        missing.push("GROKINOU_SEMANTIC_ENABLED=true");
+      }
+      if (!provider) {
+        missing.push("GROKINOU_EMBEDDING_PROVIDER=<provider>");
+      }
+      if (!model) {
+        missing.push("GROKINOU_EMBEDDING_MODEL=<model>");
+      }
+      if (provider && !providerManager.hasApiKey(provider)) {
+        missing.push("GROKINOU_EMBEDDING_API_KEY=<key> or /apikey <provider> <key>");
+      }
+      if (missing.length) {
+        outputLines.push("", "Missing configuration:");
+        missing.forEach((item) => outputLines.push(`- ${item}`));
+      }
+      outputLines.push(
+        "",
+        "Per-request usage:",
+        "- /search-code-advanced <query> --heuristic (default)",
+        "- /search-code-advanced <query> --semantic (requires config)",
+        "- /search-code-advanced <query> --auto (uses semantic if enabled)"
+      );
+
       const entry: ChatEntry = {
         type: "assistant",
-        content: res.success ? res.output || "No results" : `❌ ${res.error}`,
+        content: outputLines.join("\n"),
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, entry]);
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /conversation-fts-status
+    // ============================================
+    if (trimmedInput === "/conversation-fts-status") {
+      try {
+        const { getConversationFTS } = await import("../tools/conversation-fts.js");
+        const fts = getConversationFTS();
+        const health = fts.getHealthStatus();
+
+        const syncEmoji = health.syncStatus === "OK" ? "✅" :
+                         health.syncStatus === "NEEDS_UPDATE" ? "⚠️" :
+                         health.syncStatus === "MISSING_INDEX" ? "❌" : "🔴";
+
+        const statusLines = [
+          "📊 Conversation FTS Health Status:",
+          "",
+          `${syncEmoji} Sync Status: ${health.syncStatus}`,
+          `📝 Total Messages: ${health.totalMessages}`,
+          `🔍 Indexed Messages: ${health.indexedMessages}`,
+          `⏳ Pending Messages: ${health.pendingCount}`,
+          `🔒 Integrity: ${health.integrityOk ? "✅ OK" : "❌ Corrupted"}`,
+        ];
+
+        if (health.lastIndexedId) {
+          statusLines.push(`🔢 Last Indexed ID: ${health.lastIndexedId}`);
+        }
+
+        if (health.lastIndexedAt) {
+          statusLines.push(`🕐 Last Indexed: ${health.lastIndexedAt.toLocaleString()}`);
+        }
+
+        if (health.lastRebuildAt) {
+          statusLines.push(`🔄 Last Rebuild: ${health.lastRebuildAt.toLocaleString()}`);
+        }
+
+        if (health.syncStatus !== "OK") {
+          statusLines.push("", "💡 Tip: Run /rebuild-conversation-fts --incremental to sync");
+        }
+
+        const entry: ChatEntry = {
+          type: "assistant",
+          content: statusLines.join("\n"),
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, entry]);
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Failed to get FTS status: ${error.message}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /rebuild-conversation-fts [--full|--incremental]
+    // ============================================
+    if (trimmedInput.startsWith("/rebuild-conversation-fts")) {
+      const args = trimmedInput.replace("/rebuild-conversation-fts", "").trim();
+      const isFull = args.includes("--full");
+      const isIncremental = args.includes("--incremental");
+
+      if (!isFull && !isIncremental) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "Usage: /rebuild-conversation-fts [--full|--incremental]\n" +
+            "  --full: Rebuild entire index from scratch (drops and recreates)\n" +
+            "  --incremental: Index only new messages since last update\n" +
+            "Example: /rebuild-conversation-fts --incremental",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+
+      try {
+        const { getConversationFTS } = await import("../tools/conversation-fts.js");
+        const fts = getConversationFTS();
+
+        const startEntry: ChatEntry = {
+          type: "assistant",
+          content: `⏳ Starting ${isFull ? "full" : "incremental"} rebuild of conversation FTS index...`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, startEntry]);
+
+        if (isFull) {
+          await fts.rebuildFull();
+          const successEntry: ChatEntry = {
+            type: "assistant",
+            content: "✅ Full rebuild completed! All messages have been reindexed.",
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, successEntry]);
+        } else {
+          const indexed = await fts.rebuildIncremental();
+          const successEntry: ChatEntry = {
+            type: "assistant",
+            content: `✅ Incremental rebuild completed! Indexed ${indexed} new messages.`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, successEntry]);
+        }
+      } catch (error: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `❌ Rebuild failed: ${error.message}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /review-list [--limit N] [--session N]
+    // /review-view <view_id>
+    // ============================================
+    if (trimmedInput.startsWith("/review-list")) {
+      const args = trimmedInput.replace("/review-list", "").trim().split(/\s+/).filter(Boolean);
+      let limit = 5;
+      let sessionId: number | undefined;
+      for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--limit") {
+          limit = Number(args[i + 1] || 5);
+          i++;
+        } else if (args[i] === "--session") {
+          sessionId = Number(args[i + 1]);
+          i++;
+        }
+      }
+
+      try {
+        const [{ getTimelineDb }, { EventType }] = await Promise.all([
+          import("../timeline/database.js"),
+          import("../timeline/event-types.js"),
+        ]);
+        const db = getTimelineDb().getConnection();
+        let sql = `SELECT id, timestamp, payload FROM timeline_events WHERE event_type = ?`;
+        const params: any[] = [EventType.REVIEW_VIEW_STATE];
+        if (sessionId !== undefined && !Number.isNaN(sessionId)) {
+          sql += ` AND json_extract(payload, '$.session_id') = ?`;
+          params.push(sessionId);
+        }
+        sql += ` ORDER BY timestamp DESC LIMIT ?`;
+        params.push(limit);
+
+        const rows = db.prepare(sql).all(...params) as Array<{ id: string; timestamp: number; payload: string }>;
+        if (rows.length === 0) {
+          setChatHistory((prev) => [...prev, {
+            type: "assistant",
+            content: "No review view states found.",
+            timestamp: new Date(),
+          }]);
+          clearInput();
+          return true;
+        }
+
+        const formatted = rows.map((row, idx) => {
+          const payload = JSON.parse(row.payload);
+          const ts = row.timestamp > 1_000_000_000_000 ? Math.floor(row.timestamp / 1000) : row.timestamp;
+          const when = new Date(ts).toLocaleString();
+          const sessionKey = payload?.meta?.session_key || `session ${payload?.session_id}`;
+          const layout = payload?.layout || "unknown";
+          const active = payload?.active_pane || "unknown";
+          return `${idx + 1}. ${when} | ${sessionKey} | ${layout} | active: ${active}\n   view_id: ${payload?.view_id || row.id}`;
+        }).join("\n\n");
+
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `Review view states:\n\n${formatted}`,
+          timestamp: new Date(),
+        }]);
+      } catch (error: any) {
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `❌ Failed to list review views: ${error.message}`,
+          timestamp: new Date(),
+        }]);
+      }
+
+      clearInput();
+      return true;
+    }
+
+    if (trimmedInput.startsWith("/review-view")) {
+      const args = trimmedInput.replace("/review-view", "").trim();
+      const viewId = args || undefined;
+
+      try {
+        const [{ getTimelineDb }, { EventType }] = await Promise.all([
+          import("../timeline/database.js"),
+          import("../timeline/event-types.js"),
+        ]);
+        const { setReviewViewState, setPendingReviewViewState } = await import("../ui/review-view-store.js");
+        const db = getTimelineDb().getConnection();
+        let sql = `SELECT id, timestamp, payload FROM timeline_events WHERE event_type = ?`;
+        const params: any[] = [EventType.REVIEW_VIEW_STATE];
+
+        if (viewId) {
+          sql += ` AND json_extract(payload, '$.view_id') = ?`;
+          params.push(viewId);
+        }
+        sql += ` ORDER BY timestamp DESC LIMIT 1`;
+
+        const row = db.prepare(sql).get(...params) as { id: string; timestamp: number; payload: string } | undefined;
+        if (!row) {
+          setChatHistory((prev) => [...prev, {
+            type: "assistant",
+            content: viewId ? `No review view state found for view_id: ${viewId}` : "No review view state found.",
+            timestamp: new Date(),
+          }]);
+          clearInput();
+          return true;
+        }
+
+        const payload = JSON.parse(row.payload);
+        if (searchMode) {
+          setPendingReviewViewState(payload);
+        } else {
+          setReviewViewState(payload);
+        }
+        const ts = row.timestamp > 1_000_000_000_000 ? Math.floor(row.timestamp / 1000) : row.timestamp;
+        const when = new Date(ts).toLocaleString();
+        const sessionKey = payload?.meta?.session_key || `session ${payload?.session_id}`;
+        const panes = (payload?.panes || []).map((p: any) => {
+          const res = p?.resource ? JSON.stringify(p.resource) : "none";
+          return `- ${p.id} (${p.type}) resource: ${res}`;
+        }).join("\n");
+
+        const content = [
+          `Review view state (${payload?.view_id || row.id})`,
+          `When: ${when}`,
+          `Session: ${sessionKey}`,
+          `Layout: ${payload?.layout || "unknown"}`,
+          `Active pane: ${payload?.active_pane || "unknown"}`,
+          `Panes:\n${panes || "- none"}`,
+        ].join("\n");
+
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content,
+          timestamp: new Date(),
+        }]);
+      } catch (error: any) {
+        setChatHistory((prev) => [...prev, {
+          type: "assistant",
+          content: `❌ Failed to load review view: ${error.message}`,
+          timestamp: new Date(),
+        }]);
+      }
+
       clearInput();
       return true;
     }

@@ -1562,6 +1562,25 @@ export class GrokAgent extends EventEmitter {
             executionStream.emitCOT('decision', `❌ Conversation search failed`);
           }
           break;
+        case "search_conversation_advanced":
+          executionStream.emitCOT('thinking', `Advanced FTS search across all sessions: "${args.query}"`);
+          result = await this.searchConversationAdvancedTool(
+            args.query,
+            {
+              limit: args.limit ? Number(args.limit) : undefined,
+              sessionId: args.sessionId ? Number(args.sessionId) : undefined,
+              beforeTimestamp: args.beforeTimestamp ? Number(args.beforeTimestamp) : undefined,
+              afterTimestamp: args.afterTimestamp ? Number(args.afterTimestamp) : undefined
+            }
+          );
+          if (result.success) {
+            executionStream.emitCOT('observation', `Advanced conversation search returned results`);
+            executionStream.emitCOT('decision', `✅ Advanced conversation search completed`);
+          } else {
+            executionStream.emitCOT('observation', `Advanced conversation search failed: ${result.error}`);
+            executionStream.emitCOT('decision', `❌ Advanced conversation search failed`);
+          }
+          break;
         case "search_advanced":
           executionStream.emitCOT('thinking', `Advanced search for: "${args.query}"`);
           const advTypeInfo = args.search_type ? ` (${args.search_type})` : '';
@@ -1570,6 +1589,7 @@ export class GrokAgent extends EventEmitter {
           result = await this.search.searchAdvanced(args.query, {
             searchType: args.search_type,
             searchContext: args.search_context,
+            semanticMode: args.semantic_mode,
             includePattern: args.include_pattern,
             excludePattern: args.exclude_pattern,
             caseSensitive: args.case_sensitive,
@@ -1997,6 +2017,54 @@ export class GrokAgent extends EventEmitter {
       return { success: true, output: formatted };
     } catch (error: any) {
       return { success: false, error: `Conversation search error: ${error.message}` };
+    }
+  }
+
+  /**
+   * Advanced conversation search using FTS5 (cross-session, ranked results)
+   */
+  private async searchConversationAdvancedTool(
+    query: string,
+    options: {
+      limit?: number;
+      sessionId?: number;
+      beforeTimestamp?: number;
+      afterTimestamp?: number;
+    } = {}
+  ): Promise<ToolResult> {
+    try {
+      const { getConversationFTS } = await import("../tools/conversation-fts.js");
+      const fts = getConversationFTS();
+
+      const results = fts.search(query, {
+        limit: options.limit || 20,
+        sessionId: options.sessionId,
+        beforeTimestamp: options.beforeTimestamp,
+        afterTimestamp: options.afterTimestamp
+      });
+
+      if (results.length === 0) {
+        return { success: true, output: `No messages found matching "${query}".` };
+      }
+
+      const formatted = results
+        .map((result, idx) => {
+          const ts = this.formatTimestamp(result.timestamp);
+          const sessionIdLabel = result.sessionKey || `Session ${result.sessionId}`;
+          const sessionInfo = result.sessionName ? ` [${result.sessionName} | ${sessionIdLabel}]` : ` [${sessionIdLabel}]`;
+          const roleTag = result.role === "assistant" ? "🤖" : "👤";
+          const rankTag = `(rank: ${result.rank.toFixed(2)})`;
+
+          return `${idx + 1}. ${ts}${sessionInfo} ${roleTag} ${rankTag}\n   ${result.snippet}`;
+        })
+        .join("\n\n");
+
+      return {
+        success: true,
+        output: `Found ${results.length} results for "${query}":\n\n${formatted}`
+      };
+    } catch (error: any) {
+      return { success: false, error: `Advanced conversation search error: ${error.message}` };
     }
   }
 
