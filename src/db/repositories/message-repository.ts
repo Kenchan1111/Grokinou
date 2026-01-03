@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { Message, MessageInput } from '../types.js';
+import { getConversationFTS } from '../../tools/conversation-fts.js';
 
 export class MessageRepository {
   constructor(private db: Database.Database) {}
@@ -43,8 +44,28 @@ export class MessageRepository {
       input.is_streaming ? 1 : 0,
       input.parent_message_id || null
     );
-    
-    return this.findById(result.lastInsertRowid as number)!;
+
+    const messageId = result.lastInsertRowid as number;
+    const message = this.findById(messageId)!;
+
+    // Index in conversation-fts.db (async, non-blocking)
+    try {
+      if (message.content && message.content.trim().length > 0) {
+        const fts = getConversationFTS();
+        fts.indexMessage(
+          messageId,
+          message.session_id,
+          message.content,
+          new Date(message.timestamp),
+          message.role
+        );
+      }
+    } catch (e) {
+      // Don't fail message save if FTS indexing fails
+      console.error('⚠️  ConversationFTS indexing failed for message', messageId, ':', e);
+    }
+
+    return message;
   }
 
   /**
@@ -112,6 +133,14 @@ export class MessageRepository {
   deleteBySession(sessionId: number) {
     const stmt = this.db.prepare('DELETE FROM messages WHERE session_id = ?');
     stmt.run(sessionId);
+
+    // Also delete from FTS index
+    try {
+      const fts = getConversationFTS();
+      fts.deleteSession(sessionId);
+    } catch (e) {
+      console.error('⚠️  ConversationFTS: Failed to delete session from index:', e);
+    }
   }
 
   /**

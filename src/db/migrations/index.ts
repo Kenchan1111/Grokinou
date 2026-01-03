@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import * as migration002 from './002-add-session-search-fields.js';
+import * as migration003 from './003-protect-session-identifiers.js';
 
 /**
  * Migration Manager
@@ -20,6 +21,12 @@ const migrations: Migration[] = [
     name: 'add-session-search-fields',
     up: migration002.up,
     down: migration002.down,
+  },
+  {
+    version: 3,
+    name: 'protect-session-identifiers',
+    up: migration003.up,
+    down: migration003.down,
   },
   // Future migrations go here
 ];

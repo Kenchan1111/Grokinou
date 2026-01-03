@@ -116,6 +116,11 @@ export enum EventType {
   REWIND_STATE_MATERIALIZED = 'REWIND_STATE_MATERIALIZED',
   REWIND_COMPLETED = 'REWIND_COMPLETED',
   REWIND_FAILED = 'REWIND_FAILED',
+
+  // ========================================
+  // UI / REVIEW EVENTS
+  // ========================================
+  REVIEW_VIEW_STATE = 'REVIEW_VIEW_STATE',
   
   // ========================================
   // SNAPSHOT EVENTS
@@ -212,6 +217,22 @@ export interface RewindStartedPayload {
   requested_by: string;       // 'user' | 'llm:<model>'
 }
 
+export interface ReviewViewStatePayload {
+  session_id: number;
+  view_id: string;
+  mode: 'review';
+  layout: 'split-vertical' | 'split-horizontal' | 'fullscreen' | 'single';
+  active_pane: 'conversation' | 'viewer' | 'search' | 'other';
+  panes: Array<{
+    id: string;
+    type: 'conversation' | 'execution' | 'search' | 'diff' | 'tool' | 'other';
+    resource?: Record<string, any>;
+    scroll?: { line?: number; col?: number };
+    selection?: { start_line?: number; end_line?: number };
+  }>;
+  meta?: Record<string, any>;
+}
+
 /**
  * Timeline Event Structure
  * 
@@ -240,6 +261,7 @@ export enum EventCategory {
   FILE = 'FILE',
   GIT = 'GIT',
   REWIND = 'REWIND',
+  UI = 'UI',
 }
 
 /**
@@ -310,6 +332,9 @@ export const EVENT_CATEGORIES = {
     EventType.REWIND_STATE_MATERIALIZED,
     EventType.REWIND_COMPLETED,
     EventType.REWIND_FAILED,
+  ],
+  UI: [
+    EventType.REVIEW_VIEW_STATE,
   ],
 } as const;
 

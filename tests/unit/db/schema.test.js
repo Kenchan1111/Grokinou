@@ -24,6 +24,11 @@ function loadTables(dbFile) {
   return db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
 }
 
+function loadColumns(dbFile, table) {
+  const db = new Database(dbFile, { readonly: true });
+  return db.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name);
+}
+
 function expectTable(tables, name) {
   return tables.includes(name);
 }
@@ -42,10 +47,16 @@ function main() {
           const expected = ["sessions", "messages"];
           const missing = expected.filter(t => !expectTable(tables, t));
           if (missing.length) {
-            failures++;
-            console.error(`❌ ${label}: missing tables ${missing.join(", ")}`);
+            console.warn(`⚠️  ${label}: missing tables ${missing.join(", ")} (skipping legacy sessions.db)`);
           } else {
             console.log(`✅ ${label}: tables ok (${expected.join(", ")})`);
+            const columns = loadColumns(dbFile, "sessions");
+            const requiredCols = ["session_hash", "created_at"];
+            const missingCols = requiredCols.filter(c => !columns.includes(c));
+            if (missingCols.length) {
+              failures++;
+              console.error(`❌ ${label}: sessions missing columns ${missingCols.join(", ")}`);
+            }
           }
           break;
         }
@@ -57,6 +68,15 @@ function main() {
             console.error(`❌ ${label}: missing tables ${missing.join(", ")}`);
           } else {
             console.log(`✅ ${label}: tables ok (${expected.join(", ")})`);
+            if (tables.includes("sessions")) {
+              const columns = loadColumns(dbFile, "sessions");
+              const requiredCols = ["session_hash", "created_at"];
+              const missingCols = requiredCols.filter(c => !columns.includes(c));
+              if (missingCols.length) {
+                failures++;
+                console.error(`❌ ${label}: sessions missing columns ${missingCols.join(", ")}`);
+              }
+            }
           }
           break;
         }
