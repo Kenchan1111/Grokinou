@@ -149,12 +149,17 @@ function ChatInterfaceWithAgent({
   const confirmationService = ConfirmationService.getInstance();
   const VISIBLE_LIMIT = 10; // Keep only last N entries in dynamic tree (rest in Static)
   
+  const forceSearchMode = process.env.GROKINOU_TEST_FORCE_SEARCH_MODE === "1";
+  const allowInputInSearch = process.env.GROKINOU_TEST_ALLOW_INPUT_IN_SEARCH === "1";
+  const autoExitSearchMs = Number(process.env.GROKINOU_TEST_AUTO_EXIT_SEARCH_MS || 0);
+
   // Search mode states
-  const [searchMode, setSearchMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMode, setSearchMode] = useState(forceSearchMode);
+  const [searchQuery, setSearchQuery] = useState(forceSearchMode ? "test" : "");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchFullscreen, setSearchFullscreen] = useState(false);
   const inputInjectionRef = useRef<((text: string) => void) | null>(null);
+  const [viewerFocused, setViewerFocused] = useState(false);
 
   // Render key to force re-render after execution completes (prevents ghost duplication)
   const [renderKey, setRenderKey] = useState(0);
@@ -299,6 +304,14 @@ function ChatInterfaceWithAgent({
     setSearchResults([]);
     setSearchFullscreen(false);
   }, []);
+
+  useEffect(() => {
+    if (!forceSearchMode || !autoExitSearchMs) return;
+    const timer = setTimeout(() => {
+      handleCloseSearch();
+    }, autoExitSearchMs);
+    return () => clearTimeout(timer);
+  }, [autoExitSearchMs, forceSearchMode, handleCloseSearch]);
   
   // Toggle fullscreen for search results
   const handleToggleFullscreen = useCallback(() => {
@@ -333,6 +346,7 @@ function ChatInterfaceWithAgent({
 
   // Track if status was already added (to avoid duplicates in React strict mode)
   const statusAddedRef = useRef(false);
+  const isRestoringRef = useRef(false);
 
   useEffect(() => {
     // Avoid duplicate execution in React strict mode
@@ -346,6 +360,7 @@ function ChatInterfaceWithAgent({
         const autoRestoreSession = manager.getProjectSetting("autoRestoreSession");
 
         if (persistSession !== false && autoRestoreSession !== false) {
+          isRestoringRef.current = true;
           // Load chat history (session already initialized by GrokAgent.constructor)
           const entries = await loadChatHistory();
           
@@ -362,6 +377,7 @@ function ChatInterfaceWithAgent({
             const historyToSet = statusMessage ? [...entries, statusMessage] : entries;
             setCommittedHistory(historyToSet);
             setChatHistory(historyToSet);
+            setActiveMessages([]);
             
             // Restore agent context
             agent.restoreFromHistory(entries);
@@ -370,6 +386,7 @@ function ChatInterfaceWithAgent({
             const historyToSet = statusMessage ? [statusMessage] : [];
             setCommittedHistory(historyToSet);
             setChatHistory(historyToSet);
+            setActiveMessages([]);
             
             // Set initial session name if provided
             if (initialSessionName) {
@@ -396,6 +413,10 @@ function ChatInterfaceWithAgent({
       } catch (error) {
         console.error('Session load error:', error);
         setChatHistory([]);
+      } finally {
+        setTimeout(() => {
+          isRestoringRef.current = false;
+        }, 0);
       }
     })();
   }, [agent, initialSessionName]);
@@ -411,6 +432,9 @@ function ChatInterfaceWithAgent({
 
   // Extraire les messages EN COURS (pas encore committés dans l'historique statique)
   useEffect(() => {
+    if (isRestoringRef.current) {
+      return;
+    }
     // ✅ Skip recalculation if we're in the middle of committing to prevent race condition
     if (isCommittingRef.current) {
       return;
@@ -433,6 +457,9 @@ function ChatInterfaceWithAgent({
 
   // Commit automatique quand un message est terminé
   useEffect(() => {
+    if (isRestoringRef.current) {
+      return;
+    }
     // Si on n'est pas en train de streamer et qu'il y a des messages actifs
     // ET qu'on n'est PAS en train de switcher de session
     // ET qu'on n'est PAS déjà en train de committer
@@ -719,11 +746,12 @@ function ChatInterfaceWithAgent({
           onCloseSearch={handleCloseSearch}
           onPasteToInput={handlePasteToInput}
           onToggleFullscreen={handleToggleFullscreen}
+          onFocusChange={(focused) => setViewerFocused(focused === 'viewer')}
           confirmationOptions={confirmationOptions}
           onConfirmation={handleConfirmation}
           onRejection={handleRejection}
           inputController={
-            !confirmationOptions && !searchMode ? (
+            !confirmationOptions && (!searchMode || allowInputInSearch) ? (
               <InputController
                 agent={agent}
                 chatHistory={chatHistory}
@@ -742,6 +770,7 @@ function ChatInterfaceWithAgent({
                 isProcessing={isProcessing}
                 isStreaming={isStreaming}
                 isConfirmationActive={!!confirmationOptions}
+                inputEnabled={!viewerFocused}
                 searchMode={searchMode}
                 onSearchCommand={handleSearchCommand}
                 inputInjectionRef={inputInjectionRef}

@@ -8,8 +8,8 @@
  * rather than reusing the same JSX element across different layouts.
  */
 
-import React from 'react';
-import { Box, Text, Static } from 'ink';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Text, Static, useStdout } from 'ink';
 import { useChatState } from '../contexts/ChatContext.js';
 import { ChatHistory, MemoizedArchived } from './chat-history.js';
 // TODO: Import or create StreamingDisplay component
@@ -18,6 +18,11 @@ import { LoadingSpinner } from './loading-spinner.js';
 import { useScrollPosition } from '../hooks/use-scroll-position.js';
 import ConfirmationDialog from './confirmation-dialog.js';
 import type { ConfirmationOptions } from '../../utils/confirmation-service.js';
+import {
+  getConversationScrollState,
+  setConversationScrollOffset,
+  subscribeConversationScrollOffset,
+} from '../conversation-scroll-store.js';
 
 // ============================================================================
 // CONVERSATION VIEW
@@ -82,6 +87,104 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
   // Preserve scroll position during re-renders (disabled in searchMode)
   useScrollPosition(!searchMode && !isStreaming);
 
+  const { stdout } = useStdout();
+  const [scrollState, setScrollState] = useState(getConversationScrollState());
+
+  useEffect(() => {
+    const unsubscribe = subscribeConversationScrollOffset((state) => {
+      setScrollState(state);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const terminalColumns = stdout?.columns || 80;
+  const terminalRows = stdout?.rows || 24;
+
+  const estimateEntryLines = (entry: any): number => {
+    if (!entry) return 1;
+    const content = typeof entry.content === "string" ? entry.content : "";
+    const lines = content.split("\n");
+    const wrapped = lines.reduce((acc, line) => {
+      const width = Math.max(10, terminalColumns - 6);
+      return acc + Math.max(1, Math.ceil(line.length / width));
+    }, 0);
+    return Math.max(2, wrapped + 2);
+  };
+
+  const computeLineOffsetFromMessages = (messageOffset: number): number => {
+    if (messageOffset <= 0) return 0;
+    let total = 0;
+    let count = 0;
+    for (let i = committedHistory.length - 1; i >= 0 && count < messageOffset; i -= 1) {
+      total += estimateEntryLines(committedHistory[i]);
+      count += 1;
+    }
+    return total;
+  };
+
+  const resolveLineOffset = (): number => {
+    if (scrollState.mode === "line") {
+      return scrollState.lineOffset;
+    }
+    return computeLineOffsetFromMessages(scrollState.messageOffset);
+  };
+
+  const lineOffset = resolveLineOffset();
+
+  useEffect(() => {
+    if (scrollState.mode === "message") {
+      setConversationScrollOffset(lineOffset);
+    }
+  }, [lineOffset, scrollState.mode]);
+
+  const { slice: committedSlice, maxLineOffset } = useMemo(() => {
+    if (searchMode) {
+      return { slice: committedHistory.slice(-100), maxLineOffset: 0 };
+    }
+    const windowLines = Math.max(24, Math.floor(terminalRows * 3));
+    let totalLines = 0;
+    let linesRemaining = lineOffset + windowLines;
+    let startIndex = 0;
+    let endIndex = committedHistory.length;
+
+    for (let i = committedHistory.length - 1; i >= 0; i -= 1) {
+      const entryLines = estimateEntryLines(committedHistory[i]);
+      totalLines += entryLines;
+      linesRemaining -= entryLines;
+      if (linesRemaining <= 0) {
+        startIndex = Math.max(0, i);
+        break;
+      }
+    }
+
+    const maxOffset = Math.max(0, totalLines - windowLines);
+    const effectiveOffset = Math.min(lineOffset, maxOffset);
+    if (effectiveOffset === 0) {
+      return { slice: committedHistory, maxLineOffset: maxOffset };
+    }
+
+    if (effectiveOffset !== lineOffset) {
+      startIndex = 0;
+      linesRemaining = effectiveOffset + windowLines;
+      for (let i = committedHistory.length - 1; i >= 0; i -= 1) {
+        const entryLines = estimateEntryLines(committedHistory[i]);
+        linesRemaining -= entryLines;
+        if (linesRemaining <= 0) {
+          startIndex = Math.max(0, i);
+          break;
+        }
+      }
+    }
+
+    return { slice: committedHistory.slice(startIndex, endIndex), maxLineOffset: maxOffset };
+  }, [committedHistory, lineOffset, searchMode, terminalColumns, terminalRows]);
+
+  useEffect(() => {
+    if (lineOffset > maxLineOffset) {
+      setConversationScrollOffset(maxLineOffset);
+    }
+  }, [lineOffset, maxLineOffset]);
+
   return (
     <Box flexDirection="column" height={searchMode ? "100%" : undefined} overflow={searchMode ? "hidden" : undefined}>
       {/* Tips uniquement au premier démarrage sans historique */}
@@ -109,7 +212,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
       <Box flexDirection="column" ref={scrollRef} flexGrow={1}>
         {/* HISTORIQUE STATIQUE : Tous les messages TERMINÉS (committed) */}
         {/* En mode recherche, limiter l'affichage pour éviter le scroll */}
-        <Static items={searchMode ? committedHistory.slice(-100) : committedHistory}>
+        <Static items={committedSlice}>
           {(entry, index) => (
             <MemoizedArchived key={`committed-${entry.timestamp.getTime()}-${index}`} entry={entry} />
           )}
@@ -132,11 +235,24 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
 
       {/* Status bar */}
       {showStatus && !confirmationOptions && !searchMode && (
-        <LoadingSpinner
-          isActive={isProcessing || isStreaming}
-          processingTime={processingTime}
-          tokenCount={tokenCount}
-        />
+        lineOffset > 0 ? (
+          <Box flexDirection="row" justifyContent="space-between">
+            <Text dimColor>
+              Scroll: {lineOffset} lines up (PageUp/PageDown)
+            </Text>
+            <LoadingSpinner
+              isActive={isProcessing || isStreaming}
+              processingTime={processingTime}
+              tokenCount={tokenCount}
+            />
+          </Box>
+        ) : (
+          <LoadingSpinner
+            isActive={isProcessing || isStreaming}
+            processingTime={processingTime}
+            tokenCount={tokenCount}
+          />
+        )
       )}
 
       {/* Confirmation dialog (rendered at end, visible above conversation) */}

@@ -11,10 +11,19 @@
  * Only visibility and dimensions change between modes.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
 import { executionManager } from '../../execution/index.js';
 import type { ExecutionState } from '../../execution/index.js';
+import { getReviewHook } from '../../timeline/hooks/review-hook.js';
+import { sessionManager } from '../../utils/session-manager-sqlite.js';
+import { nanoid } from 'nanoid';
+import { subscribeReviewViewState, consumePendingReviewViewState } from '../review-view-store.js';
+import {
+  getConversationScrollOffset,
+  setConversationMessageOffset,
+  setConversationScrollOffset,
+} from '../conversation-scroll-store.js';
 
 // ============================================================================
 // TYPES
@@ -36,6 +45,7 @@ export interface LayoutManagerProps {
   executionViewer: React.ReactNode;
   config?: Partial<LayoutConfig>;
   onModeChange?: (mode: ViewerMode) => void;
+  onFocusChange?: (focused: 'conversation' | 'viewer') => void;
 }
 
 // ============================================================================
@@ -59,17 +69,22 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   conversation,
   executionViewer,
   config: userConfig,
-  onModeChange
+  onModeChange,
+  onFocusChange
 }) => {
   const config = { ...DEFAULT_CONFIG, ...userConfig };
   const [mode, setMode] = useState<ViewerMode>(config.defaultMode);
   const [focused, setFocused] = useState<'conversation' | 'viewer'>('conversation');
   const [hasActiveExecution, setHasActiveExecution] = useState(false);
   const [autoHideTimeout, setAutoHideTimeout] = useState<NodeJS.Timeout | null>(null);
+  const viewIdRef = useRef<string | null>(null);
+  const lastEmitRef = useRef<number>(0);
+  const [splitRatio, setSplitRatio] = useState(config.splitRatio);
 
   // Get terminal dimensions for numeric width calculation
   const { stdout } = useStdout();
   const terminalColumns = stdout?.columns || 80;
+  const terminalRows = stdout?.rows || 24;
 
   /**
    * Change mode and notify
@@ -147,6 +162,153 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     };
   }, [config.autoShow, mode, changeMode, cancelAutoHide, scheduleAutoHide]);
 
+  useEffect(() => {
+    const applyState = (state: any) => {
+      if (!state) return;
+      if (state.layout === 'fullscreen') {
+        changeMode('fullscreen');
+      } else if (state.layout === 'single') {
+        changeMode('hidden');
+      } else {
+        changeMode('split');
+      }
+      if (state.active_pane === 'viewer') {
+        setFocused('viewer');
+      } else {
+        setFocused('conversation');
+      }
+      if (state.meta?.split_ratio && Number.isFinite(state.meta.split_ratio)) {
+        setSplitRatio(Math.max(0.1, Math.min(0.9, Number(state.meta.split_ratio))));
+      }
+      const panes = Array.isArray(state.panes) ? state.panes : [];
+      const viewerPane = panes.find((p) => p.type === 'execution');
+      const conversationPane = panes.find((p) => p.type === 'conversation');
+      const selectedExecutionId = viewerPane?.resource?.selected_execution_id;
+      if (selectedExecutionId) {
+        executionManager.setSelectedExecutionId(selectedExecutionId);
+      }
+      const selectedCommandIndex = viewerPane?.resource?.selected_command_index ?? viewerPane?.selection?.start_line;
+      const scrollOffset = viewerPane?.resource?.scroll_offset ?? viewerPane?.scroll?.line;
+      const detailsMode = viewerPane?.resource?.details_mode;
+      if (
+        typeof selectedCommandIndex === 'number' ||
+        typeof scrollOffset === 'number' ||
+        typeof detailsMode === 'boolean'
+      ) {
+        executionManager.setViewerState({
+          selectedCommandIndex: typeof selectedCommandIndex === 'number' ? selectedCommandIndex : undefined,
+          scrollOffset: typeof scrollOffset === 'number' ? scrollOffset : undefined,
+          detailsMode: typeof detailsMode === 'boolean' ? detailsMode : undefined,
+        });
+      }
+      const conversationLineScroll =
+        conversationPane?.resource?.scroll_line_offset ??
+        conversationPane?.scroll?.line;
+      const conversationMessageScroll = conversationPane?.resource?.scroll_offset;
+      if (typeof conversationLineScroll === 'number') {
+        setConversationScrollOffset(conversationLineScroll);
+      } else if (typeof conversationMessageScroll === 'number') {
+        setConversationMessageOffset(conversationMessageScroll);
+      }
+    };
+
+    const pending = consumePendingReviewViewState();
+    if (pending) {
+      applyState(pending);
+      if (process.env.GROKINOU_TEST_LOG_REVIEW_APPLY === '1') {
+        console.log('✅ Applied pending review view state');
+      }
+    }
+
+    const unsubscribe = subscribeReviewViewState((state) => {
+      applyState(state);
+    });
+    return () => unsubscribe();
+  }, [changeMode]);
+
+  useEffect(() => {
+    onFocusChange?.(focused);
+  }, [focused, onFocusChange]);
+
+  useEffect(() => {
+    if (mode === 'fullscreen' && focused !== 'viewer') {
+      setFocused('viewer');
+    }
+  }, [mode, focused]);
+
+  useEffect(() => {
+    if (mode === 'hidden') {
+      viewIdRef.current = null;
+      return;
+    }
+    if (!viewIdRef.current) {
+      viewIdRef.current = `review-${Date.now()}-${nanoid(6)}`;
+    }
+    const now = Date.now();
+    if (now - lastEmitRef.current < 300) return;
+    lastEmitRef.current = now;
+
+    const session = sessionManager.getCurrentSession();
+    if (!session) return;
+    const executions = executionManager.getActiveExecutions();
+    const selectedExecutionId = executionManager.getSelectedExecutionId();
+    const viewerState = executionManager.getViewerState();
+
+    const createdAt = session.created_at || session.started_at;
+    const createdDate = createdAt ? new Date(createdAt) : undefined;
+    const hashPart = session.session_hash ? session.session_hash.slice(0, 8) : 'nohash';
+    const sessionKey = createdDate && !Number.isNaN(createdDate.getTime())
+      ? `${session.id}.${createdDate.getUTCFullYear().toString().padStart(4, '0')}${(createdDate.getUTCMonth() + 1).toString().padStart(2, '0')}${createdDate.getUTCDate().toString().padStart(2, '0')}-${createdDate.getUTCHours().toString().padStart(2, '0')}${createdDate.getUTCMinutes().toString().padStart(2, '0')}${createdDate.getUTCSeconds().toString().padStart(2, '0')}.${hashPart}`
+      : `${session.id}.unknown.${hashPart}`;
+
+    const reviewHook = getReviewHook();
+    const layoutType = mode === 'fullscreen'
+      ? 'fullscreen'
+      : (config.layout === 'vertical' ? 'split-horizontal' : 'split-vertical');
+    const conversationScrollOffset = getConversationScrollOffset();
+    reviewHook.captureViewState({
+      session_id: session.id,
+      view_id: viewIdRef.current,
+      mode: 'review',
+      layout: layoutType,
+      active_pane: focused === 'viewer' ? 'viewer' : 'conversation',
+      panes: [
+        {
+          id: 'conversation',
+          type: 'conversation',
+          resource: {
+            kind: 'session',
+            session_id: session.id,
+            session_key: sessionKey,
+            scroll_line_offset: conversationScrollOffset,
+          },
+          scroll: { line: conversationScrollOffset },
+        },
+        {
+          id: 'viewer',
+          type: 'execution',
+          resource: {
+            kind: 'execution',
+            selected_execution_id: selectedExecutionId,
+            execution_ids: executions.map((e) => e.id),
+            selected_command_index: viewerState.selectedCommandIndex,
+            scroll_offset: viewerState.scrollOffset,
+            details_mode: viewerState.detailsMode,
+          },
+          scroll: { line: viewerState.scrollOffset },
+          selection: { start_line: viewerState.selectedCommandIndex, end_line: viewerState.selectedCommandIndex },
+        },
+      ],
+      meta: {
+        viewer_mode: mode,
+        split_ratio: splitRatio,
+        session_key: sessionKey,
+      },
+    }).catch(() => {
+      // best-effort
+    });
+  }, [mode, focused, splitRatio]);
+
   /**
    * Keyboard shortcuts
    */
@@ -187,6 +349,17 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     if (key.tab && mode === 'split') {
       setFocused(f => f === 'conversation' ? 'viewer' : 'conversation');
     }
+
+    // PageUp/PageDown: Scroll conversation history when focused
+    if (focused === 'conversation' && !key.ctrl && !key.meta) {
+      const step = key.shift ? terminalRows : Math.max(5, Math.floor(terminalRows / 2));
+      if (key.pageUp) {
+        setConversationScrollOffset(getConversationScrollOffset() + step);
+      }
+      if (key.pageDown) {
+        setConversationScrollOffset(Math.max(0, getConversationScrollOffset() - step));
+      }
+    }
   });
 
   /**
@@ -201,10 +374,10 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         // Account for borders (2 chars per panel) and padding (2 chars per panel)
         const borderAndPadding = 4; // 2 for left border+padding, 2 for right
         const availableColumns = terminalColumns - borderAndPadding;
-        const leftColumns = Math.floor(availableColumns * config.splitRatio);
+        const leftColumns = Math.floor(availableColumns * splitRatio);
         return { width: leftColumns, display: 'flex' as const };
       } else {
-        const height = `${Math.floor(config.splitRatio * 100)}%`;
+        const height = `${Math.floor(splitRatio * 100)}%`;
         return { width: terminalColumns, height, display: 'flex' as const };
       }
     } else {
@@ -221,11 +394,11 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         // Account for borders (2 chars per panel) and padding (2 chars per panel)
         const borderAndPadding = 4;
         const availableColumns = terminalColumns - borderAndPadding;
-        const leftColumns = Math.floor(availableColumns * config.splitRatio);
+        const leftColumns = Math.floor(availableColumns * splitRatio);
         const rightColumns = availableColumns - leftColumns;
         return { width: rightColumns, display: 'flex' as const };
       } else {
-        const height = `${Math.floor((1 - config.splitRatio) * 100)}%`;
+        const height = `${Math.floor((1 - splitRatio) * 100)}%`;
         return { width: terminalColumns, height, display: 'flex' as const };
       }
     } else {
@@ -237,6 +410,9 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   const conversationStyle = getConversationStyle();
   const viewerStyle = getViewerStyle();
   const isVertical = config.layout === 'vertical';
+  const viewerNode = React.isValidElement(executionViewer)
+    ? React.cloneElement(executionViewer, { isFocused: focused === 'viewer' } as any)
+    : executionViewer;
 
   /**
    * Render fixed structure with both panels always mounted
@@ -309,7 +485,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             </Box>
           )}
           <Box flexGrow={1} flexDirection="column">
-            {executionViewer}
+            {viewerNode}
           </Box>
         </Box>
       </Box>
@@ -339,6 +515,7 @@ const KeyboardHints: React.FC<KeyboardHintsProps> = ({ mode, hasExecution }) => 
       { key: 'Ctrl+E', action: 'Hide viewer' },
       { key: 'Ctrl+F', action: 'Fullscreen' },
       { key: 'Tab', action: 'Switch focus' },
+      { key: 'PgUp/PgDn', action: 'Scroll convo' },
       { key: 'Ctrl+C', action: 'Copy output' },
       { key: 'Ctrl+D', action: 'Toggle details' }
     ],
