@@ -13,6 +13,7 @@ export interface UserSettings {
   models?: string[]; // Available models list
   persistInputHistory?: boolean; // Persist input history to ~/.grok/input-history.jsonl
   displayName?: string; // Optional user display name for UI
+  semanticSearch?: SemanticSearchSettings;
 
   // NEW: Multi-provider support
   apiKeys?: Record<string, string>; // API keys per provider: { grok: "xai-xxx", claude: "sk-ant-xxx" }
@@ -52,6 +53,14 @@ export interface ProjectSettings {
   executionViewer?: ExecutionViewerSettings; // Execution viewer configuration
   userName?: string; // Display name for the user in chat headers
   assistantName?: string; // Display name for the assistant/model in chat headers
+  semanticSearch?: SemanticSearchSettings;
+}
+
+export interface SemanticSearchSettings {
+  enabled?: boolean;
+  provider?: string;
+  model?: string;
+  baseURL?: string;
 }
 
 /**

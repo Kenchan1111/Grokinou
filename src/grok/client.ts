@@ -654,7 +654,12 @@ export class GrokClient {
       // If adaptiveMaxTokens === 0, don't set it → API uses its natural maximum
     } else {
       // Standard models: temperature + max_tokens
-      requestPayload.temperature = 0.7;
+      // Grok models may reject explicit temperature; only set if configured or non-grok.
+      const tempEnv = process.env.GROKINOU_TEMPERATURE;
+      const temp = tempEnv ? Number(tempEnv) : 0.7;
+      if (provider !== "grok" || tempEnv) {
+        requestPayload.temperature = temp;
+      }
       // Only set max_tokens if not unlimited
       if (adaptiveMaxTokens > 0) {
         requestPayload.max_tokens = adaptiveMaxTokens;
