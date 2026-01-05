@@ -159,7 +159,6 @@ function ChatInterfaceWithAgent({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchFullscreen, setSearchFullscreen] = useState(false);
   const inputInjectionRef = useRef<((text: string) => void) | null>(null);
-  const [viewerFocused, setViewerFocused] = useState(false);
 
   // Render key to force re-render after execution completes (prevents ghost duplication)
   const [renderKey, setRenderKey] = useState(0);
@@ -746,7 +745,6 @@ function ChatInterfaceWithAgent({
           onCloseSearch={handleCloseSearch}
           onPasteToInput={handlePasteToInput}
           onToggleFullscreen={handleToggleFullscreen}
-          onFocusChange={(focused) => setViewerFocused(focused === 'viewer')}
           confirmationOptions={confirmationOptions}
           onConfirmation={handleConfirmation}
           onRejection={handleRejection}
@@ -770,7 +768,6 @@ function ChatInterfaceWithAgent({
                 isProcessing={isProcessing}
                 isStreaming={isStreaming}
                 isConfirmationActive={!!confirmationOptions}
-                inputEnabled={!viewerFocused}
                 searchMode={searchMode}
                 onSearchCommand={handleSearchCommand}
                 inputInjectionRef={inputInjectionRef}

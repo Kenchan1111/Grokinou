@@ -9,7 +9,7 @@
  * Supports multiple executions, navigation, and detailed/compact modes.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { executionManager } from '../../execution/index.js';
 import type { ExecutionState, COTEntry, CommandExecution, COTType, CommandStatus } from '../../execution/index.js';
@@ -26,11 +26,15 @@ export interface ExecutionViewerProps {
   isFocused?: boolean;
 }
 
+export interface ExecutionViewerHandle {
+  handleKeyPress: (input: string, key: import('ink').Key) => boolean;
+}
+
 // ============================================================================
 // EXECUTION VIEWER COMPONENT
 // ============================================================================
 
-export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split', settings, isFocused = true }) => {
+export const ExecutionViewer = React.forwardRef<ExecutionViewerHandle, ExecutionViewerProps>(({ mode = 'split', settings, isFocused = true }, ref) => {
   const [executions, setExecutions] = useState<ExecutionState[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -174,18 +178,24 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
   }, [detailsMode, scrollOffset, selectedCommandIndex]);
 
   /**
-   * Keyboard shortcuts
+   * Unified keyboard handler - called by LayoutManager when viewer has focus
+   * Returns true if key was handled, false otherwise
    */
-  useInput((input, key) => {
-    if (mode === 'split' && !isFocused) {
-      return;
+  const handleKeyPress = useCallback((input: string, key: import('ink').Key): boolean => {
+    // DEBUG: Log when viewer receives PageUp/PageDown
+    if (key.pageUp || key.pageDown) {
+      const fs = require('fs');
+      const logMsg = `[${new Date().toISOString()}] 🔍 VIEWER.handleKeyPress called | pageUp=${key.pageUp} pageDown=${key.pageDown} mode=${mode}\n`;
+      fs.appendFileSync('keyboard-routing-debug.log', logMsg);
     }
+
     const current = executions[selectedIndex];
     const commandCount = current?.commands.length ?? 0;
 
     // Ctrl+D: Toggle details mode
     if (key.ctrl && input === 'd') {
       setDetailsMode(d => !d);
+      return true;
     }
 
     // Ctrl+C: Copy current execution output
@@ -193,6 +203,7 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
       if (current) {
         handleCopyExecution(current, showFeedback);
       }
+      return true;
     }
 
     // Ctrl+S: Save current execution to file
@@ -202,31 +213,37 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
           showFeedback(`❌ Save failed: ${error.message}`);
         });
       }
+      return true;
     }
 
     // Arrow Up: Navigate to previous execution
     if (key.upArrow && selectedIndex > 0) {
       setSelectedIndex(i => i - 1);
+      return true;
     }
 
     // Arrow Down: Navigate to next execution
     if (key.downArrow && selectedIndex < executions.length - 1) {
       setSelectedIndex(i => i + 1);
+      return true;
     }
 
     // Arrow Left: Navigate to previous command
     if (key.leftArrow && selectedCommandIndex > 0) {
       setSelectedCommandIndex(i => i - 1);
+      return true;
     }
 
     // Arrow Right: Navigate to next command
     if (key.rightArrow && selectedCommandIndex < commandCount - 1) {
       setSelectedCommandIndex(i => i + 1);
+      return true;
     }
 
     // Enter: Toggle expand for selected command
     if (key.return && commandCount > 0) {
       setDetailsMode(d => !d);
+      return true;
     }
 
     // PageDown: Scroll down (10 lines at a time)
@@ -239,16 +256,19 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
         const maxScroll = Math.max(0, totalLines - visibleLines);
         setScrollOffset(prev => Math.min(prev + 10, maxScroll));
       }
+      return true;
     }
 
     // PageUp: Scroll up (10 lines at a time)
     if (key.pageUp) {
       setScrollOffset(prev => Math.max(0, prev - 10));
+      return true;
     }
 
     // Home: Scroll to top
     if (input === 'h' && !key.ctrl) {
       setScrollOffset(0);
+      return true;
     }
 
     // End: Scroll to bottom
@@ -261,8 +281,34 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
         const maxScroll = Math.max(0, totalLines - visibleLines);
         setScrollOffset(maxScroll);
       }
+      return true;
     }
-  });
+
+    return false; // Key not handled
+  }, [executions, selectedIndex, selectedCommandIndex, detailsMode, mode, showFeedback]);
+
+  /**
+   * Expose handleKeyPress to parent via ref
+   */
+  React.useImperativeHandle(ref, () => ({
+    handleKeyPress,
+  }), [handleKeyPress]);
+
+  /**
+   * For fullscreen mode, we still handle keys directly (no LayoutManager routing)
+   */
+  useInput(
+    (input, key) => {
+      // DEBUG: This should NEVER log in split mode
+      if (key.pageUp || key.pageDown) {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] 🚨 VIEWER.useInput called directly (should only happen in fullscreen!) | pageUp=${key.pageUp} pageDown=${key.pageDown} mode=${mode} isActive=${mode === 'fullscreen'}\n`;
+        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+      }
+      handleKeyPress(input, key);
+    },
+    { isActive: mode === 'fullscreen' }
+  );
 
   const currentExecution = executions[selectedIndex];
 
@@ -359,7 +405,7 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({ mode = 'split'
       )}
     </Box>
   );
-};
+});
 
 // ============================================================================
 // COT ENTRY DISPLAY

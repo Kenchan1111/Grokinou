@@ -70,7 +70,6 @@ interface UseInputHandlerProps {
   isProcessing: boolean;
   isStreaming: boolean;
   isConfirmationActive?: boolean;
-  inputEnabled?: boolean;
   searchMode?: boolean;
   streamingBus?: import("../ui/streaming-bus.js").StreamingBus;
   onSearchCommand?: (input: string) => boolean;
@@ -104,7 +103,6 @@ export function useInputHandler({
   isProcessing,
   isStreaming,
   isConfirmationActive = false,
-  inputEnabled = true,
   searchMode = false,
   streamingBus,
   onSearchCommand,
@@ -332,7 +330,7 @@ export function useInputHandler({
   } = useEnhancedInput({
     onSubmit: handleInputSubmit,
     onSpecialKey: handleSpecialKey,
-    disabled: isConfirmationActive || showModelSelection || !inputEnabled,
+    disabled: isConfirmationActive || showModelSelection,
   });
 
   // Expose input injection function for external use (e.g., paste from search)
@@ -359,9 +357,6 @@ export function useInputHandler({
   useInput((inputChar: string, key: Key) => {
     // Don't process input in search mode (SearchResults component handles it)
     if (searchMode) {
-      return;
-    }
-    if (!inputEnabled) {
       return;
     }
 

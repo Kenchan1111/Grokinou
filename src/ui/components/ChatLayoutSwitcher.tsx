@@ -54,7 +54,6 @@ interface ChatLayoutSwitcherProps {
    * Input controller to render inside conversation panel
    */
   inputController?: React.ReactNode;
-  onFocusChange?: (focused: 'conversation' | 'viewer') => void;
 }
 
 const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
@@ -66,8 +65,7 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
   confirmationOptions,
   onConfirmation,
   onRejection,
-  inputController,
-  onFocusChange
+  inputController
 }) => {
   // Get state from context
   const {
@@ -152,7 +150,6 @@ const ChatLayoutSwitcherComponent: React.FC<ChatLayoutSwitcherProps> = ({
               splitRatio: 0.6,
               layout: 'horizontal'
             }}
-            onFocusChange={onFocusChange}
           />
         </Box>
       )}

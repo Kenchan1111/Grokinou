@@ -25,7 +25,6 @@ interface InputControllerProps {
   isProcessing: boolean;
   isStreaming: boolean;
   isConfirmationActive: boolean;
-  inputEnabled?: boolean;
   searchMode?: boolean;
   onSearchCommand?: (input: string) => boolean;
   inputInjectionRef?: React.MutableRefObject<((text: string) => void) | null>;
@@ -52,7 +51,6 @@ const InputControllerComponent = (props: InputControllerProps) => {
     isProcessing,
     isStreaming,
     isConfirmationActive,
-    inputEnabled,
     searchMode,
     onSearchCommand,
     inputInjectionRef,
@@ -86,7 +84,6 @@ const InputControllerComponent = (props: InputControllerProps) => {
     isProcessing,
     isStreaming,
     isConfirmationActive,
-    inputEnabled,
     searchMode,
     onSearchCommand,
     inputInjectionRef,

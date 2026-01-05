@@ -24,6 +24,7 @@ import {
   setConversationMessageOffset,
   setConversationScrollOffset,
 } from '../conversation-scroll-store.js';
+import type { ExecutionViewerHandle } from './execution-viewer.js';
 
 // ============================================================================
 // TYPES
@@ -45,7 +46,6 @@ export interface LayoutManagerProps {
   executionViewer: React.ReactNode;
   config?: Partial<LayoutConfig>;
   onModeChange?: (mode: ViewerMode) => void;
-  onFocusChange?: (focused: 'conversation' | 'viewer') => void;
 }
 
 // ============================================================================
@@ -69,8 +69,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   conversation,
   executionViewer,
   config: userConfig,
-  onModeChange,
-  onFocusChange
+  onModeChange
 }) => {
   const config = { ...DEFAULT_CONFIG, ...userConfig };
   const [mode, setMode] = useState<ViewerMode>(config.defaultMode);
@@ -80,6 +79,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   const viewIdRef = useRef<string | null>(null);
   const lastEmitRef = useRef<number>(0);
   const [splitRatio, setSplitRatio] = useState(config.splitRatio);
+  const viewerRef = useRef<ExecutionViewerHandle>(null);
 
   // Get terminal dimensions for numeric width calculation
   const { stdout } = useStdout();
@@ -227,10 +227,6 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   }, [changeMode]);
 
   useEffect(() => {
-    onFocusChange?.(focused);
-  }, [focused, onFocusChange]);
-
-  useEffect(() => {
     if (mode === 'fullscreen' && focused !== 'viewer') {
       setFocused('viewer');
     }
@@ -310,9 +306,21 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   }, [mode, focused, splitRatio]);
 
   /**
-   * Keyboard shortcuts
+   * UNIFIED keyboard handler - single useInput for all keyboard events
+   * Routes events based on focus state to prevent conflicts
    */
   useInput((input, key) => {
+    // DEBUG: Log ALL key presses in LayoutManager
+    if (key.pageUp || key.pageDown) {
+      const fs = require('fs');
+      const logMsg = `[${new Date().toISOString()}] 🎯 LAYOUT.useInput START | pageUp=${key.pageUp} pageDown=${key.pageDown} focused=${focused} mode=${mode}\n`;
+      fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+    }
+
+    // ============================================================
+    // 1. GLOBAL SHORTCUTS (always active, highest priority)
+    // ============================================================
+
     // Ctrl+E: Toggle viewer (hidden <-> split)
     if (key.ctrl && input === 'e') {
       if (mode === 'hidden') {
@@ -322,6 +330,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         changeMode('hidden');
         cancelAutoHide();
       }
+      return; // Consumed
     }
 
     // Ctrl+F: Fullscreen viewer (from split only)
@@ -330,36 +339,74 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         changeMode('fullscreen');
         cancelAutoHide();
       }
+      return; // Consumed
     }
 
     // Esc: Exit fullscreen (back to split)
-    if (key.escape) {
-      if (mode === 'fullscreen') {
-        changeMode('split');
-      }
+    if (key.escape && mode === 'fullscreen') {
+      changeMode('split');
+      return; // Consumed
     }
 
     // Ctrl+Shift+E: Force hide (even during execution)
     if (key.ctrl && key.shift && input === 'e') {
       changeMode('hidden');
       cancelAutoHide();
+      return; // Consumed
     }
 
     // Tab: Switch focus between panels (only in split mode)
     if (key.tab && mode === 'split') {
       setFocused(f => f === 'conversation' ? 'viewer' : 'conversation');
+      return; // Consumed
     }
 
-    // PageUp/PageDown: Scroll conversation history when focused
-    if (focused === 'conversation' && !key.ctrl && !key.meta) {
+    // ============================================================
+    // 2. ROUTE TO FOCUSED PANEL (mutually exclusive with else if)
+    // ============================================================
+
+    // Route to viewer when focused in split mode
+    if (focused === 'viewer' && mode === 'split') {
+      // DEBUG: Log routing to viewer
+      if (key.pageUp || key.pageDown) {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] 🔍 KEY → VIEWER | pageUp=${key.pageUp} pageDown=${key.pageDown} focused=${focused} mode=${mode} refExists=${!!viewerRef.current} hasHandleKeyPress=${!!viewerRef.current?.handleKeyPress}\n`;
+        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+      }
+      // Pass event to viewer - it will handle and return true if consumed
+      if (viewerRef.current?.handleKeyPress) {
+        viewerRef.current.handleKeyPress(input, key);
+      } else {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] ❌ VIEWER REF NOT AVAILABLE!\n`;
+        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+      }
+      return; // Always return to prevent fall-through
+    }
+    // Route to conversation scroll when focused (not fullscreen)
+    else if (focused === 'conversation' && mode !== 'fullscreen') {
+      // Skip if modifier keys are pressed (let global shortcuts handle)
+      if (key.ctrl || key.meta) return;
+
+      // DEBUG: Log routing to conversation
+      if (key.pageUp || key.pageDown) {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] 🔍 KEY → CONVERSATION | pageUp=${key.pageUp} pageDown=${key.pageDown} focused=${focused} mode=${mode}\n`;
+        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+      }
+
       const step = key.shift ? terminalRows : Math.max(5, Math.floor(terminalRows / 2));
       if (key.pageUp) {
         setConversationScrollOffset(getConversationScrollOffset() + step);
+        return; // Consumed
       }
       if (key.pageDown) {
         setConversationScrollOffset(Math.max(0, getConversationScrollOffset() - step));
+        return; // Consumed
       }
     }
+
+    // Note: In fullscreen mode, ExecutionViewer has its own useInput hook
   });
 
   /**
@@ -410,8 +457,14 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
   const conversationStyle = getConversationStyle();
   const viewerStyle = getViewerStyle();
   const isVertical = config.layout === 'vertical';
+
+  // Clone viewer with updated props: mode, isFocused, and ref
   const viewerNode = React.isValidElement(executionViewer)
-    ? React.cloneElement(executionViewer, { isFocused: focused === 'viewer' } as any)
+    ? React.cloneElement(executionViewer, {
+        mode: mode === 'fullscreen' ? 'fullscreen' : 'split',
+        isFocused: focused === 'viewer',
+        ref: viewerRef,
+      } as any)
     : executionViewer;
 
   /**
