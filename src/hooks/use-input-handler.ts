@@ -74,6 +74,7 @@ interface UseInputHandlerProps {
   streamingBus?: import("../ui/streaming-bus.js").StreamingBus;
   onSearchCommand?: (input: string) => boolean;
   inputInjectionRef?: React.MutableRefObject<((text: string) => void) | null>;
+  isInputActive?: boolean;  // NEW: Control when useInput hook is active (for focus management)
 }
 
 interface CommandSuggestion {
@@ -107,6 +108,7 @@ export function useInputHandler({
   streamingBus,
   onSearchCommand,
   inputInjectionRef,
+  isInputActive = true,  // Default to true for backwards compatibility
 }: UseInputHandlerProps) {
   const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -355,6 +357,13 @@ export function useInputHandler({
 
   // Hook up the actual input handling
   useInput((inputChar: string, key: Key) => {
+    // DEBUG: Log Page Up/Down to verify routing works
+    if (key.pageUp || key.pageDown) {
+      const fs = require('fs');
+      const logMsg = `[${new Date().toISOString()}] ⚠️ INPUT-HANDLER.useInput fired! | pageUp=${key.pageUp} pageDown=${key.pageDown} isActive=${isInputActive} searchMode=${searchMode}\n`;
+      fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+    }
+
     // Don't process input in search mode (SearchResults component handles it)
     if (searchMode) {
       return;
@@ -435,7 +444,7 @@ export function useInputHandler({
     // Normal input
     pasteBufferRef.current.lastInputTime = now;
     handleInput(inputChar, key);
-  });
+  }, { isActive: isInputActive });
 
   // Update command suggestions when input changes
   useEffect(() => {

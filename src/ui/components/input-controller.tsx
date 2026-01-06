@@ -28,6 +28,7 @@ interface InputControllerProps {
   searchMode?: boolean;
   onSearchCommand?: (input: string) => boolean;
   inputInjectionRef?: React.MutableRefObject<((text: string) => void) | null>;
+  isInputActive?: boolean;  // NEW: Control when input is active (for focus management)
 }
 
 // This component encapsulates input state and handlers to avoid rerendering the parent on every keystroke
@@ -54,6 +55,7 @@ const InputControllerComponent = (props: InputControllerProps) => {
     searchMode,
     onSearchCommand,
     inputInjectionRef,
+    isInputActive,
   } = props;
 
   const {
@@ -87,6 +89,7 @@ const InputControllerComponent = (props: InputControllerProps) => {
     searchMode,
     onSearchCommand,
     inputInjectionRef,
+    isInputActive,
   });
 
   return (

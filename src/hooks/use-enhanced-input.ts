@@ -32,6 +32,8 @@ export interface Key {
   tab?: boolean;
   backspace?: boolean;
   delete?: boolean;
+  pageUp?: boolean;
+  pageDown?: boolean;
 }
 
 export interface EnhancedInputHook {

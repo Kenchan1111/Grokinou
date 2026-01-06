@@ -467,6 +467,29 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
       } as any)
     : executionViewer;
 
+  // Clone conversation with injected focus state for InputController
+  // We need to traverse the conversation tree to find and update InputController
+  const conversationNode = React.isValidElement(conversation)
+    ? React.cloneElement(conversation as React.ReactElement<any>, {
+        children: React.Children.map(
+          (conversation as React.ReactElement<any>).props.children,
+          (child: any) => {
+            // Check if child is InputController by checking if it has the expected props
+            if (React.isValidElement(child)) {
+              const childProps = child.props as Record<string, any>;
+              if (childProps && 'agent' in childProps) {
+                // Clone InputController with isInputActive based on focus
+                return React.cloneElement(child as React.ReactElement<any>, {
+                  isInputActive: focused === 'conversation' || mode === 'hidden',
+                });
+              }
+            }
+            return child;
+          }
+        ),
+      })
+    : conversation;
+
   /**
    * Render fixed structure with both panels always mounted
    */
@@ -504,7 +527,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             </Box>
           )}
           <Box flexGrow={1} flexDirection="column" overflow="hidden">
-            {conversation}
+            {conversationNode}
           </Box>
         </Box>
 
