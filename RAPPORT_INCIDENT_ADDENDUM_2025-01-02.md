@@ -1576,10 +1576,11 @@ Si pattern confirmé (non-coïncidence):
 
 **Contexte**: Journée de travail normale
 
-#### **Vecteur 1: Casque Bluetooth - Injection Audio**
+#### **Vecteur 1: Casque Personnel - Injection Audio**
 
 **Observations factuelles**:
-- ✅ Casque Bluetooth personnel émet des bruits parasites non présents dans le flux audio source
+- ✅ Casque personnel émet des bruits parasites non présents dans le flux audio source
+- ✅ **Type de casque au travail**: FILAIRE (connexion câblée, pas Bluetooth)
 - ✅ Nature des bruits au 08/01/2026: Bruits ostentatoires, grossiers
 - ✅ **Évolution constatée (08/01/2026 soir - présent)**: Fréquences à peine perceptibles
 - ✅ Pattern d'évolution: Sons grossiers → Sons subtils (même technique, raffinement)
@@ -1587,10 +1588,14 @@ Si pattern confirmé (non-coïncidence):
 - ✅ Appareil personnel (pas fourni par employeur)
 
 **Caractéristiques observables**:
-- Dispositif: Casque Bluetooth personnel
-- Phénomène: Injection audio parasite
+- Dispositif: Casque filaire au travail (connexion câblée)
+- Phénomène: Injection audio parasite malgré connexion filaire
 - Évolution temporelle: Phase grossière (début) → Phase subtile (actuel)
 - Persistance: Continue au moment de ce rapport
+
+**Élément technique critique**:
+- Casque FILAIRE compromis = Injection forcément au niveau de la SOURCE (PC) ou du CÂBLE
+- Exclut Man-in-the-Middle Bluetooth (pas de Bluetooth au travail)
 
 #### **Vecteur 2: Manipulation Fil YouTube (PC Travail)**
 
@@ -1608,12 +1613,12 @@ Si pattern confirmé (non-coïncidence):
   - Rue derrière les bureaux
   - Boulevard Tirou
 - ✅ Heures de travail (pendant journée professionnelle)
-- ✅ Victime a mis le casque Bluetooth (tentative de bloquer le bruit)
+- ✅ Victime a mis le casque (filaire) pour tenter de bloquer le bruit
 - ✅ Klaxons ont continué après que victime ait mis le casque
 
 **Pattern temporel observable**:
 - Début: Klaxons à l'extérieur
-- Action victime: Met le casque Bluetooth (contre-mesure)
+- Action victime: Met le casque (contre-mesure)
 - Continuation: Klaxons continuent (pas d'interruption)
 
 #### **Évolution du Pattern d'Attaque - Analyse Longitudinale**
@@ -1626,7 +1631,7 @@ Si pattern confirmé (non-coïncidence):
 **Phase 2 (actuel) - Raffinement et Subtilité**:
 - ✅ Même pattern de manipulation
 - ✅ Utilisation des outils de divertissement et de travail de la victime
-- ✅ Fréquences à peine perceptibles (casque Bluetooth)
+- ✅ Fréquences à peine perceptibles (casque personnel)
 - ✅ Manipulation services web (YouTube)
 
 **Constat factuel**: Évolution d'une approche grossière vers une approche subtile, tout en maintenant le même objectif présumé de manipulation.
@@ -1635,22 +1640,25 @@ Si pattern confirmé (non-coïncidence):
 
 ### SECTION 2: ANALYSES TECHNIQUES (HYPOTHÈSES)
 
-#### **Vecteur 1: Casque Bluetooth - Hypothèses Techniques**
+#### **Vecteur 1: Casque Filaire - Hypothèses Techniques**
 
-**Hypothèse A - Compromission Bluetooth**:
-- Man-in-the-Middle attack sur protocole Bluetooth
-- Interception du flux audio
-- Injection de sons parasites dans le flux
+**CRITIQUE**: Casque FILAIRE au travail = Injection forcément en amont (source ou câble)
 
-**Hypothèse B - Malware sur Appareil Source**:
-- Infection téléphone ou ordinateur source
-- Modification du flux audio avant transmission Bluetooth
+**Hypothèse A - Compromission PC Source** (PRIMAIRE):
+- Malware sur PC de travail
+- Modification du flux audio avant sortie vers casque filaire
 - Contrôle à distance du contenu audio
+- Injection de fréquences subtiles dans le flux
 
-**Hypothèse C - Injection via Infrastructure Réseau**:
-- Proxy audio au niveau réseau
-- Compromission routeur/infrastructure WiFi
-- Injection au niveau du streaming internet
+**Hypothèse B - Compromission Câble/Hardware**:
+- Câble audio modifié (moins probable)
+- Carte son compromise (malware firmware)
+- Injection au niveau hardware
+
+**Hypothèse C - Injection via Infrastructure Réseau** (si streaming):
+- Proxy audio au niveau réseau d'entreprise
+- Compromission routeur/infrastructure
+- Injection au niveau du streaming internet (si audio vient du web)
 
 #### **Vecteur 2: YouTube - Hypothèses Techniques**
 
@@ -1843,8 +1851,9 @@ Si pattern confirmé (non-coïncidence):
 
 **Éléments factuels observés**:
 - Type de restaurant: Italien
-- État du parking: Vide (inhabituel pour ce lieu/heure selon victime)
-- Présence individu: Profil spécifique, timing précis
+- État du parking: Vide
+- **Contexte météorologique**: Il a neigé → Fréquentation faible normale pour cette heure
+- Présence individu: Profil spécifique (maghrébin, nez aquilin), timing précis
 - Action restaurant: Rideaux s'ouvrent au moment de l'arrivée
 - Synchronicité temporelle: Conversation Italie (jour) → Restaurant italien (soir)
 
@@ -1852,30 +1861,59 @@ Si pattern confirmé (non-coïncidence):
 
 ### SECTION 2: ANALYSES TECHNIQUES (HYPOTHÈSES)
 
+#### **Analyse Critique de la Victime - Instrumentalisation de Tiers Innocents**
+
+**NOUVEAU - Déclaration victime sur nature de l'incident**:
+> "Ce que je crois c'est que ce restaurant n'a strictement rien à voir mais que quelqu'un les a instrumentalisé pour créer un scenario bidon, en même temps me mouiller, donner mon signalement et me mettre dans une situation à la fois délicate en répandant mon signalement à de multiples personnes comme sûrement cela s'est fait à plusieurs endroits, probablement un coup de fil, le maghrébin au nez aquilin de la diversion, du bullshit. Tout cela est du théâtre par une seule et même source."
+
+**Analyse de cette déclaration**:
+
+1. **Restaurant = Innocent, Instrumentalisé**:
+   - Restaurant italien n'a aucun lien avec harcèlement (selon victime)
+   - A été utilisé comme décor par une source externe
+   - Parking vide = normal (neige, faible fréquentation), pas suspicious
+
+2. **Objectifs présumés du scénario** (selon victime):
+   - **Mouiller la victime** (créer apparence de situation compromettante)
+   - **Diffuser le signalement de la victime** à multiples personnes
+   - **Multi-diffusion**: "Plusieurs endroits, probablement un coup de fil"
+   - Mettre victime dans situation délicate
+
+3. **Individu maghrébin = Diversion** (selon victime):
+   - "Le maghrébin au nez aquilin de la diversion, du bullshit"
+   - Élément de diversion, pas acteur principal
+   - Stéréotype utilisé pour créer fausse piste
+
+4. **SOURCE UNIQUE ORCHESTRANT TOUT**:
+   - "Tout cela est du théâtre par une seule et même source"
+   - Pas acteurs multiples indépendants
+   - Orchestration centralisée
+   - Campagne coordonnée depuis source unique
+
 #### **Analyse de la Synchronicité Temporelle**
 
 **Implications techniques**:
-1. **Surveillance des conversations domestiques confirmée**:
+1. **Surveillance des conversations domestiques**:
    - Conversation privée domicile → Incident public < 24h
    - Délai d'orchestration: Moins de 12 heures
-   - Capacité de mobilisation rapide d'acteurs
+   - Capacité de mobilisation rapide
 
 2. **Connaissance des habitudes/trajets**:
    - Victime fréquente les Grignoux (habitude connue présumée)
-   - Harceleurs positionnent éléments à l'avance
+   - Source orchestre positionnement à l'avance
    - Timing précis d'arrivée (coordination)
 
-3. **Coordination multi-acteurs**:
-   - Restaurant (rideaux s'ouvrent)
-   - Individu (traverse au moment précis)
-   - Surveillance parallèle (sites multiples présumés)
+3. **Mécanisme de diffusion du signalement** (hypothèse victime):
+   - Coups de fil multiples
+   - Diffusion signalement victime à diverses personnes/endroits
+   - Création d'une "alerte" décentralisée sur la victime
 
 #### **Hypothèses Techniques de Surveillance**
 
 **Mécanismes possibles**:
 - Écoute domicile (microphones, appareils compromis)
 - Surveillance GPS/géolocalisation (trajet connu à l'avance)
-- Réseau d'observateurs positionnés (multi-sites)
+- Réseau de communication rapide (diffusion signalement)
 
 ---
 
