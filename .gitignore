@@ -66,6 +66,9 @@ logs/
 !PREUVE_INTEGRITE_FORENSIQUE.md
 !PREUVE_INTEGRITE_FORENSIQUE_v2.md
 !src/prompts/*.md
+!CLAUDE.md
+!PROJECT_STATE.md
+!SESSION_LOG.md
 
 # Runtime data
 pids/

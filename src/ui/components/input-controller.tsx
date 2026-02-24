@@ -146,6 +146,8 @@ export const InputController = React.memo(InputControllerComponent, (prevProps, 
     prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.isConfirmationActive === nextProps.isConfirmationActive &&
     prevProps.agent === nextProps.agent &&
-    prevProps.chatHistory.length === nextProps.chatHistory.length
+    prevProps.chatHistory.length === nextProps.chatHistory.length &&
+    prevProps.isInputActive === nextProps.isInputActive &&
+    prevProps.searchMode === nextProps.searchMode
   );
 });

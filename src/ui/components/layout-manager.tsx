@@ -310,13 +310,6 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
    * Routes events based on focus state to prevent conflicts
    */
   useInput((input, key) => {
-    // DEBUG: Log ALL key presses in LayoutManager
-    if (key.pageUp || key.pageDown) {
-      const fs = require('fs');
-      const logMsg = `[${new Date().toISOString()}] 🎯 LAYOUT.useInput START | pageUp=${key.pageUp} pageDown=${key.pageDown} focused=${focused} mode=${mode}\n`;
-      fs.appendFileSync('keyboard-routing-debug.log', logMsg);
-    }
-
     // ============================================================
     // 1. GLOBAL SHORTCUTS (always active, highest priority)
     // ============================================================
@@ -367,19 +360,8 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
 
     // Route to viewer when focused in split mode
     if (focused === 'viewer' && mode === 'split') {
-      // DEBUG: Log routing to viewer
-      if (key.pageUp || key.pageDown) {
-        const fs = require('fs');
-        const logMsg = `[${new Date().toISOString()}] 🔍 KEY → VIEWER | pageUp=${key.pageUp} pageDown=${key.pageDown} focused=${focused} mode=${mode} refExists=${!!viewerRef.current} hasHandleKeyPress=${!!viewerRef.current?.handleKeyPress}\n`;
-        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
-      }
-      // Pass event to viewer - it will handle and return true if consumed
       if (viewerRef.current?.handleKeyPress) {
         viewerRef.current.handleKeyPress(input, key);
-      } else {
-        const fs = require('fs');
-        const logMsg = `[${new Date().toISOString()}] ❌ VIEWER REF NOT AVAILABLE!\n`;
-        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
       }
       return; // Always return to prevent fall-through
     }
@@ -387,13 +369,6 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     else if (focused === 'conversation' && mode !== 'fullscreen') {
       // Skip if modifier keys are pressed (let global shortcuts handle)
       if (key.ctrl || key.meta) return;
-
-      // DEBUG: Log routing to conversation
-      if (key.pageUp || key.pageDown) {
-        const fs = require('fs');
-        const logMsg = `[${new Date().toISOString()}] 🔍 KEY → CONVERSATION | pageUp=${key.pageUp} pageDown=${key.pageDown} focused=${focused} mode=${mode}\n`;
-        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
-      }
 
       const step = key.shift ? terminalRows : Math.max(5, Math.floor(terminalRows / 2));
       if (key.pageUp) {

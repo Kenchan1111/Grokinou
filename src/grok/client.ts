@@ -439,8 +439,55 @@ export class GrokClient {
         // Other messages: keep as-is
         cleaned.push(msg);
       }
-      
-      return cleaned;
+
+      // ✅ FORWARD VALIDATION: Verify each tool_call_id has a matching tool response
+      // This catches the case where an assistant has tool_calls but some/all tool
+      // responses are missing (e.g., user cancelled during tool execution, or DB corruption)
+      const validated: GrokMessage[] = [];
+      for (let i = 0; i < cleaned.length; i++) {
+        const msg = cleaned[i];
+
+        if (msg.role === 'assistant' && (msg as any).tool_calls && (msg as any).tool_calls.length > 0) {
+          const toolCalls: any[] = (msg as any).tool_calls;
+          // Collect tool_call_ids that have responses in the messages immediately following
+          const respondedIds = new Set<string>();
+          for (let j = i + 1; j < cleaned.length; j++) {
+            if (cleaned[j].role === 'tool') {
+              const tid = (cleaned[j] as any).tool_call_id;
+              if (tid) respondedIds.add(tid);
+            } else {
+              break; // tool responses must be immediately adjacent
+            }
+          }
+
+          // Filter tool_calls to only those with responses
+          const matchedToolCalls = toolCalls.filter((tc: any) => respondedIds.has(tc.id));
+
+          if (matchedToolCalls.length === toolCalls.length) {
+            // All tool_calls have responses - keep as-is
+            validated.push(msg);
+          } else if (matchedToolCalls.length > 0) {
+            // Some tool_calls missing responses - keep only matched ones
+            debugLog.log(`⚠️  Forward validation: ${toolCalls.length - matchedToolCalls.length} tool_call(s) without response, stripping orphans`);
+            validated.push({
+              ...msg,
+              tool_calls: matchedToolCalls,
+            });
+          } else {
+            // No tool_calls have responses - strip tool_calls entirely
+            debugLog.log(`⚠️  Forward validation: ALL ${toolCalls.length} tool_call(s) without response, removing tool_calls`);
+            const { tool_calls, ...msgWithoutToolCalls } = msg as any;
+            if (msgWithoutToolCalls.content && (typeof msgWithoutToolCalls.content === 'string' ? msgWithoutToolCalls.content.trim() : true)) {
+              validated.push(msgWithoutToolCalls);
+            }
+            // Also skip orphaned tool messages that follow (there shouldn't be any, but just in case)
+          }
+        } else {
+          validated.push(msg);
+        }
+      }
+
+      return validated;
     }
     
     // Other providers (Claude): return as-is

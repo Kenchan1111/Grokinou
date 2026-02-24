@@ -182,13 +182,6 @@ export const ExecutionViewer = React.forwardRef<ExecutionViewerHandle, Execution
    * Returns true if key was handled, false otherwise
    */
   const handleKeyPress = useCallback((input: string, key: import('ink').Key): boolean => {
-    // DEBUG: Log when viewer receives PageUp/PageDown
-    if (key.pageUp || key.pageDown) {
-      const fs = require('fs');
-      const logMsg = `[${new Date().toISOString()}] 🔍 VIEWER.handleKeyPress called | pageUp=${key.pageUp} pageDown=${key.pageDown} mode=${mode}\n`;
-      fs.appendFileSync('keyboard-routing-debug.log', logMsg);
-    }
-
     const current = executions[selectedIndex];
     const commandCount = current?.commands.length ?? 0;
 
@@ -299,12 +292,6 @@ export const ExecutionViewer = React.forwardRef<ExecutionViewerHandle, Execution
    */
   useInput(
     (input, key) => {
-      // DEBUG: This should NEVER log in split mode
-      if (key.pageUp || key.pageDown) {
-        const fs = require('fs');
-        const logMsg = `[${new Date().toISOString()}] 🚨 VIEWER.useInput called directly (should only happen in fullscreen!) | pageUp=${key.pageUp} pageDown=${key.pageDown} mode=${mode} isActive=${mode === 'fullscreen'}\n`;
-        fs.appendFileSync('keyboard-routing-debug.log', logMsg);
-      }
       handleKeyPress(input, key);
     },
     { isActive: mode === 'fullscreen' }

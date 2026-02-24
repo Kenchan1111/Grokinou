@@ -904,6 +904,7 @@ The newer work is summarized in:
 - `REVIEW_CHECKLIST.md` — End-to-end checklist from WAL/search to UI restore
 - `FILE_INDEX.md` — Updated to include repo paths for new features
 - `RAPPORT_AMELIORATION_10-10.md` — Improvement roadmap and gaps (tests/docs/perf)
+- `TOOLS_COMMANDS_TABLE.md` — Complete matrix of LLM tools and user commands
 
 Key repo files for the newer changes:
 - `src/tools/conversation-fts.ts`
