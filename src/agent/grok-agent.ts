@@ -1215,7 +1215,9 @@ export class GrokAgent extends EventEmitter {
       // Timeline/rewind
       'timeline_query', 'rewind_to', 'list_time_points',
       // Identity
-      'get_my_identity'
+      'get_my_identity',
+      // Skill delegation
+      'delegate_to_specialist'
     ];
 
     let cleanToolName = toolCall.function.name;
@@ -1833,6 +1835,42 @@ export class GrokAgent extends EventEmitter {
           const { getAvailableTimePoints } = await import('../tools/rewind-to-tool.js');
           const timePoints = await getAvailableTimePoints();
           result = { success: true, ...timePoints };
+          break;
+        }
+
+        case "delegate_to_specialist": {
+          const { getSkillRunner } = await import('../skills/skill-runner.js');
+          const runner = getSkillRunner();
+
+          executionStream.emitCOT('thinking', `Delegating to specialist skill: ${args.skill}`);
+
+          try {
+            let results: import('../skills/sub-agent.js').SubAgentResult[];
+
+            if (args.providers && Array.isArray(args.providers) && args.providers.length > 1) {
+              executionStream.emitCOT('action',
+                `Running "${args.skill}" on ${args.providers.length} providers: ${args.providers.join(', ')}`
+              );
+              results = await runner.runMultiProvider(args.skill, args.context, args.providers);
+            } else {
+              executionStream.emitCOT('action', `Running skill "${args.skill}"`);
+              const single = await runner.run(args.skill, args.context);
+              results = [single];
+            }
+
+            const output = results.map(r =>
+              `[${r.skillName}@${r.provider}/${r.model}] (${r.duration}ms)\n${r.content}`
+            ).join('\n\n---\n\n');
+
+            executionStream.emitCOT('observation',
+              `${results.length} specialist(s) responded (${results.map(r => `${r.provider}/${r.model}`).join(', ')})`
+            );
+
+            result = { success: true, output };
+          } catch (err: any) {
+            executionStream.emitCOT('observation', `Skill delegation failed: ${err.message}`);
+            result = { success: false, error: err.message };
+          }
           break;
         }
 

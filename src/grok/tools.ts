@@ -407,6 +407,37 @@ const BASE_GROK_TOOLS: GrokTool[] = [
   },
   
   // ============================================
+  // SKILL DELEGATION TOOL (Multi-Agent)
+  // ============================================
+
+  {
+    type: "function",
+    function: {
+      name: "delegate_to_specialist",
+      description: "Delegate a task to a specialist sub-agent with a specific skill. The sub-agent runs in isolation with its own LLM context and a limited set of tools. Use for code review, security audit, refactoring suggestions, test generation, or other specialized tasks. Use /skills in the chat to see available skills.",
+      parameters: {
+        type: "object",
+        properties: {
+          skill: {
+            type: "string",
+            description: "Name of the skill to invoke (e.g. 'code-review', 'security-scan', 'explain', 'refactor', 'test-gen')",
+          },
+          context: {
+            type: "string",
+            description: "Task description and relevant context to pass to the specialist",
+          },
+          providers: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional: run the same skill on multiple providers in parallel for comparison (e.g. ['openai', 'claude', 'deepseek'])",
+          },
+        },
+        required: ["skill", "context"],
+      },
+    },
+  },
+
+  // ============================================
   // SESSION MANAGEMENT TOOLS (Git-like)
   // ============================================
   

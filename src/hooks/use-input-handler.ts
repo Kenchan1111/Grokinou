@@ -357,11 +357,9 @@ export function useInputHandler({
 
   // Hook up the actual input handling
   useInput((inputChar: string, key: Key) => {
-    // DEBUG: Log Page Up/Down to verify routing works
-    if (key.pageUp || key.pageDown) {
-      const fs = require('fs');
-      const logMsg = `[${new Date().toISOString()}] ⚠️ INPUT-HANDLER.useInput fired! | pageUp=${key.pageUp} pageDown=${key.pageDown} isActive=${isInputActive} searchMode=${searchMode}\n`;
-      fs.appendFileSync('keyboard-routing-debug.log', logMsg);
+    // Don't process navigation keys - LayoutManager handles scroll routing
+    if (key.pageUp || key.pageDown || key.tab) {
+      return;
     }
 
     // Don't process input in search mode (SearchResults component handles it)
@@ -464,6 +462,7 @@ export function useInputHandler({
     { command: "/review-view", description: "Show a saved review view state (/review-view <view_id>)" },
     { command: "/search-code", description: "Search code (rg-based with ranking/cutoff)" },
     { command: "/search-code-advanced", description: "Advanced code search (BM25 + optional semantic rerank)" },
+    { command: "/search-more", description: "Show additional cached search results (/search-more <id> [--limit N])" },
     { command: "/semantic-config", description: "Configure semantic search (enable + provider/model/key)" },
     { command: "/semantic_config", description: "Alias for /semantic-config" },
     { command: "/list_sessions", description: "List all sessions in current directory" },
@@ -486,6 +485,7 @@ export function useInputHandler({
     { command: "/db-restore", description: "Restore DB from snapshot+WAL (conversations|timeline) [--archive <path>]" },
     { command: "/db-export-jsonl", description: "Export DB to JSONL (conversations|timeline) [sessionId] [--out <path>]" },
     { command: "/backup-status", description: "Show WAL/archive status for conversations and timeline" },
+    { command: "/skills", description: "List, run, or reload skills (multi-agent)" },
     { command: "/exit", description: "Exit the application" },
   ];
 
@@ -678,6 +678,56 @@ export function useInputHandler({
       const entry: ChatEntry = {
         type: "assistant",
         content: res.success ? res.output || "No results" : `❌ ${res.error}`,
+        timestamp: new Date(),
+      };
+      setChatHistory((prev) => [...prev, entry]);
+      clearInput();
+      return true;
+    }
+
+    // Handle search pagination (/search-more <id> [--limit N])
+    if (trimmedInput.startsWith("/search-more")) {
+      const args = trimmedInput.replace("/search-more", "").trim().split(/\s+/).filter(Boolean);
+      if (!args.length) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "Usage: /search-more <search_id> [--limit N]\nExample: /search-more 12 --limit 20",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+
+      let searchId: number | undefined;
+      let limit = 20;
+      for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--limit") {
+          const value = args[i + 1];
+          if (value) {
+            limit = Number(value);
+            i++;
+          }
+        } else if (!searchId) {
+          searchId = Number(args[i]);
+        }
+      }
+
+      if (!searchId || Number.isNaN(searchId)) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: "❌ Invalid search_id. Usage: /search-more <search_id> [--limit N]",
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+        clearInput();
+        return true;
+      }
+
+      const res = await codeSearchTool.searchMore(searchId, limit);
+      const entry: ChatEntry = {
+        type: "assistant",
+        content: res.success ? res.output || "No more results" : `❌ ${res.error}`,
         timestamp: new Date(),
       };
       setChatHistory((prev) => [...prev, entry]);
@@ -3406,6 +3456,104 @@ Respond with ONLY the commit message, no additional text.`;
         const errorEntry: ChatEntry = {
           type: "assistant",
           content: `Error executing command: ${error.message}`,
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorEntry]);
+      }
+
+      clearInput();
+      return true;
+    }
+
+    // ============================================
+    // /skills [list|run <name>|reload]
+    // ============================================
+    if (trimmedInput === "/skills" || trimmedInput.startsWith("/skills ")) {
+      const subArgs = trimmedInput.replace("/skills", "").trim();
+
+      try {
+        const { getSkillRegistry, getSkillRunner } = await import('../skills/index.js');
+        const registry = getSkillRegistry();
+
+        if (!subArgs || subArgs === "list") {
+          // /skills ou /skills list → lister les skills
+          const skills = registry.list();
+          let content: string;
+
+          if (skills.length === 0) {
+            content = "No skills loaded.\n\n" +
+              "Add skills as .md files in:\n" +
+              "  - `.grokinou/skills/` (project)\n" +
+              "  - `~/.config/grokinou/skills/` (user)\n" +
+              "  - Built-in skills are in `src/skills/builtins/`";
+          } else {
+            const lines = skills.map(s => {
+              const providerInfo = s.provider ? ` [${s.provider}]` : '';
+              const modelInfo = s.model ? ` (${s.model})` : '';
+              const parallelInfo = s.parallel ? ' [parallel]' : '';
+              const toolsInfo = s.tools ? ` tools: ${s.tools.join(', ')}` : '';
+              return `  - **${s.name}**: ${s.description}${providerInfo}${modelInfo}${parallelInfo}${toolsInfo} _(${s.source})_`;
+            });
+            content = `**Available Skills** (${skills.length}):\n\n${lines.join('\n')}`;
+          }
+
+          const entry: ChatEntry = {
+            type: "assistant",
+            content,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, entry]);
+
+        } else if (subArgs === "reload") {
+          // /skills reload → hot-reload
+          registry.reload();
+          const skills = registry.list();
+          const entry: ChatEntry = {
+            type: "assistant",
+            content: `Skills reloaded. ${skills.length} skill(s) available.`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, entry]);
+
+        } else if (subArgs.startsWith("run ")) {
+          // /skills run <name> [context...]
+          const parts = subArgs.substring(4).trim();
+          const spaceIdx = parts.indexOf(' ');
+          const skillName = spaceIdx > 0 ? parts.substring(0, spaceIdx) : parts;
+          const context = spaceIdx > 0 ? parts.substring(spaceIdx + 1) : 'Execute this skill with default context.';
+
+          const startEntry: ChatEntry = {
+            type: "assistant",
+            content: `Running skill **${skillName}**...`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, startEntry]);
+
+          const runner = getSkillRunner();
+          const result = await runner.run(skillName, context);
+
+          const resultEntry: ChatEntry = {
+            type: "assistant",
+            content: `**[${result.skillName}@${result.provider}/${result.model}]** (${result.duration}ms)\n\n${result.content}`,
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, resultEntry]);
+
+        } else {
+          const entry: ChatEntry = {
+            type: "assistant",
+            content: "Usage:\n" +
+              "  `/skills` — List available skills\n" +
+              "  `/skills run <name> [context]` — Execute a skill\n" +
+              "  `/skills reload` — Reload skills from disk",
+            timestamp: new Date(),
+          };
+          setChatHistory((prev) => [...prev, entry]);
+        }
+      } catch (err: any) {
+        const errorEntry: ChatEntry = {
+          type: "assistant",
+          content: `Error: ${err.message}`,
           timestamp: new Date(),
         };
         setChatHistory((prev) => [...prev, errorEntry]);
