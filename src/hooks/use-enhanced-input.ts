@@ -152,6 +152,8 @@ export function useEnhancedInput({
 
     // Handle Enter/Return
     if (key.return) {
+      // Guard: si un paste burst est en cours, le \n vient du texte collé → ne pas soumettre
+      if (pasteBurstDetector.isBuffering()) return;
       if (multiline && key.shift) {
         // Shift+Enter in multiline mode inserts newline
         const result = insertText(currentInput, currentCursor, "\n");

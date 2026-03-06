@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
+import { pasteBurstDetector } from '../../utils/paste-burst-detector.js';
 import { executionManager } from '../../execution/index.js';
 import type { ExecutionState } from '../../execution/index.js';
 import { getReviewHook } from '../../timeline/hooks/review-hook.js';
@@ -349,7 +350,8 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     }
 
     // Tab: Switch focus between panels (only in split mode)
-    if (key.tab && mode === 'split') {
+    // Guard: si un paste burst est en cours, le tab vient du texte collé → ne pas switcher le focus
+    if (key.tab && mode === 'split' && !pasteBurstDetector.isBuffering()) {
       setFocused(f => f === 'conversation' ? 'viewer' : 'conversation');
       return; // Consumed
     }
