@@ -7,3 +7,10 @@ export { SearchTool } from "./search.js";
 export { ApplyPatchTool } from "./apply-patch.js";
 export * from './timeline-query-tool.js';
 export * from './rewind-to-tool.js';
+
+// Phase 1 — Tools atomiques (parité Claude Code)
+export { ReadTool } from "./read-tool.js";
+export { WriteTool } from "./write-tool.js";
+export { EditTool } from "./edit-tool.js";
+export { GlobTool } from "./glob-tool.js";
+export { GrepTool } from "./grep-tool.js";

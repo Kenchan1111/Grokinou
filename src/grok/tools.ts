@@ -699,9 +699,162 @@ const MORPH_EDIT_TOOL: GrokTool = {
   }
 };
 
+// ============================================
+// PHASE 1 — TOOLS ATOMIQUES (parité Claude Code)
+// ============================================
+
+const ATOMIC_TOOLS: GrokTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "read_file",
+      description: "Read a file with line numbers. For large files, use offset and limit to read specific sections. If the path is a directory, lists its contents. This is a read-only operation.",
+      parameters: {
+        type: "object",
+        properties: {
+          file_path: {
+            type: "string",
+            description: "Absolute or relative path to the file to read",
+          },
+          offset: {
+            type: "number",
+            description: "Line number to start reading from (1-based). Only provide if the file is too large to read at once.",
+          },
+          limit: {
+            type: "number",
+            description: "Number of lines to read (default: 2000). Only provide if the file is too large to read at once.",
+          },
+        },
+        required: ["file_path"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "write_file",
+      description: "Write content to a file. Creates the file if it doesn't exist. If the file exists, it MUST have been read first with read_file. Prefer edit_file for modifying existing files — it only sends the diff.",
+      parameters: {
+        type: "object",
+        properties: {
+          file_path: {
+            type: "string",
+            description: "Absolute or relative path to the file to write",
+          },
+          content: {
+            type: "string",
+            description: "The content to write to the file",
+          },
+        },
+        required: ["file_path", "content"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "edit_file_replace",
+      description: "Perform exact string replacement in a file. The file MUST have been read first with read_file. The old_string must be unique in the file unless replace_all is true. Use this for targeted edits instead of rewriting the whole file.",
+      parameters: {
+        type: "object",
+        properties: {
+          file_path: {
+            type: "string",
+            description: "Path to the file to edit",
+          },
+          old_string: {
+            type: "string",
+            description: "The exact text to replace (must match including whitespace and indentation)",
+          },
+          new_string: {
+            type: "string",
+            description: "The text to replace it with (must be different from old_string)",
+          },
+          replace_all: {
+            type: "boolean",
+            description: "Replace all occurrences (default: false, only first unique match)",
+          },
+        },
+        required: ["file_path", "old_string", "new_string"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "glob_files",
+      description: "Fast file pattern matching. Returns matching file paths sorted by modification time (most recent first). Use for finding files by name patterns (e.g. '**/*.ts', 'src/**/*.tsx').",
+      parameters: {
+        type: "object",
+        properties: {
+          pattern: {
+            type: "string",
+            description: "Glob pattern to match files (e.g. '**/*.ts', 'src/components/**/*.tsx', '*.json')",
+          },
+          path: {
+            type: "string",
+            description: "Directory to search in (default: current working directory)",
+          },
+        },
+        required: ["pattern"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "grep_search",
+      description: "Search file contents using ripgrep. Supports regex, file type filtering, and multiple output modes. Use for searching code content (not file names — use glob_files for that).",
+      parameters: {
+        type: "object",
+        properties: {
+          pattern: {
+            type: "string",
+            description: "Regex pattern to search for in file contents",
+          },
+          path: {
+            type: "string",
+            description: "File or directory to search in (default: current working directory)",
+          },
+          glob: {
+            type: "string",
+            description: "Glob pattern to filter files (e.g. '*.ts', '*.{js,jsx}')",
+          },
+          type: {
+            type: "string",
+            description: "File type filter (e.g. 'ts', 'py', 'js'). More efficient than glob for standard types.",
+          },
+          output_mode: {
+            type: "string",
+            enum: ["content", "files_with_matches", "count"],
+            description: "Output: 'files_with_matches' (default, file paths only), 'content' (matching lines with line numbers), 'count' (match counts per file)",
+          },
+          context_lines: {
+            type: "number",
+            description: "Lines of context around each match (only for output_mode='content')",
+          },
+          case_insensitive: {
+            type: "boolean",
+            description: "Case insensitive search (default: false)",
+          },
+          head_limit: {
+            type: "number",
+            description: "Limit output to first N lines/entries (default: 100 for content mode)",
+          },
+          multiline: {
+            type: "boolean",
+            description: "Enable multiline matching where . matches newlines (default: false)",
+          },
+        },
+        required: ["pattern"],
+      },
+    },
+  },
+];
+
 // Function to build tools array conditionally
 function buildGrokTools(): GrokTool[] {
-  const tools = [...BASE_GROK_TOOLS];
+  const tools = [...BASE_GROK_TOOLS, ...ATOMIC_TOOLS];
   
   // Add Morph Fast Apply tool if API key is available
   if (process.env.MORPH_API_KEY) {

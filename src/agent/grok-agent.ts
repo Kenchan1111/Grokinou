@@ -1629,6 +1629,86 @@ export class GrokAgent extends EventEmitter {
             executionStream.emitCOT('decision', `❌ search_more failed`);
           }
           break;
+
+        // ============================================
+        // PHASE 1 — TOOLS ATOMIQUES (parité Claude Code)
+        // ============================================
+
+        case "read_file": {
+          executionStream.emitCOT('thinking', `Reading file: ${args.file_path}`);
+          const { ReadTool } = await import("../tools/read-tool.js");
+          const readTool = new ReadTool();
+          result = await readTool.execute(args.file_path, args.offset, args.limit);
+          if (result.success) {
+            executionStream.emitCOT('decision', `✅ File read successfully`);
+          } else {
+            executionStream.emitCOT('decision', `❌ ${result.error}`);
+          }
+          break;
+        }
+
+        case "write_file": {
+          executionStream.emitCOT('thinking', `Writing file: ${args.file_path}`);
+          const { WriteTool } = await import("../tools/write-tool.js");
+          const writeTool = new WriteTool();
+          result = await writeTool.execute(args.file_path, args.content);
+          if (result.success) {
+            executionStream.emitCOT('decision', `✅ ${result.output}`);
+          } else {
+            executionStream.emitCOT('decision', `❌ ${result.error}`);
+          }
+          break;
+        }
+
+        case "edit_file_replace": {
+          executionStream.emitCOT('thinking', `Editing file: ${args.file_path}`);
+          const { EditTool } = await import("../tools/edit-tool.js");
+          const editTool = new EditTool();
+          result = await editTool.execute(args.file_path, args.old_string, args.new_string, args.replace_all);
+          if (result.success) {
+            executionStream.emitCOT('decision', `✅ ${result.output}`);
+          } else {
+            executionStream.emitCOT('decision', `❌ ${result.error}`);
+          }
+          break;
+        }
+
+        case "glob_files": {
+          executionStream.emitCOT('thinking', `Searching files: ${args.pattern}`);
+          const { GlobTool } = await import("../tools/glob-tool.js");
+          const globTool = new GlobTool();
+          result = await globTool.execute(args.pattern, args.path);
+          if (result.success) {
+            executionStream.emitCOT('decision', `✅ Glob completed`);
+          } else {
+            executionStream.emitCOT('decision', `❌ ${result.error}`);
+          }
+          break;
+        }
+
+        case "grep_search": {
+          executionStream.emitCOT('thinking', `Searching content: "${args.pattern}"`);
+          const { GrepTool } = await import("../tools/grep-tool.js");
+          const grepTool = new GrepTool();
+          result = await grepTool.execute({
+            pattern: args.pattern,
+            path: args.path,
+            glob: args.glob,
+            type: args.type,
+            outputMode: args.output_mode,
+            contextLines: args.context_lines,
+            caseInsensitive: args.case_insensitive,
+            headLimit: args.head_limit,
+            multiline: args.multiline,
+          });
+          if (result.success) {
+            executionStream.emitCOT('decision', `✅ Grep completed`);
+          } else {
+            executionStream.emitCOT('decision', `❌ ${result.error}`);
+          }
+          break;
+        }
+
         case "apply_patch":
           // 📺 COT: Applying patch
           const isDryRun = !!args.dry_run;
