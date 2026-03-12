@@ -107,6 +107,13 @@ export class GrokClient {
   }
   
   /**
+   * Retourne la taille du context window pour le modèle courant (public).
+   */
+  getContextWindowSize(): number {
+    return this.getModelContextWindow();
+  }
+
+  /**
    * Get model context window size in tokens
    */
   private getModelContextWindow(model?: string): number {

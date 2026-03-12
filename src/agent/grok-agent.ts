@@ -33,6 +33,7 @@ import { getLLMHook } from "../timeline/hooks/llm-hook.js";
 import { getToolHook } from "../timeline/hooks/tool-hook.js";
 import { executionManager, ExecutionStream } from "../execution/index.js";
 import { loadSystemPrompt } from "./prompt-loader.js";
+import { ContextCompactor } from "./context-compactor.js";
 
 export interface ChatEntry {
   type: "user" | "assistant" | "tool_result" | "tool_call";
@@ -74,6 +75,7 @@ export class GrokAgent extends EventEmitter {
   private llmHook = getLLMHook();
   private toolHook = getToolHook();
   private currentExecutionStream: ExecutionStream | null = null;
+  private contextCompactor: ContextCompactor;
 
   constructor(
     apiKey: string,
@@ -94,6 +96,7 @@ export class GrokAgent extends EventEmitter {
     this.confirmationTool = new ConfirmationTool();
     this.search = getSharedSearchTool();
     this.tokenCounter = createTokenCounter(modelToUse);
+    this.contextCompactor = new ContextCompactor(undefined, modelToUse);
     // applyPatch tool will be lazily imported on first use
 
     // Load project persistence settings
@@ -339,6 +342,41 @@ export class GrokAgent extends EventEmitter {
         this.mcpInitialized = true;
       }
     });
+  }
+
+  /**
+   * Compacte le contexte si on approche la limite du context window.
+   * Remplace les anciens messages par un résumé généré par le LLM.
+   */
+  private async maybeCompactContext(): Promise<void> {
+    const contextWindowSize = this.grokClient.getContextWindowSize();
+    if (!this.contextCompactor.shouldCompact(this.messages, contextWindowSize)) {
+      return;
+    }
+
+    debugLog.log(`🗜️ Context compaction triggered — ${this.messages.length} messages`);
+
+    const summarizer = async (text: string): Promise<string> => {
+      const summaryResponse = await this.grokClient.chat(
+        [{ role: "user", content: text } as any],
+        [], // pas de tools pour le résumé
+      );
+      return summaryResponse.choices[0]?.message?.content || text;
+    };
+
+    const { messages: compactedMessages, result } = await this.contextCompactor.compact(
+      this.messages,
+      contextWindowSize,
+      summarizer,
+    );
+
+    if (result.compacted) {
+      this.messages = compactedMessages;
+      debugLog.log(
+        `✅ Context compacted: ${result.originalMessageCount} → ${result.newMessageCount} messages, ` +
+        `${result.tokensFreed.toLocaleString()} tokens freed`
+      );
+    }
   }
 
   private isGrokModel(): boolean {
@@ -597,6 +635,10 @@ export class GrokAgent extends EventEmitter {
 
     try {
       const tools = await getAllGrokTools();
+
+      // Context compaction — résume les anciens messages si on approche la limite
+      await this.maybeCompactContext();
+
       let currentResponse = await this.grokClient.chat(
         this.messages,
         tools,
@@ -702,6 +744,9 @@ export class GrokAgent extends EventEmitter {
             
             this.messages.push(toolMessage);
           }
+
+          // Context compaction avant le prochain round
+          await this.maybeCompactContext();
 
           // Get next response - this might contain more tool calls
           currentResponse = await this.grokClient.chat(

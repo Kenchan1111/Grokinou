@@ -207,19 +207,54 @@ const MemoizedChatEntry = React.memo(
 
           switch (toolName) {
             case "view_file":
+            case "read_file":
               return "Read";
             case "str_replace_editor":
-              return "Update";
+            case "edit_file_replace":
+              return "Edit";
             case "create_file":
-              return "Create";
+            case "write_file":
+              return "Write";
             case "bash":
               return "Bash";
             case "search":
+            case "search_advanced":
               return "Search";
+            case "search_conversation":
+            case "search_conversation_advanced":
+              return "Search Chat";
+            case "search_more":
+              return "Search More";
+            case "glob_files":
+              return "Glob";
+            case "grep_search":
+              return "Grep";
             case "create_todo_list":
               return "Created Todo";
             case "update_todo_list":
               return "Updated Todo";
+            case "get_my_identity":
+              return "Identity";
+            case "session_list":
+              return "Sessions";
+            case "session_switch":
+              return "Switch Session";
+            case "session_new":
+              return "New Session";
+            case "session_rewind":
+              return "Rewind Session";
+            case "timeline_query":
+              return "Timeline";
+            case "rewind_to":
+              return "Rewind";
+            case "list_time_points":
+              return "Snapshots";
+            case "delegate_to_specialist":
+              return "Delegate";
+            case "apply_patch":
+              return "Patch";
+            case "edit_file":
+              return "Morph Edit";
             default:
               return "Tool";
           }
@@ -232,8 +267,16 @@ const MemoizedChatEntry = React.memo(
           if (toolCall?.function?.arguments) {
             try {
               const args = JSON.parse(toolCall.function.arguments);
-              if (toolCall.function.name === "search") {
+              const name = toolCall.function.name;
+              if (name === "search" || name === "search_advanced" ||
+                  name === "search_conversation" || name === "search_conversation_advanced") {
                 return args.query;
+              }
+              if (name === "grep_search") {
+                return args.pattern;
+              }
+              if (name === "glob_files") {
+                return args.pattern;
               }
               return args.path || args.file_path || args.command || "";
             } catch {
@@ -264,15 +307,17 @@ const MemoizedChatEntry = React.memo(
           return content;
         };
         const shouldShowDiff =
-          entry.toolCall?.function?.name === "str_replace_editor" &&
+          (entry.toolCall?.function?.name === "str_replace_editor" ||
+            entry.toolCall?.function?.name === "edit_file_replace") &&
           entry.toolResult?.success &&
-          entry.content.includes("Updated") &&
           entry.content.includes("---") &&
           entry.content.includes("+++");
 
         const shouldShowFileContent =
           (entry.toolCall?.function?.name === "view_file" ||
-            entry.toolCall?.function?.name === "create_file") &&
+            entry.toolCall?.function?.name === "read_file" ||
+            entry.toolCall?.function?.name === "create_file" ||
+            entry.toolCall?.function?.name === "write_file") &&
           entry.toolResult?.success &&
           !shouldShowDiff;
 
@@ -284,18 +329,30 @@ const MemoizedChatEntry = React.memo(
           if (toolName === "get_my_identity") {
             return content; // Show full identity block
           }
-          if (toolName === "view_file" || toolName === "create_file") {
+          if (toolName === "view_file" || toolName === "create_file" ||
+              toolName === "read_file" || toolName === "write_file") {
             const lines = content.split("\n").length;
             const chars = content.length;
             return `✓ ${lines} lines (${(chars / 1024).toFixed(1)}KB) - Details in Execution Viewer (Ctrl+E)`;
           }
-          if (toolName === "search") {
+          if (toolName === "search" || toolName === "search_advanced") {
             const lines = content.split("\n").filter(l => l.trim()).length;
             return `✓ ${lines} matches`;
+          }
+          if (toolName === "grep_search") {
+            const lines = content.split("\n").filter(l => l.trim()).length;
+            return `✓ ${lines} results`;
+          }
+          if (toolName === "glob_files") {
+            const lines = content.split("\n").filter(l => l.trim()).length;
+            return `✓ ${lines} files found`;
           }
           if (toolName === "bash") {
             const lines = content.split("\n").length;
             return lines > 10 ? `✓ ${lines} lines output` : content;
+          }
+          if (toolName === "edit_file_replace" || toolName === "str_replace_editor") {
+            return content.split("\n")[0]; // First line = summary
           }
           return formatToolContent(content, toolName);
         };
