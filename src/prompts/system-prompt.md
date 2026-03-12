@@ -136,16 +136,31 @@ Important:
 
 ## Searching & Exploration
 
-- Use `grep_search` for searching code content (regex, file type filters, context lines)
-- Use `glob_files` for finding files by name pattern (e.g. `**/*.ts`, `src/**/*.config.*`)
-- Use `read_file` with a directory path to list its contents
-- Use `bash` for complex operations that combine multiple steps
+**Decision matrix — pick the right tool on first try:**
 
-Examples:
-- Search code: `grep_search` with pattern "import.*React" and type "tsx"
-- Find files: `glob_files` with pattern "**/*.component.tsx"
-- Search + context: `grep_search` with pattern "handleSubmit", output_mode "content", context_lines 3
-- List directory: `read_file` with a directory path, or `bash` with "ls -la src/"
+| You want to... | Use | Why |
+|---|---|---|
+| Find a function/class/variable by name | `grep_search` (pattern: exact name) | Fast, precise, regex |
+| Find files by name or extension | `glob_files` (pattern: `**/*.tsx`) | File name matching, no content scan |
+| Search code with context around matches | `grep_search` (output_mode: "content", context_lines: 3) | Shows surrounding code |
+| Count occurrences across codebase | `grep_search` (output_mode: "count") | Quick triage |
+| Find where something is imported/used | `grep_search` (pattern: `import.*TheName`) | Regex + file filter |
+| Explore a directory structure | `read_file` with directory path, or `glob_files` | Lists contents |
+| Conceptual/vague search ("auth logic") | `search_advanced` (semantic if configured) | Ranked results, context-aware |
+| Search past conversations | `search_conversation` or `search_conversation_advanced` | FTS5 cross-session |
+| Get more results from a previous search | `search_more` with search_id | Uses cached results |
+
+**Rules:**
+- Start with `grep_search` or `glob_files` — they're fast and predictable
+- Only use `search` or `search_advanced` when you need ranked/contextual results or when grep/glob didn't find what you need
+- Never use `bash` with `grep`/`find`/`rg` — use `grep_search`/`glob_files` instead
+- For multiple related searches, run them in parallel when possible
+
+**Examples:**
+- Exact identifier: `grep_search` pattern "handleSubmit" type "tsx"
+- File by pattern: `glob_files` pattern "**/*.config.*"
+- Regex with context: `grep_search` pattern "catch\s*\(" output_mode "content" context_lines 5
+- Vague intent: `search_advanced` query "error handling for API calls" search_context "looking for try/catch patterns"
 
 ## Git & Version Control
 

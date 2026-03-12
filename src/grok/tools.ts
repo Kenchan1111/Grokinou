@@ -190,7 +190,7 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     function: {
       name: "search_conversation",
       description:
-        "Search the current conversation history (persisted session) by keyword. Returns matching turns with timestamps.",
+        "Search the CURRENT session's conversation history by keyword. Fast simple search. For cross-session or advanced FTS5 search, use search_conversation_advanced instead.",
       parameters: {
         type: "object",
         properties: {
