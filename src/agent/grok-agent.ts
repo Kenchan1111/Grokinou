@@ -1264,8 +1264,10 @@ export class GrokAgent extends EventEmitter {
     //   3. "bashedit_file" (2 tools concatenated)
     // Valid tools from tools.ts + internal tools
     const validTools = [
-      // File operations
+      // File operations (legacy)
       'view_file', 'create_file', 'str_replace_editor', 'edit_file', 'apply_patch',
+      // File operations (atomic)
+      'read_file', 'write_file', 'edit_file_replace', 'glob_files', 'grep_search',
       // System operations
       'bash', 'search',
       // Task management
@@ -1836,7 +1838,7 @@ export class GrokAgent extends EventEmitter {
           const switchArgs = JSON.parse(toolCall.function.arguments) as { session_id: number };
           const sessionTools = await import('../tools/session-tools.js');
           result = await sessionTools.executeSessionSwitch(switchArgs);
-          
+
           if (result.success) {
             // Update agent's context after switch
             const { sessionManager } = await import('../utils/session-manager-sqlite.js');
@@ -1863,6 +1865,39 @@ export class GrokAgent extends EventEmitter {
                   providerConfig.baseURL
                 );
               }
+
+              // ✅ FIX: Reload agent messages from the new session
+              // Without this, the agent continues with the OLD session's messages
+              const history = await sessionManager.loadChatHistory();
+              this.chatHistory = history;
+              // Rebuild this.messages (GrokMessage[]) from the loaded ChatEntry[]
+              // Keep only the system message, then convert history
+              const systemMsg = this.messages.find(m => (m as any).role === 'system');
+              this.messages = [];
+              if (systemMsg) {
+                this.messages.push(systemMsg);
+              }
+              for (const entry of history) {
+                if (entry.type === 'user') {
+                  this.messages.push({ role: 'user', content: entry.content } as GrokMessage);
+                } else if (entry.type === 'assistant') {
+                  const msg: any = { role: 'assistant', content: entry.content };
+                  if (entry.toolCalls) {
+                    msg.tool_calls = entry.toolCalls;
+                  }
+                  this.messages.push(msg as GrokMessage);
+                } else if (entry.type === 'tool_result' && entry.toolCall) {
+                  this.messages.push({
+                    role: 'tool',
+                    content: entry.content,
+                    tool_call_id: entry.toolCall.id,
+                  } as any);
+                }
+              }
+              debugLog.log(`✅ [session_switch] Agent context reloaded: ${this.messages.length} messages, ${this.chatHistory.length} history entries`);
+
+              // Notify UI to replace its chatHistory
+              this.emit('session:switched', this.chatHistory);
             }
           }
           break;

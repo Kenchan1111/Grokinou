@@ -423,6 +423,23 @@ function ChatInterfaceWithAgent({
   // Le logo est maintenant affiché AVANT le démarrage d'Ink dans index.ts
   // Plus besoin de le générer ici !
 
+  // ✅ Listen for session:switched events from agent (LLM tool session_switch)
+  useEffect(() => {
+    const onSessionSwitched = (newHistory: ChatEntry[]) => {
+      isSwitchingRef.current = true;
+      setChatHistory(newHistory);
+      setCommittedHistory(newHistory);
+      setActiveMessages([]);
+      setTimeout(() => {
+        isSwitchingRef.current = false;
+      }, 100);
+    };
+    agent.on('session:switched', onSessionSwitched);
+    return () => {
+      agent.off('session:switched', onSessionSwitched);
+    };
+  }, [agent]);
+
   // ✅ Track if we're in the middle of a switch to prevent auto-commit
   const isSwitchingRef = useRef(false);
 
