@@ -347,35 +347,50 @@ export class GrokAgent extends EventEmitter {
   /**
    * Compacte le contexte si on approche la limite du context window.
    * Remplace les anciens messages par un résumé généré par le LLM.
+   * Ne crashe jamais la boucle agent — les erreurs sont loguées et ignorées.
    */
   private async maybeCompactContext(): Promise<void> {
-    const contextWindowSize = this.grokClient.getContextWindowSize();
-    if (!this.contextCompactor.shouldCompact(this.messages, contextWindowSize)) {
-      return;
-    }
+    try {
+      const contextWindowSize = this.grokClient.getContextWindowSize();
+      if (!this.contextCompactor.shouldCompact(this.messages, contextWindowSize)) {
+        return;
+      }
 
-    debugLog.log(`🗜️ Context compaction triggered — ${this.messages.length} messages`);
+      debugLog.log(`🗜️ Context compaction triggered — ${this.messages.length} messages`);
 
-    const summarizer = async (text: string): Promise<string> => {
-      const summaryResponse = await this.grokClient.chat(
-        [{ role: "user", content: text } as any],
-        [], // pas de tools pour le résumé
+      // COT event pour que l'utilisateur voie la compaction dans l'Execution Viewer
+      if (this.currentExecutionStream) {
+        this.currentExecutionStream.emitCOT(
+          "action",
+          `Context compaction: ${this.messages.length} messages, approaching context window limit`
+        );
+      }
+
+      const summarizer = async (text: string): Promise<string> => {
+        const summaryResponse = await this.grokClient.chat(
+          [{ role: "user", content: text } as any],
+          [], // pas de tools pour le résumé
+        );
+        return summaryResponse.choices[0]?.message?.content || text;
+      };
+
+      const { messages: compactedMessages, result } = await this.contextCompactor.compact(
+        this.messages,
+        contextWindowSize,
+        summarizer,
       );
-      return summaryResponse.choices[0]?.message?.content || text;
-    };
 
-    const { messages: compactedMessages, result } = await this.contextCompactor.compact(
-      this.messages,
-      contextWindowSize,
-      summarizer,
-    );
-
-    if (result.compacted) {
-      this.messages = compactedMessages;
-      debugLog.log(
-        `✅ Context compacted: ${result.originalMessageCount} → ${result.newMessageCount} messages, ` +
-        `${result.tokensFreed.toLocaleString()} tokens freed`
-      );
+      if (result.compacted) {
+        this.messages = compactedMessages;
+        const msg = `Context compacted: ${result.originalMessageCount} → ${result.newMessageCount} messages, ${result.tokensFreed.toLocaleString()} tokens freed`;
+        debugLog.log(`✅ ${msg}`);
+        if (this.currentExecutionStream) {
+          this.currentExecutionStream.emitCOT("observation", msg);
+        }
+      }
+    } catch (error) {
+      // Ne jamais crasher la boucle agent à cause de la compaction
+      debugLog.log(`⚠️ Context compaction failed (non-fatal):`, error);
     }
   }
 
