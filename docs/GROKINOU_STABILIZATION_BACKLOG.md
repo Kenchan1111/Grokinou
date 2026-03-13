@@ -112,7 +112,7 @@ During this backlog:
 
 ### B1.4 Validate session-switch UI consistency
 
-- Status: `todo`
+- Status: `done`
 - Goal: prevent mismatch between visible state and actual workdir/session
 - Actions:
   - verify directory changes are reflected clearly
@@ -123,7 +123,7 @@ During this backlog:
 
 ### B1.5 Add interface smoke test list
 
-- Status: `todo`
+- Status: `done`
 - Goal: avoid rebreaking the surface repeatedly
 - Actions:
   - write a short smoke checklist covering all `done` flows from B1.1
@@ -249,7 +249,7 @@ During this backlog:
 
 ### B3.3 Improve search routing heuristics
 
-- Status: `todo`
+- Status: `done`
 - Goal: make the agent choose better between search modes
 - Actions:
   - clarify mapping:
@@ -310,7 +310,7 @@ During this backlog:
 
 ### B4.1 Define golden workflows
 
-- Status: `todo`
+- Status: `done`
 - Goal: stop relying on memory for critical regressions
 - Actions:
   - define canonical workflow set:
@@ -330,7 +330,7 @@ During this backlog:
 
 ### B4.2 Add startup tests
 
-- Status: `todo`
+- Status: `done`
 - Goal: detect launch failures immediately
 - Actions:
   - validate startup path
@@ -453,18 +453,21 @@ During this backlog:
 
 ---
 
-## Immediate Next 10 Tasks (v2 priorities)
+## Immediate Next 10 Tasks (v2 priorities — updated 2026-03-13)
 
 1. `B1.3` Normalize tool result display — blocks consistent UX
 2. `B1.6` Validate atomic tool display — new tools need UI validation
 3. `B2.6` Define atomic vs legacy tool migration — reduce LLM confusion
 4. `B3.7` Validate context compactor in tool loops — safety-critical
-5. `B1.4` Validate session-switch UI consistency
+5. ~~`B1.4` Validate session-switch UI consistency~~ → **done**
 6. `B3.2` Audit wrong-first-tool patterns — use timeline data
-7. `B3.3` Improve search routing heuristics — atomic tools change the game
-8. `B1.5` Add interface smoke test list — lock in fixes
-9. `B4.1` Define golden workflows — include atomic tool flows
-10. `B4.2` Add startup tests — catch regressions early
+7. ~~`B3.3` Improve search routing heuristics~~ → **done**
+8. ~~`B1.5` Add interface smoke test list~~ → **done**
+9. ~~`B4.1` Define golden workflows~~ → **done**
+10. ~~`B4.2` Add startup tests~~ → **done**
+
+**Remaining from top 10:** B1.3, B1.6, B2.6, B3.7, B3.2
+**Next candidates:** B2.3, B2.4, B4.3, B3.4
 
 ---
 

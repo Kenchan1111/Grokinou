@@ -324,20 +324,41 @@ const MemoizedChatEntry = React.memo(
         // Check if user wants verbose tool output (default: compact)
         const verboseToolOutput = process.env.GROK_VERBOSE_TOOLS === "true";
 
-        // Create compact summary for file operations
+        // Create compact summary for tool results
         const createCompactSummary = (content: string, toolName: string) => {
+          // Identity: always show full block
           if (toolName === "get_my_identity") {
-            return content; // Show full identity block
+            return content;
           }
+
+          // Error results: show error message
+          if (entry.toolResult && !entry.toolResult.success) {
+            const errorMsg = entry.toolResult.error || content.split("\n")[0];
+            return `✗ ${errorMsg}`.slice(0, 200);
+          }
+
+          // File read/write: line count + size
           if (toolName === "view_file" || toolName === "create_file" ||
               toolName === "read_file" || toolName === "write_file") {
             const lines = content.split("\n").length;
             const chars = content.length;
-            return `✓ ${lines} lines (${(chars / 1024).toFixed(1)}KB) - Details in Execution Viewer (Ctrl+E)`;
+            return `✓ ${lines} lines (${(chars / 1024).toFixed(1)}KB) — Ctrl+E for details`;
           }
+
+          // Edit tools: show result summary (not raw diff)
+          if (toolName === "edit_file_replace" || toolName === "str_replace_editor") {
+            // Extract meaningful summary from first line
+            const firstLine = content.split("\n")[0] || "";
+            if (firstLine.startsWith("Edited") || firstLine.startsWith("Updated") || firstLine.startsWith("Successfully")) {
+              return `✓ ${firstLine}`;
+            }
+            return `✓ Edit applied`;
+          }
+
+          // Search tools: match count
           if (toolName === "search" || toolName === "search_advanced") {
             const lines = content.split("\n").filter(l => l.trim()).length;
-            return `✓ ${lines} matches`;
+            return `✓ ${lines} matches — Ctrl+E for details`;
           }
           if (toolName === "grep_search") {
             const lines = content.split("\n").filter(l => l.trim()).length;
@@ -347,14 +368,73 @@ const MemoizedChatEntry = React.memo(
             const lines = content.split("\n").filter(l => l.trim()).length;
             return `✓ ${lines} files found`;
           }
+
+          // Bash: always compact (line count + exit code hint)
           if (toolName === "bash") {
             const lines = content.split("\n").length;
-            return lines > 10 ? `✓ ${lines} lines output` : content;
+            if (lines <= 3 && content.length < 120) {
+              // Very short output: show inline
+              return `✓ ${content.replace(/\n/g, " ").trim()}`;
+            }
+            return `✓ ${lines} lines output — Ctrl+E for details`;
           }
-          if (toolName === "edit_file_replace" || toolName === "str_replace_editor") {
-            return content.split("\n")[0]; // First line = summary
+
+          // Session tools: compact summary
+          if (toolName === "session_list") {
+            const sessionCount = (content.match(/Session #/g) || []).length;
+            return `✓ ${sessionCount} sessions listed`;
           }
-          return formatToolContent(content, toolName);
+          if (toolName === "session_switch") {
+            return `✓ Session switched`;
+          }
+          if (toolName === "session_new") {
+            return `✓ New session created`;
+          }
+          if (toolName === "session_rewind") {
+            return `✓ Session rewound`;
+          }
+
+          // Timeline tools: compact summary
+          if (toolName === "timeline_query") {
+            const eventCount = (content.match(/│/g) || []).length;
+            return `✓ ${eventCount > 0 ? eventCount + " events" : "Query complete"}`;
+          }
+          if (toolName === "rewind_to") {
+            return `✓ Rewind complete`;
+          }
+          if (toolName === "list_time_points") {
+            return `✓ Time points listed`;
+          }
+
+          // Delegation
+          if (toolName === "delegate_to_specialist") {
+            return `✓ Specialist task complete — Ctrl+E for details`;
+          }
+
+          // Todo: compact
+          if (toolName === "create_todo_list" || toolName === "update_todo_list") {
+            const itemCount = (content.match(/[☐☑✓✗□■▪▫\-\*]/g) || []).length;
+            return `✓ ${itemCount > 0 ? itemCount + " items" : "Todo updated"}`;
+          }
+
+          // Patch
+          if (toolName === "apply_patch") {
+            const fileCount = (content.match(/(Created|Patched|Deleted)/g) || []).length;
+            return `✓ ${fileCount} files patched`;
+          }
+
+          // MCP tools: truncate JSON
+          if (toolName.startsWith("mcp__")) {
+            const formatted = formatToolContent(content, toolName);
+            if (formatted.length > 200) {
+              return formatted.slice(0, 197) + "...";
+            }
+            return formatted;
+          }
+
+          // Default: first line, truncated
+          const firstLine = content.split("\n")[0] || "";
+          return firstLine.length > 200 ? firstLine.slice(0, 197) + "..." : firstLine;
         };
 
         return (
@@ -398,9 +478,9 @@ const MemoizedChatEntry = React.memo(
                   </Text>
                 )
               ) : shouldShowDiff ? (
-                // For diff results, show only the summary line, not the raw content
+                // For diff results, show compact summary (diff rendered below)
                 <Text color="green" dimColor wrap="wrap">
-                  {"└─ "}{entry.content.split("\n")[0]}
+                  {"└─ "}{createCompactSummary(entry.content, toolName)}
                 </Text>
               ) : (
                 <Text color="green" dimColor wrap="wrap">
