@@ -115,7 +115,13 @@ Depuis [wshobson/commands](https://github.com/wshobson/commands):
 ---
 
 ## Bugs Connus
-- Page Up keyboard bug en split view (scroll les deux panels)
+- Aucun bug bloquant connu (Page Up et paste overflow résolus)
+
+## Stabilisation en cours
+- Backlog : `docs/GROKINOU_STABILIZATION_BACKLOG.md`
+- Smoke test : `docs/SMOKE_TEST_CHECKLIST.md`
+- Golden workflows : `docs/GOLDEN_WORKFLOWS.md`
+- Tests : `test/startup.test.js` (17 tests), `test/user-commands.test.js`, `test/llm-tools.test.js`
 
 ## Fichiers de Référence
 - `PROJECT_STATE.md` - État actuel du projet
