@@ -7,7 +7,7 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     type: "function",
     function: {
       name: "view_file",
-      description: "View contents of a file or list directory contents. Note: prefer read_file for new workflows.",
+      description: "[LEGACY — use read_file instead] View contents of a file or list directory contents.",
       parameters: {
         type: "object",
         properties: {
@@ -55,7 +55,7 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     type: "function",
     function: {
       name: "create_file",
-      description: "Create a new file with specified content. Note: prefer write_file for new workflows.",
+      description: "[LEGACY — use write_file instead] Create a new file with specified content.",
       parameters: {
         type: "object",
         properties: {
@@ -76,7 +76,7 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     type: "function",
     function: {
       name: "str_replace_editor",
-      description: "Replace specific text in a file (supports fuzzy matching). Note: prefer edit_file_replace for new workflows.",
+      description: "[LEGACY — use edit_file_replace instead] Replace specific text in a file (supports fuzzy matching).",
       parameters: {
         type: "object",
         properties: {
@@ -126,7 +126,7 @@ const BASE_GROK_TOOLS: GrokTool[] = [
     function: {
       name: "search",
       description:
-        "Intelligent code search with context-aware ranking and adaptive cutoff (caches all results). Note: for simple searches, prefer grep_search (content) or glob_files (file names). Use this tool for ranked/contextual searches with caching.",
+        "[LEGACY — prefer grep_search or glob_files] Intelligent code search with context-aware ranking and adaptive cutoff. Use only for ranked/contextual searches when grep_search or glob_files are insufficient.",
       parameters: {
         type: "object",
         properties: {

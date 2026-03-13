@@ -201,6 +201,55 @@ async function run() {
     assert.equal(compactor.shouldCompact(messages, 128000), false);
   });
 
+  await test('ContextCompactor preserves tool_call/tool_result pairs', async () => {
+    const { ContextCompactor } = await import('../dist/agent/context-compactor.js');
+    // keepRecentMessages=4, minMessages=6 so compaction triggers
+    const compactor = new ContextCompactor({
+      threshold: 0.01, // Very low to force compaction
+      keepRecentMessages: 4,
+      minMessagesBeforeCompaction: 6,
+    }, 'grok-3');
+
+    // Build messages: system + 4 old user/assistant + 1 assistant with tool_calls + 1 tool result + 2 recent
+    const messages = [
+      { role: 'system', content: 'System prompt' },
+      { role: 'user', content: 'Message 1' },
+      { role: 'assistant', content: 'Response 1' },
+      { role: 'user', content: 'Message 2' },
+      { role: 'assistant', content: 'Response 2' },
+      // This pair should NOT be split
+      { role: 'assistant', content: '', tool_calls: [{ id: 'tc1', function: { name: 'read_file', arguments: '{}' } }] },
+      { role: 'tool', content: 'file contents here', tool_call_id: 'tc1' },
+      // Recent messages
+      { role: 'user', content: 'Recent 1' },
+      { role: 'assistant', content: 'Recent 2' },
+    ];
+
+    // Verify shouldCompact returns true (9 messages > 6 minimum)
+    assert.equal(compactor.shouldCompact(messages, 100), true, 'Should want to compact');
+
+    // Compact with a mock summarizer
+    const { messages: compacted, result } = await compactor.compact(
+      messages, 100,
+      async (text) => 'Summary of old messages',
+    );
+
+    assert.ok(result.compacted, 'Should have compacted');
+
+    // Verify no tool message appears without its assistant+tool_calls pair
+    for (let i = 0; i < compacted.length; i++) {
+      const msg = compacted[i];
+      if (msg.role === 'tool') {
+        // The message before a tool result must be assistant with tool_calls
+        const prev = compacted[i - 1];
+        assert.ok(
+          prev && prev.role === 'assistant' && prev.tool_calls,
+          'Tool result must be preceded by assistant with tool_calls'
+        );
+      }
+    }
+  });
+
   // ─── ReadTool guard ───────────────────────────────────────────
 
   await test('ReadTool.hasBeenRead tracks files', async () => {

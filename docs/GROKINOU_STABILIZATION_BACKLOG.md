@@ -134,7 +134,7 @@ During this backlog:
 
 ### B1.6 Validate atomic tool display (NEW)
 
-- Status: `todo`
+- Status: `done`
 - Goal: ensure new Phase 1 tools render correctly in UI
 - Actions:
   - test read_file output (cat -n format, line numbers, truncation)
@@ -207,7 +207,7 @@ During this backlog:
 
 ### B2.6 Define atomic vs legacy tool migration (NEW)
 
-- Status: `todo`
+- Status: `done`
 - Goal: clarify when LLM should use new atomic tools vs legacy tools
 - Actions:
   - define precedence rules in system prompt
@@ -294,7 +294,7 @@ During this backlog:
 
 ### B3.7 Validate context compactor in tool loops (NEW)
 
-- Status: `todo`
+- Status: `done`
 - Goal: ensure compaction doesn't break multi-round tool execution
 - Actions:
   - verify tool_call/tool_result pair preservation (adjustSplitForToolPairs)

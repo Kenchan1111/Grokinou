@@ -315,9 +315,7 @@ const MemoizedChatEntry = React.memo(
 
         const shouldShowFileContent =
           (entry.toolCall?.function?.name === "view_file" ||
-            entry.toolCall?.function?.name === "read_file" ||
-            entry.toolCall?.function?.name === "create_file" ||
-            entry.toolCall?.function?.name === "write_file") &&
+            entry.toolCall?.function?.name === "read_file") &&
           entry.toolResult?.success &&
           !shouldShowDiff;
 
@@ -337,12 +335,16 @@ const MemoizedChatEntry = React.memo(
             return `✗ ${errorMsg}`.slice(0, 200);
           }
 
-          // File read/write: line count + size
-          if (toolName === "view_file" || toolName === "create_file" ||
-              toolName === "read_file" || toolName === "write_file") {
+          // File read: line count + size (content is the file)
+          if (toolName === "view_file" || toolName === "read_file") {
             const lines = content.split("\n").length;
             const chars = content.length;
             return `✓ ${lines} lines (${(chars / 1024).toFixed(1)}KB) — Ctrl+E for details`;
+          }
+
+          // File write/create: output is already a summary ("Created path (N bytes)")
+          if (toolName === "write_file" || toolName === "create_file") {
+            return `✓ ${content.split("\n")[0]}`;
           }
 
           // Edit tools: show result summary (not raw diff)
