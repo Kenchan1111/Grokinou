@@ -238,7 +238,7 @@ During this backlog:
 
 ### B3.2 Audit wrong-first-tool patterns
 
-- Status: `todo`
+- Status: `done`
 - Goal: identify routing mistakes from real usage
 - Actions:
   - inspect recent workflows via timeline_query

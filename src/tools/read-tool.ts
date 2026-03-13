@@ -38,6 +38,13 @@ export class ReadTool {
     limit?: number
   ): Promise<ToolResult> {
     try {
+      if (!filePath || typeof filePath !== 'string') {
+        return {
+          success: false,
+          error: 'file_path is required and must be a string',
+        };
+      }
+
       const resolvedPath = path.resolve(filePath);
 
       if (!(await fs.pathExists(resolvedPath))) {
